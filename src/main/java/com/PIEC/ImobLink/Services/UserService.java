@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.Services;
 
 import Role.Role;
+import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -33,11 +34,17 @@ public class UserService {
         return new UserDetails(user);
     }
 
-    public void setBio(String bio, String email) throws UsernameNotFoundException {
+    public void setInfo(SetInfoRequest newInfo, String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
-        user.setBio(bio);
+        if(newInfo.getName() != null) {
+            user.setName(newInfo.getName());
+        }if(newInfo.getPhoneNumber() != null) {
+            user.setPhoneNumber(newInfo.getPhoneNumber());
+        }if(newInfo.getBio() != null) {
+            user.setBio(newInfo.getBio());
+        }
         userRepository.save(user);
-        System.out.println("Bio setada com sucesso para o user: " + user.getName());
+        System.out.println("Informações setadas com sucesso para o user: " + user.getName());
     }
 }

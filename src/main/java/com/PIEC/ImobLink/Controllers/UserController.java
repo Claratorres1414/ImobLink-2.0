@@ -35,8 +35,9 @@ public class UserController {
     }
 
     @PatchMapping("/setInfo")
-    public void setBio(@RequestBody SetInfoRequest setRequest, Authentication authentication) {
+    public ResponseEntity<String> setBio(@RequestBody SetInfoRequest setRequest, Authentication authentication) {
         String email = authentication.getName();
-        userService.setBio(setRequest.getBio(), email);
+        userService.setInfo(setRequest, email);
+        return ResponseEntity.ok("Informações atualizadas com sucesso!");
     }
 }

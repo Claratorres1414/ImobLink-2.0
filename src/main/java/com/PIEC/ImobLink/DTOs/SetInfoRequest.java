@@ -7,4 +7,6 @@ import lombok.Getter;
 @Getter
 public class SetInfoRequest {
     private String bio;
+    private String name;
+    private String phoneNumber;
 }
