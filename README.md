@@ -69,5 +69,7 @@ UserController
     esse endpoint permite as auterações de informação do usuário, atualmente seu body é:
     {
       "bio" : "algo legal aí"
+      "name" : "fulano de tal"
+      "phoneNumber" : "45523"
     }
-    e exige autenticação no header om a estrutura: Authorization | Bearer token.
+    salientando que esse endpoint permite campos vazios caso o usuário só vá atualizar uma das três informações e lembrando que a requisição exige autenticação no header com a estrutura: Authorization | Bearer token.
