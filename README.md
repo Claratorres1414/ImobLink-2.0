@@ -73,3 +73,10 @@ UserController
       "phoneNumber" : "45523"
     }
     salientando que esse endpoint permite campos vazios caso o usuário só vá atualizar uma das três informações e lembrando que a requisição exige autenticação no header com a estrutura: Authorization | Bearer token.
+  PATCH - /api/user/setPassword
+    esse endpoint permite a auteração da senha mediante apresentação da senha atual, não é permitido: repetir a senha atual na nova senha ou tentar enviar uma nova senha vazia. O body dessa requisição é:
+    {
+      "password" : "senha atual",
+      "newPassword" : "nova senha não vazia"
+    }
+    e esse endPoint exige header com a estrutura: Authorization | Bearer token.
