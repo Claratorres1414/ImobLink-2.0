@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.Controllers;
 
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
+import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.Services.CustomUserDetailsService;
 import com.PIEC.ImobLink.Services.UserService;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +36,19 @@ public class UserController {
     }
 
     @PatchMapping("/setInfo")
-    public ResponseEntity<String> setBio(@RequestBody SetInfoRequest setRequest, Authentication authentication) {
+    public ResponseEntity<String> setInfo(@RequestBody SetInfoRequest setRequest, Authentication authentication) {
         String email = authentication.getName();
         userService.setInfo(setRequest, email);
         return ResponseEntity.ok("Informações atualizadas com sucesso!");
+    }
+
+    @PatchMapping("/setPassword")
+    public ResponseEntity<String> setPassword(@RequestBody SetPasswordRequest setRequest, Authentication authentication) {
+        String email = authentication.getName();
+        Boolean response = userService.setPassword(setRequest, email);
+        if (response) {
+            return ResponseEntity.ok("Senha atualizada com sucesso!");
+        }
+        return ResponseEntity.ok("Erro ao atualizar senha!");
     }
 }

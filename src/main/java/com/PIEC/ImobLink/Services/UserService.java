@@ -2,9 +2,11 @@ package com.PIEC.ImobLink.Services;
 
 import Role.Role;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
+import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Entitys.User;
@@ -13,6 +15,7 @@ import com.PIEC.ImobLink.Entitys.User;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public void promoteUser(String email) {
         User user = userRepository.findByEmail(email)
@@ -46,5 +49,21 @@ public class UserService {
         }
         userRepository.save(user);
         System.out.println("Informações setadas com sucesso para o user: " + user.getName());
+    }
+
+    public Boolean setPassword(SetPasswordRequest setRequest, String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
+
+        if (setRequest.getNewPassword() != null && !setRequest.getNewPassword().equals(setRequest.getPassword()) && passwordEncoder.matches(setRequest.getPassword(), user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(setRequest.getNewPassword()));
+            userRepository.save(user);
+            System.out.println("Senha atualizada com sucesso!");
+            return true;
+        }
+        else {
+            System.out.println("Erro ao atualizar senha!");
+            return false;
+        }
     }
 }
