@@ -37,16 +37,17 @@ public class AuthenticationService {
 
     public AuthResponse login(LoginRequest request) {
         try {
-            authenticationManager.authenticate( //Quando sai do controller bate aqui
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()) //Entra aqui e volta pra linha de cima, é onde quebra toda vez
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
         }catch (AuthenticationException e){
-            System.out.println(e.getMessage());
+            throw new RuntimeException("Credenciais inválidas", e);
         }
 
-        var user = userRepository.findByEmail(request.getEmail());
+        var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        String token = jwtUtil.generateToken(user.get().getEmail());
+        String token = jwtUtil.generateToken(user.getEmail());
         return new AuthResponse(token);
     }
 }
