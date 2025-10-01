@@ -36,7 +36,7 @@ public class PostService {
     private String uploadDir;
 
     @Transactional
-    public String createPost(MultipartFile image, String description, double price, String street, String avenue, Authentication auth) throws IOException, java.io.IOException {
+    public String createPost(MultipartFile image, String description, double price, String street, String avenue, String number, Authentication auth) throws IOException, java.io.IOException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -51,12 +51,13 @@ public class PostService {
 
         Post post = new Post();
         post.setImagePath(filePath.toString());
-        post.setImagePath(image.getContentType());
+        post.setImageType(image.getContentType());
         post.setDescription(description);
         post.setPrice(price);
         post.setStreet(street);
         post.setAvenue(avenue);
         post.setUser(user);
+        post.setNumber(number);
 
         postRepository.save(post);
 

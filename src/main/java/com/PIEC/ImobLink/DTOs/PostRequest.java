@@ -11,5 +11,6 @@ public class PostRequest {
     private double price;
     private String street;
     private String avenue;
-    //private MultipartFile image;
+    private String number;
+    private MultipartFile image;
 }

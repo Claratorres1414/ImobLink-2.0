@@ -25,6 +25,7 @@ public class Post {
     private double price;
     private String street;
     private String avenue;
+    private String number;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

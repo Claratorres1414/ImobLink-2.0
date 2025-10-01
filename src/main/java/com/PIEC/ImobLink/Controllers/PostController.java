@@ -32,9 +32,9 @@ public class PostController {
     private final PostRepository postRepository;
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("image")MultipartFile image, Authentication auth) throws IOException {
+    public ResponseEntity<String> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("number") String number, @RequestParam("image")MultipartFile image, Authentication auth) throws IOException {
         System.out.println("Recebi a imagem: " + image.getOriginalFilename());
-        String response = postService.createPost(image, description, price, street, avenue, auth);
+        String response = postService.createPost(image, description, price, street, avenue, number, auth);
         return ResponseEntity.ok(response);
     }
 

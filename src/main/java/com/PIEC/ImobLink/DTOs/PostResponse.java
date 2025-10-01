@@ -16,6 +16,7 @@ public class PostResponse {
     private String avenue;
     private LocalDateTime createdAt;
     private String createdBy;
+    private String number;
 
     public PostResponse(Post post) {
         this.imageUrl = "/api/posts/" + post.getId() + "/image";
@@ -23,6 +24,7 @@ public class PostResponse {
         this.price = post.getPrice();
         this.street = post.getStreet();
         this.avenue = post.getAvenue();
+        this.number = post.getNumber();
         this.createdAt = post.getCreatedAt();
         this.createdBy = post.getUser().getName();
     }
