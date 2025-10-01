@@ -39,11 +39,12 @@ FollowController:
 
 PostController:
   POST - /api/posts/create
-    permite que o usuário realize publicações com uma imagem, descrição, preço da casa, rua e bairro, seu body é multipart tendo os seguintes campos:
+    permite que o usuário realize publicações com uma imagem, descrição, preço da casa, rua,bairro e número, seu body é multipart tendo os seguintes campos:
       description | algo
       price | 123.4
       street | uma rua
       avenue | um bairro
+      number | número da casa
       image | IMG_ajfkdkj.jpeg
     Essa requisição exige header com a estrutura: Authorization | Bearer token;
   GET - /api/posts/my-posts
