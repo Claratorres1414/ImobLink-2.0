@@ -4,18 +4,24 @@ import Role.Role;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
+import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Entitys.User;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ImageService imageService;
 
     public void promoteUser(String email) {
         User user = userRepository.findByEmail(email)
@@ -37,7 +43,8 @@ public class UserService {
         return new UserDetails(user);
     }
 
-    public void setInfo(SetInfoRequest newInfo, String email) throws UsernameNotFoundException {
+    public void setInfo(SetInfoRequest newInfo, Authentication auth) throws UsernameNotFoundException {
+        String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         if(newInfo.getName() != null) {
@@ -49,6 +56,16 @@ public class UserService {
         }
         userRepository.save(user);
         System.out.println("Informações setadas com sucesso para o user: " + user.getName());
+    }
+
+    public String setProfileImage(MultipartFile newProfileImage, Authentication auth) throws IOException {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
+        if(newProfileImage != null) {
+            String imagePath = imageService.saveImage(newProfileImage, auth);
+            user.setProfileImageUrl(imagePath);
+        }
     }
 
     public Boolean setPassword(SetPasswordRequest setRequest, String email) throws UsernameNotFoundException {
