@@ -9,7 +9,6 @@ import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Entitys.Post;
@@ -18,11 +17,7 @@ import com.PIEC.ImobLink.Repositorys.UserRepository;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +26,7 @@ import java.util.UUID;
 public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-
-    @Value("${upload.dir}")
-    private String uploadDir;
+    private final ImageService imageService;
 
     @Transactional
     public String createPost(MultipartFile image, String description, double price, String street, String avenue, String number, Authentication auth) throws IOException, java.io.IOException {
@@ -41,16 +34,10 @@ public class PostService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String filename = UUID.randomUUID() + "_" + image.getOriginalFilename();
-
-        Path uploadPath = Paths.get(uploadDir);
-        Files.createDirectories(uploadPath);
-        Path filePath = uploadPath.resolve(filename);
-
-        image.transferTo(filePath);
+        String filePath = imageService.saveImage(image, auth);
 
         Post post = new Post();
-        post.setImagePath(filePath.toString());
+        post.setImagePath(filePath);
         post.setImageType(image.getContentType());
         post.setDescription(description);
         post.setPrice(price);
@@ -62,11 +49,6 @@ public class PostService {
         postRepository.save(post);
 
         return "post created!";
-    }
-
-    public PostResponse getPostById(@PathVariable Long id) throws ServletException {
-        Post post = postRepository.getReferenceById(id);
-        return new PostResponse(post);
     }
 
     public List<PostResponse> getFeed() {
