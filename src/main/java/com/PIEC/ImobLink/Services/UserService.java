@@ -65,7 +65,9 @@ public class UserService {
         if(newProfileImage != null) {
             String imagePath = imageService.saveImage(newProfileImage, auth);
             user.setProfileImageUrl(imagePath);
+            return "Imagem de perfil atualizada com sucesso para: " + userRepository.save(user).getEmail();
         }
+        return "Não foi possível atualizar a imagem de perfil.";
     }
 
     public Boolean setPassword(SetPasswordRequest setRequest, String email) throws UsernameNotFoundException {
