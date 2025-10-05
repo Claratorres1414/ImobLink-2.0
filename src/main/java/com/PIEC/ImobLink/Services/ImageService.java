@@ -4,6 +4,7 @@ import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
+import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import io.jsonwebtoken.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ import java.util.UUID;
 public class ImageService {
     private final ImageRepository imageRepository;
     private final UserRepository userRepository;
-    private final PostService postService;
+    private final PostRepository postRepository;
 
     public String saveImage(MultipartFile file, Authentication auth) throws IOException, java.io.IOException {
         String email = auth.getName();
@@ -57,7 +58,7 @@ public class ImageService {
     public ResponseEntity<byte[]> getImageByPostId(@PathVariable Long postId, Authentication auth) throws java.io.IOException {
         userRepository.findByEmail(auth.getName()).orElseThrow(() -> new UsernameNotFoundException(auth.getName()));
         try{
-            Post post = postService.get(postId);
+            Post post = postRepository.getReferenceById(postId);
             String imagePath = post.getImagePath();
 
             if (imagePath == null) {
