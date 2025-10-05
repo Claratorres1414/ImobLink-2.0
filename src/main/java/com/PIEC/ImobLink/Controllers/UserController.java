@@ -10,6 +10,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.PIEC.ImobLink.DTOs.UserDetails;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
@@ -37,8 +39,7 @@ public class UserController {
 
     @PatchMapping("/setInfo")
     public ResponseEntity<String> setInfo(@RequestBody SetInfoRequest setRequest, Authentication authentication) {
-        String email = authentication.getName();
-        userService.setInfo(setRequest, email);
+        userService.setInfo(setRequest, authentication);
         return ResponseEntity.ok("Informações atualizadas com sucesso!");
     }
 
