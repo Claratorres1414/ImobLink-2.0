@@ -4,7 +4,6 @@ import Role.Role;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
-import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -64,7 +63,7 @@ public class UserService {
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         if(newProfileImage != null) {
             String imagePath = imageService.saveImage(newProfileImage, auth);
-            user.setProfileImageUrl(imagePath);
+            user.setImageProfilePath(imagePath);
             return "Imagem de perfil atualizada com sucesso para: " + userRepository.save(user).getEmail();
         }
         return "Não foi possível atualizar a imagem de perfil.";

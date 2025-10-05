@@ -36,7 +36,7 @@ public class User {
     private String password;
 
     private String bio;
-    private String profileImageUrl;
+    private String imageProfilePath;
 
     @Enumerated(EnumType.STRING)
     private Role role;

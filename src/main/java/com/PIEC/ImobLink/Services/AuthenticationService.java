@@ -24,6 +24,7 @@ public class AuthenticationService {
 
     public AuthResponse register(RegisterRequest request) {
         User user = new User();
+        user.setImageProfilePath("/uploads/holder.jpeg");
         user.setCpf(request.getCpf());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setName(request.getName());
