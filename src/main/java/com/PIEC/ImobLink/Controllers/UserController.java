@@ -1,8 +1,8 @@
 package com.PIEC.ImobLink.Controllers;
 
+import com.PIEC.ImobLink.DTOs.DeleteProfileRequest;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
-import com.PIEC.ImobLink.Services.CustomUserDetailsService;
 import com.PIEC.ImobLink.Services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -18,7 +18,6 @@ import java.io.IOException;
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
 public class UserController {
-    private final CustomUserDetailsService customUserDetailsService;
     private final UserService userService;
 
     @GetMapping("/teste")
@@ -59,5 +58,14 @@ public class UserController {
             return ResponseEntity.ok("Senha atualizada com sucesso!");
         }
         return ResponseEntity.ok("Erro ao atualizar senha!");
+    }
+
+    @DeleteMapping("/deleteProfile")
+    public ResponseEntity<String> deleteProfile(@RequestBody DeleteProfileRequest delRequest, Authentication auth) {
+        Boolean response = userService.deleteProfile(delRequest, auth);
+        if (response) {
+            return ResponseEntity.ok("Usuário deletado com sucesso!");
+        }
+        return ResponseEntity.ok("Erro ao deletar usuario!");
     }
 }

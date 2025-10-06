@@ -1,9 +1,11 @@
 package com.PIEC.ImobLink.Services;
 
 import Role.Role;
+import com.PIEC.ImobLink.DTOs.DeleteProfileRequest;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
+import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -11,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Entitys.User;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -21,6 +24,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ImageService imageService;
+    private final ImageRepository imageRepository;
 
     public void promoteUser(String email) {
         User user = userRepository.findByEmail(email)
@@ -83,5 +87,18 @@ public class UserService {
             System.out.println("Erro ao atualizar senha!");
             return false;
         }
+    }
+
+    @Transactional
+    public Boolean deleteProfile(DeleteProfileRequest delRequest, Authentication auth) {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
+        if(delRequest.getPassword() != null && passwordEncoder.matches(delRequest.getPassword(), user.getPassword())) {
+            imageRepository.deleteByUserId(user.getId());
+            userRepository.delete(user);
+            return true;
+        }
+        return false;
     }
 }
