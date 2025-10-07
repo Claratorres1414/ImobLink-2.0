@@ -40,8 +40,9 @@ public class SecurityConfig {
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/legenda/**").permitAll()         // rota da legenda
-                        .requestMatchers("/ocr/**").permitAll()             // rota do OCR
+                        // libera apenas as rotas de integração com o FastAPI
+                        .requestMatchers("/integracao/legenda").permitAll()
+                        .requestMatchers("/integracao/ocr").permitAll()
                         .requestMatchers("/api/feed").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "SUPER_ADMIN")

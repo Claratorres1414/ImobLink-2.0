@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class MultipartInputStreamFileResource extends InputStreamResource {
+
     private final String filename;
 
     public MultipartInputStreamFileResource(InputStream inputStream, String filename) {
@@ -20,6 +21,6 @@ public class MultipartInputStreamFileResource extends InputStreamResource {
 
     @Override
     public long contentLength() throws IOException {
-        return -1;
+        return -1; // evita problemas com arquivos grandes
     }
 }
