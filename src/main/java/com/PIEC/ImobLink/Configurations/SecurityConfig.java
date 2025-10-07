@@ -40,6 +40,8 @@ public class SecurityConfig {
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/legenda/**").permitAll()         // rota da legenda
+                        .requestMatchers("/ocr/**").permitAll()             // rota do OCR
                         .requestMatchers("/api/feed").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "SUPER_ADMIN")
