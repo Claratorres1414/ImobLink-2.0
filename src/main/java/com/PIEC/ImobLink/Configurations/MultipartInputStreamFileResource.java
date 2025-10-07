@@ -1,10 +1,13 @@
 package com.PIEC.ImobLink.Configurations;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.core.io.InputStreamResource;
 
-import java.io.IOException;
 import java.io.InputStream;
 
+@Getter
+@Setter
 public class MultipartInputStreamFileResource extends InputStreamResource {
 
     private final String filename;
@@ -12,15 +15,5 @@ public class MultipartInputStreamFileResource extends InputStreamResource {
     public MultipartInputStreamFileResource(InputStream inputStream, String filename) {
         super(inputStream);
         this.filename = filename;
-    }
-
-    @Override
-    public String getFilename() {
-        return this.filename;
-    }
-
-    @Override
-    public long contentLength() throws IOException {
-        return -1; // evita problemas com arquivos grandes
     }
 }
