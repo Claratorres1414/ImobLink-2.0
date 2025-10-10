@@ -1,7 +1,6 @@
 package com.PIEC.ImobLink.DTOs;
 
 import com.PIEC.ImobLink.Entitys.Post;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -9,7 +8,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class PostResponse {
-    private String imageUrl;
+    private Long id;
+    private String imageAdresse;
     private String description;
     private double price;
     private String street;
@@ -19,7 +19,8 @@ public class PostResponse {
     private String number;
 
     public PostResponse(Post post) {
-        this.imageUrl = "/api/posts/" + post.getId() + "/image";
+        this.id = post.getId();
+        this.imageAdresse = "/api/images/" + post.getId() + "/post";
         this.description = post.getDescription();
         this.price = post.getPrice();
         this.street = post.getStreet();
