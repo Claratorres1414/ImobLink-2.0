@@ -58,7 +58,7 @@ public class ImageService {
     public ResponseEntity<byte[]> getImageByPostId(@PathVariable Long postId, Authentication auth) throws java.io.IOException {
         userRepository.findByEmail(auth.getName()).orElseThrow(() -> new UsernameNotFoundException(auth.getName()));
         try{
-            Post post = postRepository.getReferenceById(postId);
+            Post post = postRepository.getPostById(postId);
             String imagePath = post.getImagePath();
 
             if (imagePath == null) {
