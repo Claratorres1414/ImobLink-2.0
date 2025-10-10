@@ -1,7 +1,7 @@
 package com.PIEC.ImobLink.Services;
 
-import com.PIEC.ImobLink.DTOs.PostRequest;
 import com.PIEC.ImobLink.DTOs.PostResponse;
+import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.User;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.ServletException;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -58,24 +57,33 @@ public class PostService {
                 .toList();
     }
 
-    public Post editPost(Long id, PostRequest newInfoPost, Authentication auth) throws ServletException {
+    public Boolean editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
         String email = auth.getName();
         userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        Post post = postRepository.getReferenceById(id);
-        if (newInfoPost.getDescription() != null) {
-            post.setDescription(newInfoPost.getDescription());
+        try {
+            Post post = postRepository.getPostById(id);
+            if (newInfoPost.getDescription() != null) {
+                post.setDescription(newInfoPost.getDescription());
+            }
+            if (newInfoPost.getPrice() != 0){
+                post.setPrice(newInfoPost.getPrice());
+            }
+            if (newInfoPost.getStreet() != null) {
+                post.setStreet(newInfoPost.getStreet());
+            }
+            if (newInfoPost.getAvenue() != null) {
+                post.setAvenue(newInfoPost.getAvenue());
+            }
+            if (newInfoPost.getNumber() != null) {
+                post.setNumber(newInfoPost.getNumber());
+            }
+
+            postRepository.save(post);
+            return true;
+        }catch (Exception e){
+            throw new ServletException("Erro ao tentar editar publicação: " + e);
         }
-        if (newInfoPost.getPrice() != 0){
-            post.setPrice(newInfoPost.getPrice());
-        }
-        if (newInfoPost.getStreet() != null) {
-            post.setStreet(newInfoPost.getStreet());
-        }
-        if (newInfoPost.getAvenue() != null) {
-            post.setAvenue(newInfoPost.getAvenue());
-        }
-        return postRepository.save(post);
     }
 
    public String deletePost(Long id, Authentication auth) throws IOException, ServletException {
@@ -97,7 +105,10 @@ public class PostService {
     }
 
     public Post get(Long id) {
-        return postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post não encontrado: " + id));
+        try{
+            return postRepository.getPostById(id);
+        }catch (Exception e){
+            return null;
+        }
     }
 }
