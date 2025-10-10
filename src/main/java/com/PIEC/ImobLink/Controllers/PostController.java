@@ -1,7 +1,7 @@
 package com.PIEC.ImobLink.Controllers;
 
-import com.PIEC.ImobLink.DTOs.PostRequest;
 import com.PIEC.ImobLink.DTOs.PostResponse;
+import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import jakarta.servlet.ServletException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -40,8 +40,11 @@ public class PostController {
     }
 
     @PatchMapping("/edit/{id}")
-    public ResponseEntity<String> editPost(@PathVariable Long id, @RequestBody PostRequest newInfoPost, Authentication auth) throws ServletException {
-        postService.editPost(id, newInfoPost, auth);
-        return ResponseEntity.ok("Editado com sucesso");
+    public ResponseEntity<String> editPost(@PathVariable Long id, @RequestBody SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
+        Boolean response = postService.editPost(id, newInfoPost, auth);
+        if (response) {
+            return ResponseEntity.ok("Editado com sucesso");
+        }
+        return ResponseEntity.badRequest().body("Erro ao tentar editar o post");
     }
 }
