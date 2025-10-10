@@ -53,6 +53,18 @@ FollowController:
 
 
 
+ImageController:
+
+  POST - /api/images (Só serve para fins de teste)
+    permite que imagens sejam salvas no repositório, passando a imagem, seu body é multipart tendo a seguinte estrutura:
+      image | IMG_aogjwot.jpeg
+    Essa requisição exige header com a estrutura: Authorization | Bearer token;
+
+  GET - /api/images/{id}/post
+    esse endpoint tem como finalidade servir a imagem do respectivo post ao passar o id do post na url. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+
+
 PostController:
 
   POST - /api/posts/create
