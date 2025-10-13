@@ -26,7 +26,8 @@ public class AdminInitializer implements CommandLineRunner {
             superAdmin.setRole(Role.SUPER_ADMIN);
 
             userRepository.save(superAdmin);
-            System.out.println("A SUPREMACIA ENTROU NO CHAT");
+            System.out.println("SuperAdmin added");
         }
+        System.out.println("SupremeAdmin presente");
     }
 }
