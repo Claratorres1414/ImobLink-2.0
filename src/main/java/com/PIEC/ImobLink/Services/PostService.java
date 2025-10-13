@@ -90,9 +90,12 @@ public class PostService {
         String email = auth.getName();
         userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
-        postRepository.delete(get(id));
-        return "post deleted!";
+        try{
+            postRepository.delete(get(id));
+            return "post deleted!";
+        } catch (Exception e){
+            throw new ServletException("Erro ao excluir post: " + e);
+        }
     }
 
     public List<PostResponse> getPostsByUser(String email) {
