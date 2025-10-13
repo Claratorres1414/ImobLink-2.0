@@ -31,16 +31,14 @@ public class UserController {
     }
 
     @GetMapping("/account")
-    public ResponseEntity<UserDetails> loadAccountInfo(Authentication authentication) {
-        String email = authentication.getName();
-        UserDetails response = userService.loadUser(email);
-
+    public ResponseEntity<UserDetails> loadAccountInfo(Authentication auth) {
+        UserDetails response = userService.loadUser(auth);
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/setInfo")
-    public ResponseEntity<String> setInfo(@RequestBody SetInfoRequest setRequest, Authentication authentication) {
-        userService.setInfo(setRequest, authentication);
+    public ResponseEntity<String> setInfo(@RequestBody SetInfoRequest setRequest, Authentication auth) {
+        userService.setInfo(setRequest, auth);
         return ResponseEntity.ok("Informações atualizadas com sucesso!");
     }
 
@@ -51,9 +49,8 @@ public class UserController {
     }
 
     @PatchMapping("/setPassword")
-    public ResponseEntity<String> setPassword(@RequestBody SetPasswordRequest setRequest, Authentication authentication) {
-        String email = authentication.getName();
-        Boolean response = userService.setPassword(setRequest, email);
+    public ResponseEntity<String> setPassword(@RequestBody SetPasswordRequest setRequest, Authentication auth) {
+        Boolean response = userService.setPassword(setRequest, auth);
         if (response) {
             return ResponseEntity.ok("Senha atualizada com sucesso!");
         }
