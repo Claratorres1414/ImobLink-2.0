@@ -104,6 +104,18 @@ public class PostService {
                 .toList();
     }
 
+    public PostResponse getPostById(Long id, Authentication auth) throws ServletException {
+        String email = auth.getName();
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found " + email));
+        try {
+            Post post = postRepository.getPostById(id);
+            return new PostResponse(post);
+        } catch (Exception e){
+            throw new ServletException("Erro ao tentar buscar post: " + e);
+        }
+    }
+
     public Post get(Long id) {
         try{
             return postRepository.getPostById(id);
