@@ -40,7 +40,8 @@ public class UserService {
         System.out.println("Usuário promovido com sucesso: " + email);
     }
 
-    public UserDetails loadUser(String email) throws UsernameNotFoundException {
+    public UserDetails loadUser(Authentication auth) throws UsernameNotFoundException {
+        String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         return new UserDetails(user);
@@ -50,6 +51,7 @@ public class UserService {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
+
         if(newInfo.getName() != null) {
             user.setName(newInfo.getName());
         }if(newInfo.getPhoneNumber() != null) {
@@ -57,7 +59,13 @@ public class UserService {
         }if(newInfo.getBio() != null) {
             user.setBio(newInfo.getBio());
         }
-        userRepository.save(user);
+
+        try {
+            userRepository.save(user);
+        } catch ( Exception e ) {
+            System.out.println("Erro ao salvar novas informações para user: " + user.getName() + " Log: " + e.getMessage());
+            return;
+        }
         System.out.println("Informações setadas com sucesso para o user: " + user.getName());
     }
 
@@ -73,15 +81,21 @@ public class UserService {
         return "Não foi possível atualizar a imagem de perfil.";
     }
 
-    public Boolean setPassword(SetPasswordRequest setRequest, String email) throws UsernameNotFoundException {
+    public Boolean setPassword(SetPasswordRequest setRequest, Authentication auth) throws UsernameNotFoundException {
+        String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
 
         if (setRequest.getNewPassword() != null && !setRequest.getNewPassword().equals(setRequest.getPassword()) && passwordEncoder.matches(setRequest.getPassword(), user.getPassword())) {
             user.setPassword(passwordEncoder.encode(setRequest.getNewPassword()));
-            userRepository.save(user);
-            System.out.println("Senha atualizada com sucesso!");
-            return true;
+            try{
+                userRepository.save(user);
+                System.out.println("Senha atualizada com sucesso!");
+                return true;
+            }catch ( Exception e ) {
+                System.out.println("Erro ao tentar salvar nova senha: " + e.getMessage());
+                return false;
+            }
         }
         else {
             System.out.println("Erro ao atualizar senha!");
