@@ -13,46 +13,83 @@ function EditarPostagem() {
   const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
   const [imagem, setImagem] = useState(null);
-
+  const [imagemSrc, setImagemSrc] = useState("/placeholder.jpg");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
-  // 🔹 Carregar dados atuais da postagem
-  useEffect(() => {
-    fetch(`http://localhost:8080/api/posts/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Erro ao carregar postagem");
-        const data = await res.json();
-        setDescricao(data.description || "");
-        setPreco(data.price || "");
-        setRua(data.street || "");
-        setNumero(data.houseNumber || "");
-        setBairro(data.avenue || "");
-        setCarregando(false);
+useEffect(() => {
+  if (!id) {
+    setErro("ID da postagem inválido.");
+    setCarregando(false);
+    return;
+  }
 
-        // 🔹 Garantir que só o dono pode editar
-        if (data.authorEmail && localStorage.getItem("userEmail")) {
-          if (data.authorEmail !== localStorage.getItem("userEmail")) {
-            alert("Você não tem permissão para editar esta postagem.");
-            navigate("/home");
-          }
+  let controller = new AbortController();
+  let createdObjectURL = null;
+
+  async function carregarPostagem() {
+    try {
+      const urlsPossiveis = [
+        `http://localhost:8080/api/posts/${id}`,
+        `http://localhost:8080/api/posts/post/${id}`,
+      ];
+
+      let data = null;
+      for (const url of urlsPossiveis) {
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        if (res.ok) {
+          data = await res.json();
+          break;
         }
-      })
-      .catch((err) => {
-        console.error(err);
-        setErro("Erro ao carregar a postagem.");
-        setCarregando(false);
-      });
-  }, [id]);
+      }
 
-  // 🔹 Salvar alterações
+      if (!data) throw new Error("Postagem não encontrada");
+
+      console.log("📦 Dados recebidos:", data);
+
+      setDescricao(data.description || "");
+      setPreco(data.price || "");
+      setRua(data.street || "");
+      setNumero(data.number || "");
+      setBairro(data.neighborhood || data.avenue || "");
+
+      // Carregar imagem, se houver
+      const imagePath =
+        data.imageAdresse || data.imagePath || data.imageUrl || null;
+      if (imagePath) {
+        const imgRes = await fetch(`http://localhost:8080${imagePath}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        if (imgRes.ok) {
+          const blob = await imgRes.blob();
+          createdObjectURL = URL.createObjectURL(blob);
+          setImagemSrc(createdObjectURL);
+        }
+      }
+
+      setCarregando(false);
+    } catch (err) {
+      console.error(err);
+      setErro("Erro ao carregar a postagem.");
+      setCarregando(false);
+    }
+  }
+
+  carregarPostagem();
+
+  return () => {
+    controller.abort();
+    if (createdObjectURL) URL.revokeObjectURL(createdObjectURL);
+  };
+}, [id, token]);
+
+
   const handleSalvar = async (e) => {
     e.preventDefault();
-
     if (!descricao || !preco || !rua || !numero || !bairro) {
       setErro("Preencha todos os campos obrigatórios.");
       return;
@@ -62,18 +99,14 @@ function EditarPostagem() {
     formData.append("description", descricao);
     formData.append("price", preco);
     formData.append("street", rua);
-    formData.append("houseNumber", numero);
-    formData.append("avenue", bairro);
-    if (imagem) {
-      formData.append("image", imagem);
-    }
+    formData.append("number", numero);
+    formData.append("neighborhood", bairro);
+    if (imagem) formData.append("image", imagem);
 
     try {
       const resposta = await fetch(`http://localhost:8080/api/posts/edit/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
@@ -109,17 +142,6 @@ function EditarPostagem() {
           </h2>
 
           {erro && <p className="text-red-500 text-sm">{erro}</p>}
-
-          {/* 🔹 Exibir imagem atual */}
-          <img
-            src={`http://localhost:8080/api/posts/${id}/image`}
-            alt="Imagem atual do imóvel"
-            className="w-full max-h-80 object-contain rounded mb-4"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "/placeholder.jpg";
-            }}
-          />
 
           <input
             type="text"
@@ -161,6 +183,16 @@ function EditarPostagem() {
             value={bairro}
             onChange={(e) => setBairro(e.target.value)}
             className="w-full p-2 border rounded"
+          />
+
+          <img
+            src={imagemSrc}
+            alt="Imagem atual"
+            className="w-full rounded-lg shadow mt-3 mb-3"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "/placeholder.jpg";
+            }}
           />
 
           <input

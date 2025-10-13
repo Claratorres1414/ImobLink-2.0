@@ -6,6 +6,7 @@ import Perfil from "./pages/Perfil";
 import PublicarPostagem from "./pages/PublicarPostagem";
 import MeusAnuncios from "./pages/MeusAnuncios";
 import EditarPostagem from "./pages/EditarPostagem";
+import PostagemDetalhada from "./pages/PostagemDetalhada"; // ✅ import novo
 
 // 🔒 Componente para proteger rotas
 function RotaProtegida({ children }) {
@@ -17,7 +18,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Rota pública */}
+        {/* Rotas públicas */}
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
 
@@ -63,6 +64,16 @@ function App() {
           element={
             <RotaProtegida>
               <EditarPostagem />
+            </RotaProtegida>
+          }
+        />
+
+        {/* ✅ Rota nova para detalhes da postagem */}
+        <Route
+          path="/post/:id"
+          element={
+            <RotaProtegida>
+              <PostagemDetalhada />
             </RotaProtegida>
           }
         />

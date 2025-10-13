@@ -1,65 +1,73 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
-import { format } from "date-fns";
 
 function PostagemDetalhada() {
   const { id } = useParams();
   const [post, setPost] = useState(null);
-  const navigate = useNavigate();
+  const [imagemSrc, setImagemSrc] = useState("/placeholder.jpg");
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    if (!id) return;
+
+    let controller = new AbortController();
+    let createdObjectURL = null;
+
     fetch(`http://localhost:8080/api/posts/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: controller.signal,
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error("Erro ao buscar postagem");
+        if (!res.ok) throw new Error("Postagem não encontrada");
         const data = await res.json();
         setPost(data);
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("Erro ao carregar a postagem.");
-        navigate("/home");
-      });
-  }, [id]);
 
-  if (!post) return null;
+        try {
+          const resImg = await fetch(`http://localhost:8080/api/images/${id}/post`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            signal: controller.signal,
+          });
+          if (resImg.ok) {
+            const blob = await resImg.blob();
+            createdObjectURL = URL.createObjectURL(blob);
+            setImagemSrc(createdObjectURL);
+          }
+        } catch (err) {
+          console.warn("Imagem não carregada", err);
+        }
+      })
+      .catch((err) => console.error(err));
+
+    return () => {
+      controller.abort();
+      if (createdObjectURL) URL.revokeObjectURL(createdObjectURL);
+    };
+  }, [id, token]);
+
+  if (!post) return <DashboardLayout><p>Carregando postagem...</p></DashboardLayout>;
 
   return (
     <DashboardLayout>
-      <div className="bg-white p-6 rounded shadow max-w-3xl mx-auto mt-8">
+      <div className="max-w-3xl mx-auto p-4 space-y-4">
         <img
-          src={`http://localhost:8080/api/posts/${id}/image`}
+          src={imagemSrc}
           alt="Imagem do imóvel"
-          className="w-full max-h-[400px] object-contain rounded mb-4"
+          className="w-full rounded-lg shadow"
           onError={(e) => {
             e.target.onerror = null;
             e.target.src = "/placeholder.jpg";
           }}
         />
-
-        <h1 className="text-2xl font-bold mb-2">{post.description}</h1>
-        <p className="text-gray-600 mb-2">Preço: R$ {post.price}</p>
-        <p className="text-gray-600 mb-1">Rua: {post.street}</p>
-        <p className="text-gray-600 mb-1">Bairro: {post.avenue}</p>
-        <p className="text-gray-600 mb-2">
-          Publicado em: {format(new Date(post.createdAt), "dd/MM/yyyy")}
-        </p>
-
-        <div className="mt-6 bg-gray-100 p-4 rounded">
-          <h3 className="font-semibold text-lg mb-2">Contato</h3>
-          <p className="text-gray-700">Nome: {post.authorName}</p>
-          <p className="text-gray-700">Telefone: {post.phoneNumber}</p>
-        </div>
-
-        <div className="mt-8">
-          <h3 className="font-semibold text-lg mb-2">Comentários</h3>
-          <p className="text-gray-500 text-sm">Sistema de comentários em breve...</p>
-        </div>
+        <h2 className="text-2xl font-bold">{post.description}</h2>
+        <p>Preço: R$ {post.price}</p>
+        <p>Rua: {post.street}</p>
+        <p>Bairro: {post.neighborhood ?? post.avenue}</p>
+        {post.createdAt && (
+          <p className="text-gray-500 text-sm">
+            Publicado em {new Date(post.createdAt).toLocaleDateString()}
+          </p>
+        )}
       </div>
     </DashboardLayout>
   );

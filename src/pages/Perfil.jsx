@@ -9,6 +9,7 @@ function Perfil() {
   const [novaBio, setNovaBio] = useState("");
   const navigate = useNavigate();
 
+  // 🔹 Carregar informações do usuário
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -31,10 +32,12 @@ function Perfil() {
         console.error(err);
         navigate("/");
       });
-  }, []);
+  }, [navigate]);
 
+  // 🔹 Atualizar bio
   const salvarBio = async () => {
     const token = localStorage.getItem("token");
+
     try {
       const res = await fetch("http://localhost:8080/api/user/setInfo", {
         method: "PATCH",
@@ -46,28 +49,40 @@ function Perfil() {
       });
 
       if (res.ok) {
+        alert("Bio atualizada com sucesso!");
         setDadosUsuario((prev) => ({ ...prev, bio: novaBio }));
         setEditando(false);
       } else {
+        const textoErro = await res.text();
+        console.error("Erro ao salvar bio:", textoErro);
         alert("Erro ao salvar a bio.");
       }
     } catch (error) {
-      console.error("Erro:", error);
+      console.error("Erro ao salvar bio:", error);
+      alert("Falha de conexão com o servidor.");
     }
   };
 
+  // 🔹 Deletar conta (agora chama o endpoint correto e pede senha)
   const deletarConta = async () => {
-    const confirmado = confirm("Tem certeza que deseja excluir sua conta? Essa ação não poderá ser desfeita.");
-    if (!confirmado) return;
+    if (!confirm("Tem certeza que deseja excluir sua conta?")) return;
+
+    const senha = prompt("Digite sua senha para confirmar a exclusão da conta:");
+    if (!senha) {
+      alert("Exclusão cancelada: senha não informada.");
+      return;
+    }
 
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://localhost:8080/api/user/delete", {
+      const res = await fetch("http://localhost:8080/api/user/deleteProfile", {
         method: "DELETE",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({ password: senha }),
       });
 
       if (res.ok) {
@@ -75,6 +90,8 @@ function Perfil() {
         localStorage.removeItem("token");
         navigate("/");
       } else {
+        const erroTexto = await res.text();
+        console.error("Erro ao excluir conta:", erroTexto);
         alert("Erro ao excluir a conta.");
       }
     } catch (err) {
@@ -99,12 +116,15 @@ function Perfil() {
           {/* Informações */}
           <div className="w-2/3 pl-6 space-y-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">{dadosUsuario.name}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">
+                {dadosUsuario.name}
+              </h2>
               <p className="text-gray-600">Telefone: {dadosUsuario.phoneNumber}</p>
               <p className="text-gray-600">Email: {dadosUsuario.email}</p>
               <p className="text-gray-600">{dadosUsuario.role}</p>
             </div>
 
+            {/* BIO */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-1 flex items-center justify-between">
                 Bio:
