@@ -33,6 +33,12 @@ public class PostController {
         return ResponseEntity.ok(posts);
     }
 
+    @GetMapping("/getOne/{id}")
+    public ResponseEntity<PostResponse> getOnePost(@PathVariable Long id, Authentication auth) throws ServletException {
+        PostResponse post = postService.getPostById(id, auth);
+        return ResponseEntity.ok(post);
+    }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deletePost(@PathVariable Long id,  Authentication auth) throws ServletException {
         String response = postService.deletePost(id, auth);
