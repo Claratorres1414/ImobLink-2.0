@@ -1,5 +1,6 @@
 package com.PIEC.ImobLink.Services;
 
+import com.PIEC.ImobLink.DTOs.ImageResponse;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
@@ -22,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,7 +33,7 @@ public class ImageService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
 
-    public String saveImage(MultipartFile file, Authentication auth) throws IOException, java.io.IOException {
+    public Images saveImage(MultipartFile file, Authentication auth) throws IOException, java.io.IOException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
@@ -52,20 +54,18 @@ public class ImageService {
             throw new IOException("Erro ao salvar a imagem: " + e.getMessage());
         }
 
-        return image.getFilepath();
+        return image;
     }
 
-    public ResponseEntity<byte[]> getImageByPostId(@PathVariable Long postId, Authentication auth) throws java.io.IOException {
+    public ResponseEntity<byte[]> getFirstImageByPostId(@PathVariable Long postId, Authentication auth) throws java.io.IOException {
         userRepository.findByEmail(auth.getName()).orElseThrow(() -> new UsernameNotFoundException(auth.getName()));
         try{
             Post post = postRepository.getPostById(postId);
-            String imagePath = post.getImagePath();
+            List<Images> images = post.getImages();
 
-            if (imagePath == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Imagem não encontrada para o post");
-            }
+            Images image = images.getFirst();
 
-            File file = new File(imagePath);
+            File file = new File(image.getFilepath());
             byte[] imageBytes = Files.readAllBytes(file.toPath());
 
             HttpHeaders headers = new HttpHeaders();
@@ -76,5 +76,33 @@ public class ImageService {
         } catch (ResponseStatusException e) {
             throw new IOException("Erro ao buscar imagem: " + e.getMessage());
         }
+    }
+
+    public List<ImageResponse> getAllImagesByPostId(@PathVariable Long postId, Authentication auth) throws IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new UsernameNotFoundException(auth.getName()));
+        return post.getImages()
+                .stream()
+                .map(img -> new ImageResponse(img.getId(), img.getFilename(), img.getFilepath(), img.getContentType()))
+                .toList();
+    }
+
+    public ResponseEntity<byte[]> getImageById(@PathVariable Long imageId, Authentication auth) throws IOException, java.io.IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+        Images image = imageRepository.findById(imageId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Imagem não encontrada"));
+
+        File file = new File(image.getFilepath());
+        if (!file.exists()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Arquivo não encontrado");
+        }
+
+        byte[] imageBytes = Files.readAllBytes(file.toPath());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(image.getContentType()));
+        headers.setContentLength(imageBytes.length);
+
+        return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
     }
 }
