@@ -54,7 +54,7 @@ labels = requests.get(LABELS_URL).text.split("\n")
 house_keywords = ["house", "home", "building", "palace", "monastery", "mansion"]
 
 def is_house(image_path: str) -> bool:
-    """Verifica se a imagem representa uma casa usando ResNet."""
+    """Verifica se a imagem representa uma casa (externa ou interior) usando ResNet + palavras-chave ampliadas."""
     img = Image.open(image_path).convert("RGB")
     img_t = transform(img).unsqueeze(0)
 
@@ -63,8 +63,39 @@ def is_house(image_path: str) -> bool:
         _, index = torch.max(out, 1)
 
     predicted_label = labels[index]
+    label_lower = predicted_label.lower()
     print(f"[ResNet] Classe detectada: {predicted_label}")
-    return any(word in predicted_label.lower() for word in house_keywords)
+
+    # Palavras-chave ampliadas
+    exterior_keywords = [
+        "house", "home", "building", "palace", "monastery", "mansion", "villa",
+        "cottage", "farmhouse", "residence", "patio", "porch", "driveway",
+        "lawn", "garage", "yard", "roof", "chimney", "veranda", "gazebo",
+        "carport", "garden", "terrace", "deck"
+    ]
+
+    interior_keywords = [
+        "room", "living room", "bedroom", "kitchen", "bathroom",
+        "dining room", "interior", "hallway", "office", "sofa",
+        "furniture", "lamp", "ceiling", "floor", "window", "door"
+    ]
+
+    # Se o label da ResNet corresponder a algo doméstico
+    if any(word in label_lower for word in exterior_keywords + interior_keywords):
+        return True
+
+    # Segunda checagem: se BLIP descrever algo doméstico, reforça a decisão
+    legenda_blip = gerar_legenda_blip(image_path).lower()
+    domestic_terms = [
+        "house", "home", "yard", "garden", "kitchen", "living room",
+        "sofa", "bedroom", "interior", "window", "door", "stairs"
+    ]
+    if any(term in legenda_blip for term in domestic_terms):
+        print("[BLIP] Contexto doméstico identificado.")
+        return True
+
+    return False
+
 
 # ----------------------------
 # 4. Funções de legenda e tradução
