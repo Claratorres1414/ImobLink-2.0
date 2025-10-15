@@ -74,7 +74,7 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         if(newProfileImage != null) {
-            String imagePath = imageService.saveImage(newProfileImage, auth);
+            String imagePath = imageService.saveImage(newProfileImage, auth).getFilepath();
             user.setImageProfilePath(imagePath);
             return "Imagem de perfil atualizada com sucesso para: " + userRepository.save(user).getEmail();
         }
