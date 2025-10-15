@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "posts")
@@ -18,8 +20,8 @@ public class Post {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String imagePath;
-    private String imageType;
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = false)
+    private List<Images> images = new ArrayList<>();
 
     private String description;
     private double price;
@@ -33,4 +35,8 @@ public class Post {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    public void addImage(Images image) {
+        images.add(image);
+    }
 }
