@@ -12,6 +12,7 @@ import com.PIEC.ImobLink.Services.PostService;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -21,9 +22,9 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("number") String number, @RequestParam("image")MultipartFile image, Authentication auth) throws IOException {
-        System.out.println("Recebi a imagem: " + image.getOriginalFilename());
-        String response = postService.createPost(image, description, price, street, avenue, number, auth);
+    public ResponseEntity<String> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("number") String number, @RequestParam("images")MultipartFile[] images, Authentication auth) throws IOException {
+        List<MultipartFile> imagesList = Arrays.asList(images);
+        String response = postService.createPost(imagesList, description, price, street, avenue, number, auth);
         return ResponseEntity.ok(response);
     }
 
