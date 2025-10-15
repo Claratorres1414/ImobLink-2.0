@@ -2,6 +2,7 @@ package com.PIEC.ImobLink.Services;
 
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
+import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.User;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.ServletException;
@@ -28,16 +29,16 @@ public class PostService {
     private final ImageService imageService;
 
     @Transactional
-    public String createPost(MultipartFile image, String description, double price, String street, String avenue, String number, Authentication auth) throws IOException, java.io.IOException {
+    public String createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, Authentication auth) throws IOException, java.io.IOException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String filePath = imageService.saveImage(image, auth);
+        if (images.size() > 10 || images.isEmpty()){
+            throw new IllegalArgumentException("Quantidade de imagens inválida, deve ter no mínimo 1 imagem e no máximo 10!");
+        }
 
         Post post = new Post();
-        post.setImagePath(filePath);
-        post.setImageType(image.getContentType());
         post.setDescription(description);
         post.setPrice(price);
         post.setStreet(street);
@@ -45,9 +46,20 @@ public class PostService {
         post.setUser(user);
         post.setNumber(number);
 
-        postRepository.save(post);
+        for (MultipartFile image : images) {
+            Images savedImage = imageService.saveImage(image,auth);
+            post.addImage(savedImage);
+        }
 
-        return "post created!";
+        try{
+            postRepository.save(post);
+            for(Images image: post.getImages()){
+                image.setPost(post);
+            }
+            return "post created!";
+        }catch (Exception e){
+            return "post creation failed!";
+        }
     }
 
     public List<PostResponse> getFeed() {
