@@ -51,10 +51,8 @@ resnet.eval()
 LABELS_URL = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
 labels = requests.get(LABELS_URL).text.split("\n")
 
-house_keywords = ["house", "home", "building", "palace", "monastery", "mansion"]
-
+# Função de checagem doméstica
 def is_house(image_path: str) -> bool:
-    """Verifica se a imagem representa uma casa (externa ou interior) usando ResNet + palavras-chave ampliadas."""
     img = Image.open(image_path).convert("RGB")
     img_t = transform(img).unsqueeze(0)
 
@@ -66,7 +64,6 @@ def is_house(image_path: str) -> bool:
     label_lower = predicted_label.lower()
     print(f"[ResNet] Classe detectada: {predicted_label}")
 
-    # Palavras-chave ampliadas
     exterior_keywords = [
         "house", "home", "building", "palace", "monastery", "mansion", "villa",
         "cottage", "farmhouse", "residence", "patio", "porch", "driveway",
@@ -80,11 +77,9 @@ def is_house(image_path: str) -> bool:
         "furniture", "lamp", "ceiling", "floor", "window", "door"
     ]
 
-    # Se o label da ResNet corresponder a algo doméstico
     if any(word in label_lower for word in exterior_keywords + interior_keywords):
         return True
 
-    # Segunda checagem: se BLIP descrever algo doméstico, reforça a decisão
     legenda_blip = gerar_legenda_blip(image_path).lower()
     domestic_terms = [
         "house", "home", "yard", "garden", "kitchen", "living room",
@@ -96,13 +91,12 @@ def is_house(image_path: str) -> bool:
 
     return False
 
-
 # ----------------------------
-# 4. Funções de legenda e tradução
+# 4. Funções de legenda e tradução com prompts ricos
 # ----------------------------
-def gerar_legenda_blip(caminho_imagem: str, max_length=300) -> str:
+def gerar_legenda_blip(caminho_imagem: str, prompt_base: str = "", max_length=300) -> str:
     imagem = Image.open(caminho_imagem).convert("RGB")
-    inputs = processor(images=imagem, return_tensors="pt")
+    inputs = processor(images=imagem, return_tensors="pt", text=prompt_base)
 
     with torch.no_grad():
         output = blip_model.generate(
@@ -135,18 +129,31 @@ def traduzir_para_portugues(texto_ingles: str) -> str:
         return f"[Erro na tradução: {response.status_code} - {response.text}]"
 
 # ----------------------------
-# 5. Pipeline completo
+# 5. Pipeline completo com prompts variados
 # ----------------------------
 def gerar_legendas_completas(caminho_imagem: str) -> dict:
-    """
-    Gera legenda para imagem se for uma casa.
-    Retorna dicionário com legenda em inglês e português.
-    """
     if not is_house(caminho_imagem):
         return {"erro": "Imagem rejeitada: não parece ser uma casa."}
 
-    legenda_en = gerar_legenda_blip(caminho_imagem)
+    # Lista de prompts base para enriquecer a legenda
+    prompts_base = [
+        "This is a beautiful house made of ",
+        "A luxurious home with ",
+        "A charming residence featuring ",
+        #"An interior design showcasing ",
+        "A cozy house with ",
+        "A stunning mansion built with "
+    ]
+
+    legendas_en = []
+    for prompt in prompts_base:
+        legenda = gerar_legenda_blip(caminho_imagem, prompt_base=prompt)
+        legendas_en.append(legenda)
+
+    # Seleciona a legenda mais longa (ou mais rica) como principal
+    legenda_en = max(legendas_en, key=len)
     legenda_pt = traduzir_para_portugues(legenda_en)
+
     return {"legenda_en": legenda_en, "legenda_pt": legenda_pt}
 
 # ----------------------------
