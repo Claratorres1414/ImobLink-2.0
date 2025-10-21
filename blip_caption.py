@@ -31,8 +31,8 @@ if not HUGGINGFACE_API_TOKEN:
 # ----------------------------
 # 2. Inicializa modelo BLIP
 # ----------------------------
-processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
+blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
 
 # ----------------------------
 # 3. Inicializa ResNet para validação de casas
