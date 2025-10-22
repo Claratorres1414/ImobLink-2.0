@@ -28,6 +28,6 @@ public class Comment {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "post_id")
-    private Post post;
+    @JoinColumn(name = "author_id", nullable = false)
+    private User author;
 }
