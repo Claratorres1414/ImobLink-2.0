@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 public class UserDetails {
     private String imageProfilePath;
+    private Long imageProfileId;
     private String email;
     private String name;
     private String phoneNumber;
@@ -16,6 +17,7 @@ public class UserDetails {
 
     public UserDetails(User user) {
         this.imageProfilePath = user.getImageProfilePath();
+        this.imageProfileId = user.getImageProfileId();
         this.email = user.getEmail();
         this.name = user.getName();
         this.phoneNumber = user.getPhoneNumber();
