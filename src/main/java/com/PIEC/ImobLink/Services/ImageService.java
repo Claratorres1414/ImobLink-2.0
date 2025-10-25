@@ -57,6 +57,32 @@ public class ImageService {
         return image;
     }
 
+    public Images saveProfileImage(MultipartFile file, Authentication auth) throws IOException, java.io.IOException {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
+        String folder = "uploads/users/" + user.getId() +"/profile";
+        Files.createDirectories(Paths.get(folder));
+
+        String filePath = folder + "/" + file.getOriginalFilename();
+        Files.write(Paths.get(filePath), file.getBytes());
+
+        Images image = new Images();
+        image.setFilename(UUID.randomUUID() + "_" + file.getOriginalFilename());
+        image.setFilepath(filePath);
+        image.setContentType(file.getContentType());
+        image.setUser(user);
+        try {
+            imageRepository.save(image);
+            user.setImageProfileId(image.getId());
+            userRepository.save(user);
+        } catch (IOException e) {
+            throw new IOException("Erro ao salvar a imagem: " + e.getMessage());
+        }
+
+        return image;
+    }
+
     public ResponseEntity<byte[]> getFirstImageByPostId(@PathVariable Long postId, Authentication auth) throws java.io.IOException {
         userRepository.findByEmail(auth.getName()).orElseThrow(() -> new UsernameNotFoundException(auth.getName()));
         try{
