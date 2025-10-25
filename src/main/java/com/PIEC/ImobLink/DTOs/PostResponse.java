@@ -9,7 +9,8 @@ import java.time.LocalDateTime;
 @Setter
 public class PostResponse {
     private Long id;
-    private String imageAdresse;
+    private String firstImageAdresse;
+    private String allImagesAdresse;
     private String description;
     private double price;
     private String street;
@@ -20,7 +21,8 @@ public class PostResponse {
 
     public PostResponse(Post post) {
         this.id = post.getId();
-        this.imageAdresse = "/api/images/" + post.getId() + "/post";
+        this.firstImageAdresse = "/api/images/" + post.getId() + "/post/thumb";
+        this.allImagesAdresse = "/api/images/" + post.getId() + "/post/all";
         this.description = post.getDescription();
         this.price = post.getPrice();
         this.street = post.getStreet();
