@@ -2,6 +2,7 @@ package com.PIEC.ImobLink.Entitys;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,11 +24,9 @@ public class Comment {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Long userId;
 
-    @ManyToOne
     @JoinColumn(name = "author_id", nullable = false)
-    private User author;
+    private Long authorId;
 }
