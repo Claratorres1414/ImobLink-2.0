@@ -37,6 +37,7 @@ public class User {
 
     private String bio;
     private String imageProfilePath;
+    private Long imageProfileId;
 
     @Enumerated(EnumType.STRING)
     private Role role;
