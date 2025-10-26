@@ -12,6 +12,4 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CommentRequest {
     private String content;
-    private LocalDateTime createdAt;
-    private Long userId;
 }
