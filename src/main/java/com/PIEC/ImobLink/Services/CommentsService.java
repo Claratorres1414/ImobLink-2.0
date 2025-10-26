@@ -19,7 +19,7 @@ public class CommentsService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
 
-    public CommentResponse comment(CommentRequest req, Authentication auth){
+    public CommentResponse comment(CommentRequest req, Long userId, Authentication auth){
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -29,7 +29,7 @@ public class CommentsService {
         Comment comment = new Comment();
         comment.setContent(req.getContent());
         comment.setCreatedAt(createdAt);
-        comment.setUserId(req.getUserId());
+        comment.setUserId(userId);
         comment.setAuthorId(user.getId());
 
         try{
