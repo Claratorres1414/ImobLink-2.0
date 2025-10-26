@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +46,13 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         return new UserDetails(user);
+    }
+
+    public List<UserDetails> loadAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(UserDetails::new)
+                .toList();
     }
 
     public void setInfo(SetInfoRequest newInfo, Authentication auth) throws UsernameNotFoundException {

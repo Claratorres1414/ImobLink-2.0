@@ -13,6 +13,7 @@ import com.PIEC.ImobLink.DTOs.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/user")
@@ -34,6 +35,11 @@ public class UserController {
     public ResponseEntity<UserDetails> loadAccountInfo(Authentication auth) {
         UserDetails response = userService.loadUser(auth);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/getAll")
+    public ResponseEntity<List<UserDetails>> getAll() {
+        return ResponseEntity.ok(userService.loadAllUsers());
     }
 
     @PatchMapping("/setInfo")
