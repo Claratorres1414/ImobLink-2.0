@@ -48,6 +48,19 @@ public class UserService {
         return new UserDetails(user);
     }
 
+    public UserDetails loadUserById(Long id, Authentication auth) throws UsernameNotFoundException {
+        String email = auth.getName();
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
+        try {
+            User account = userRepository.getReferenceById(id);
+            return new UserDetails(account);
+        } catch (Exception e) {
+            System.out.println("Erro ao tentar pegar usuário com id: " + id + " Erro: " + e.getMessage());
+            return null;
+        }
+    }
+
     public List<UserDetails> loadAllUsers() {
         return userRepository.findAll()
                 .stream()
