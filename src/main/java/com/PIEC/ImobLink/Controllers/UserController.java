@@ -37,6 +37,12 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/getAccount/{id}")
+    public ResponseEntity<UserDetails> loadUserById(@PathVariable Long id, Authentication auth) {
+        UserDetails response = userService.loadUserById(id, auth);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/getAll")
     public ResponseEntity<List<UserDetails>> getAll() {
         return ResponseEntity.ok(userService.loadAllUsers());
