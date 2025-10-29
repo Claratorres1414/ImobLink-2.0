@@ -18,6 +18,7 @@ public class PostResponse {
     private LocalDateTime createdAt;
     private String createdBy;
     private String number;
+    private Long userId;
 
     public PostResponse(Post post) {
         this.id = post.getId();
@@ -30,5 +31,6 @@ public class PostResponse {
         this.number = post.getNumber();
         this.createdAt = post.getCreatedAt();
         this.createdBy = post.getUser().getName();
+        this.userId = post.getUser().getId();
     }
 }
