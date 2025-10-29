@@ -43,7 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/user/**").hasAnyAuthority("USER", "ADMIN", "SUPER_ADMIN")
-                        .requestMatchers("/api/images").hasAnyAuthority("USER", "ADMIN", "SUPER_ADMIN")
+                        .requestMatchers("/api/images").permitAll()
                         .requestMatchers("/api/images/**").hasAnyAuthority("USER", "ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/posts/**").hasAnyAuthority("USER", "ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/comments/**").hasAnyAuthority("USER", "ADMIN", "SUPER_ADMIN")
@@ -70,6 +70,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
