@@ -16,6 +16,7 @@ public class PostResponse {
     private String street;
     private String avenue;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private String createdBy;
     private String number;
     private Long userId;
@@ -30,6 +31,7 @@ public class PostResponse {
         this.avenue = post.getAvenue();
         this.number = post.getNumber();
         this.createdAt = post.getCreatedAt();
+        this.updatedAt = post.getUpdatedAt();
         this.createdBy = post.getUser().getName();
         this.userId = post.getUser().getId();
     }
