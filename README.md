@@ -34,6 +34,20 @@ esse endpoint não exige header nem autorização.
 
 
 
+CommentsController:
+
+  POST - /api/comments/coment/{userId}
+    permite que o usuário realize comentários no perfil de outro usuário, passando o id do usuário no path, seu body é:
+      {
+        "content" : "abobrinha"
+      }
+    Essa requisição exige header com a estrutura: Authorization | Bearer token, para identificação do autor do comentário;
+  
+  GET - /api/comments/getComments/{userId}
+    esse endpoint tem como finalidade servir uma lista de comentários feitos àquele perfil com id endereçado no path, retornando-os em ordem cronológica. Essa requisição exige header com a estrutura: Authorization | Bearer token.
+
+
+
 FeedController:
 
   GET - /api/feed
@@ -60,8 +74,29 @@ ImageController:
       image | IMG_aogjwot.jpeg
     Essa requisição exige header com a estrutura: Authorization | Bearer token;
 
-  GET - /api/images/{id}/post
-    esse endpoint tem como finalidade servir a imagem do respectivo post ao passar o id do post na url. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+  GET - /api/images/{postId}/post/thumb
+    esse endpoint tem como finalidade servir a primeira imagem do respectivo post ao passar o id do post no path. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+  GET - /api/images/{postId}/post/all
+    esse endpoint tem como finalidade servir todos endereços e informações relevantes das imagens do respectivo post ao passar o id do post no path. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+  GET - /api/images/get/{imageId}
+    esse endpoint tem como finalidade servir a imagem que contém aquele respectivo id passado no path. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+
+
+MicroserviceController:
+
+  POST - /integracao/legenda
+    permite que o usuário gere legendas automáticamente para sua publicação por meio da integração com nosso microserviço, essa requisição exige body multipart no formato:
+      file | arquivo.jpeg
+    Essa requisição não exige header;
+
+  POST - /integracao/ocr
+    permite que o usuário realize autopreenchimento de informações no seu cadastro ao enviar a frente e o verso do seu rg, essa requisição exige body multipart no formato:
+      frente | frente.arquivo
+      verso | verso.arquivo
+    Essa requisição não exige header.
 
 
 
@@ -79,6 +114,10 @@ PostController:
     
   GET - /api/posts/my-posts
     permite que o usuário veja todas as suas publicações em uma lista de ordem cronológica, da mais recente para a mais antiga. Essa rquisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
+
+  GET - /getOne/{id}
+    permite que o usuário veja uma publicação específica com mais detalhes, carregando unicamente ela e suas informações com base no id passado no path. Essa rquisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
+
     
   PATCH - /api/posts/edit/{id}
     esse endpoint permite realizar a edição do post com base em seu id, seu body é flexível, já que depende das informações passadsas para atualização, mas de modo completo ele tem a seguinte estrutura:
@@ -99,6 +138,12 @@ UserController
 
   GET - /api/user/account
     esse endpoint informa todas as informações da conta do usuário. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+  GET - /api/user/getAccount/{id}
+    esse endpoint passa as informações permitidas a respeito do usuário que porta o id informado no path da requisição. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+  GET - /api/user/getAll
+    esse endpoint passa uma lista de usuários com as informações permitidas a respeito de cada um deles. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
     
   PATCH - /api/user/setInfo
     esse endpoint permite as auterações de informação do usuário, atualmente seu body é:
