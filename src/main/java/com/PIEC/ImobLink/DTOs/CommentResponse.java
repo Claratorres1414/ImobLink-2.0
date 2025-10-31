@@ -19,7 +19,7 @@ public class CommentResponse {
     public CommentResponse(Comment comment) {
         this.content = comment.getContent();
         this.createdAt = comment.getCreatedAt();
-        this.userId = comment.getUserId();
-        this.authorId = comment.getAuthorId();
+        this.userId = comment.getUser().getId();
+        this.authorId = comment.getAuthor().getId();
     }
 }
