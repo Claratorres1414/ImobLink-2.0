@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UserDetails {
+    private Long id;
     private String imageProfilePath;
     private Long imageProfileId;
     private String email;
@@ -16,6 +17,7 @@ public class UserDetails {
     private String role;
 
     public UserDetails(User user) {
+        this.id = user.getId();
         this.imageProfilePath = user.getImageProfilePath();
         this.imageProfileId = user.getImageProfileId();
         this.email = user.getEmail();
