@@ -39,6 +39,9 @@ public class Post {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Favs> favedTimes = new ArrayList<>();
+
     public void addImage(Images image) {
         images.add(image);
     }
