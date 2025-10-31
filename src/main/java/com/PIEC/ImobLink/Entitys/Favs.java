@@ -18,9 +18,15 @@ public class Favs {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId;
-    private Long authorId;
-    private Long postId;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+    @ManyToOne
+    @JoinColumn(name = "author_id", nullable = false)
+    private User author;
+    @ManyToOne
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
 
     @CreationTimestamp
     private LocalDateTime favAt;
