@@ -54,4 +54,13 @@ public class PostController {
         }
         return ResponseEntity.badRequest().body("Erro ao tentar editar o post");
     }
+
+    @PostMapping("/fav/{id}")
+    public ResponseEntity<String> favPost(@PathVariable Long id, Authentication auth) throws ServletException {
+        Boolean response = postService.favPost(id, auth);
+        if (response) {
+            return ResponseEntity.ok("Favorito com sucesso");
+        }
+        return ResponseEntity.badRequest().body("Erro ao tentar favoritar o post");
+    }
 }
