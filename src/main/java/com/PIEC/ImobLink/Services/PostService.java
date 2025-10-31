@@ -2,8 +2,10 @@ package com.PIEC.ImobLink.Services;
 
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
+import com.PIEC.ImobLink.Entitys.Favs;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Repositorys.FavsRepository;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.transaction.Transactional;
@@ -27,6 +29,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ImageService imageService;
+    private final FavsRepository favsRepository;
 
     @Transactional
     public String createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, Authentication auth) throws IOException, java.io.IOException {
@@ -136,6 +139,29 @@ public class PostService {
             return postRepository.getPostById(id);
         }catch (Exception e){
             return null;
+        }
+    }
+
+    public Boolean favPost(Long id, Authentication auth) throws ServletException {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        Post post;
+        try {
+            post = postRepository.getPostById(id);
+        } catch (Exception e) {
+            throw new ServletException("Erro ao tentar buscar post: " + e);
+        }
+        try {
+            Favs favPost = new Favs();
+            favPost.setUser(user);
+            favPost.setAuthor(post.getUser());
+            favPost.setPost(post);
+            favsRepository.save(favPost);
+            user.addFav(favPost);
+            post.getFavedTimes().add(favPost);
+            return true;
+        } catch (Exception e){
+            throw new ServletException("Erro ao tentar buscar post: " + e);
         }
     }
 }
