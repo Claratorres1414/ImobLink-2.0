@@ -29,8 +29,8 @@ public class CommentsService {
         Comment comment = new Comment();
         comment.setContent(req.getContent());
         comment.setCreatedAt(createdAt);
-        comment.setUserId(userId);
-        comment.setAuthorId(user.getId());
+        comment.setUser(userRepository.findById(userId).get());
+        comment.setAuthor(user);
 
         try{
             commentRepository.save(comment);
