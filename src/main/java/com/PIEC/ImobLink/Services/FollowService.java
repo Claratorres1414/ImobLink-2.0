@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.Services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Entitys.Follow;
 import com.PIEC.ImobLink.Entitys.User;
@@ -13,18 +14,22 @@ public class FollowService {
     private final UserRepository userRepository;
     private final FollowRespository followRepository;
 
-    public Follow follow(Long followerId, Long followingId){
-        if (followerId.equals(followingId)){
+    public Follow follow(Authentication auth, Long followingId){
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
+        Long userId = user.getId();
+        if (userId.equals(followingId)){
             throw new IllegalArgumentException("Você não pode seguir a si mesmo.");
         }
 
-        User follower = userRepository.findById(followerId)
+        User follower = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Seguidor não encontrado."));
         User following = userRepository.findById(followingId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         boolean alreadyFollows = followRepository
-                .findByFollowerId(followerId).stream()
+                .findByFollowerId(userId).stream()
                 .anyMatch(f -> f.getFollowing().getId().equals(followingId));
 
         if (alreadyFollows){
@@ -37,8 +42,11 @@ public class FollowService {
         return followRepository.save(follow);
     }
 
-    public void unfollow(Long followerId, Long followingId){
-        var follows = followRepository.findByFollowerId(followerId);
+    public void unfollow(Authentication auth, Long followingId){
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
+        var follows = followRepository.findByFollowerId(user.getId());
         follows.stream()
                 .filter(f -> f.getFollowing().getId().equals(followingId))
                 .findFirst()
