@@ -5,6 +5,7 @@ import com.PIEC.ImobLink.DTOs.DeleteProfileRequest;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
+import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -135,5 +136,22 @@ public class UserService {
             return true;
         }
         return false;
+    }
+
+    public int calcFavedTimes(Authentication auth) {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
+        int favTimes = 0;
+        try{
+            List<Post> posts = user.getPosts();
+            for (Post post : posts) {
+                favTimes += post.getFavedTimes().size();
+            }
+        } catch ( Exception e ) {
+            System.out.println("Erro ao tentar calcular favoritos: " + e.getMessage());
+            return 0;
+        }
+        return favTimes;
     }
 }
