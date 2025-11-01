@@ -152,6 +152,11 @@ public class PostService {
             throw new ServletException("Erro ao tentar buscar post: " + e);
         }
         try {
+            for (Favs favPosts : user.getFavs()) {
+                if (favPosts.getPost().equals(post)) {
+                    return true;
+                }
+            }
             Favs favPost = new Favs();
             favPost.setUser(user);
             favPost.setAuthor(post.getUser());
