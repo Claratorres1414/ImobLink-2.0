@@ -77,4 +77,10 @@ public class UserController {
         }
         return ResponseEntity.ok("Erro ao deletar usuario!");
     }
+
+    @GetMapping("/info/favedTimes")
+    public ResponseEntity<Integer> favedTimes(Authentication auth) {
+        int response = userService.calcFavedTimes(auth);
+        return ResponseEntity.ok(response);
+    }
 }
