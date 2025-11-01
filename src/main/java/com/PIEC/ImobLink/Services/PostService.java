@@ -19,6 +19,7 @@ import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -70,6 +71,22 @@ public class PostService {
                 .stream()
                 .map(PostResponse::new)
                 .toList();
+    }
+
+    public List<PostResponse> getUserFavs(Authentication auth) throws ServletException {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        List<PostResponse> faveds = new ArrayList<>();
+        try {
+            for (Favs fav : user.getFavs()) {
+                Post post = fav.getPost();
+                faveds.add(new PostResponse(post));
+            }
+            return faveds;
+        } catch (Exception e) {
+            throw new ServletException("Erro ao obter os favoritos" + e.getMessage());
+        }
     }
 
     public Boolean editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
