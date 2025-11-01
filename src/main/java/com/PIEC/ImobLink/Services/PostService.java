@@ -186,4 +186,28 @@ public class PostService {
             throw new ServletException("Erro ao tentar buscar post: " + e);
         }
     }
+
+    public Boolean unfavPost(Long id, Authentication auth) throws ServletException {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        Post post;
+        try {
+            post = postRepository.getPostById(id);
+        } catch (Exception e) {
+            throw new ServletException("Erro ao tentar buscar post: " + e);
+        }
+        try {
+            for (Favs favPost : user.getFavs()) {
+                if (favPost.getPost().equals(post)) {
+                    post.getFavedTimes().remove(favPost);
+                    user.getFavs().remove(favPost);
+                    favsRepository.delete(favPost);
+                    return true;
+                }
+            }
+        } catch (Exception e){
+            throw new ServletException("Erro ao tentar remover favoritos: " + e);
+        }
+        return false;
+    }
 }
