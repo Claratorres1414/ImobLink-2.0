@@ -2,6 +2,7 @@ package com.PIEC.ImobLink.Controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.PIEC.ImobLink.Services.FollowService;
 import com.PIEC.ImobLink.Entitys.Follow;
@@ -12,15 +13,18 @@ import com.PIEC.ImobLink.Entitys.Follow;
 public class FollowController {
     private final FollowService followService;
 
-    @PostMapping("/{followerId}/follow/{followingId}")
-    public ResponseEntity<Follow> followUser(@PathVariable Long followerId, @PathVariable Long followingId) {
-        Follow follow = followService.follow(followerId, followingId);
-        return ResponseEntity.ok(follow);
+    @PostMapping("/{followingId}")
+    public ResponseEntity<String> followUser(@PathVariable Long followingId, Authentication auth) {
+        Follow follow = followService.follow(auth, followingId);
+        if (follow == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok("Following " + followingId);
     }
 
-    @DeleteMapping("/{followerId}/unfollow/{followingId}")
-    public ResponseEntity<Void> unfollowUser(@PathVariable Long followerId, @PathVariable Long followingId) {
-        followService.unfollow(followerId, followingId);
-        return ResponseEntity.noContent().build();
+    @DeleteMapping("/unfollow/{followingId}")
+    public ResponseEntity<String> unfollowUser(@PathVariable Long followingId, Authentication auth) {
+        followService.unfollow(auth, followingId);
+        return ResponseEntity.ok("Unfollowing " + followingId);
     }
 }
