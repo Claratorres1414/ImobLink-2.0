@@ -69,4 +69,13 @@ public class PostController {
         }
         return ResponseEntity.badRequest().body("Erro ao tentar favoritar o post");
     }
+
+    @DeleteMapping("/unfav/{id}")
+    public ResponseEntity<String> unfavPost(@PathVariable Long id, Authentication auth) throws ServletException {
+        Boolean response = postService.unfavPost(id, auth);
+        if (response) {
+            return ResponseEntity.ok("Desfavorito com sucesso");
+        }
+        return ResponseEntity.badRequest().body("Erro ao tentar desfavoritar o post");
+    }
 }
