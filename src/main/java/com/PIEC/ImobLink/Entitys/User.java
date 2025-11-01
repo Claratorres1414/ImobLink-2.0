@@ -42,6 +42,12 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Follow> followers;
+
+    @OneToMany(mappedBy = "following", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Follow> followings;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Favs> favs = new ArrayList<>();
 
