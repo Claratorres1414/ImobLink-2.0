@@ -34,6 +34,12 @@ public class PostController {
         return ResponseEntity.ok(posts);
     }
 
+    @GetMapping("/my-favs")
+    public ResponseEntity<List<PostResponse>> getMyFavs(Authentication auth) throws ServletException {
+        List<PostResponse> posts = postService.getUserFavs(auth);
+        return ResponseEntity.ok(posts);
+    }
+
     @GetMapping("/getOne/{id}")
     public ResponseEntity<PostResponse> getOnePost(@PathVariable Long id, Authentication auth) throws ServletException {
         PostResponse post = postService.getPostById(id, auth);
