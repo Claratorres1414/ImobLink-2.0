@@ -1,5 +1,6 @@
 package com.PIEC.ImobLink.Services;
 
+import com.PIEC.ImobLink.DTOs.UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -7,6 +8,9 @@ import com.PIEC.ImobLink.Entitys.Follow;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Repositorys.FollowRespository;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -64,5 +68,35 @@ public class FollowService {
         } catch (Exception e) {
             throw new IllegalArgumentException("Erro ao tentar dar unfollow: " + e.getMessage());
         }
+    }
+
+    public List<UserDetails> getFollowers(Authentication auth){
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
+
+        List<Follow> followers = user.getFollowers();
+        List<UserDetails> followerList = new ArrayList<>();
+
+        for (Follow follow : followers) {
+            followerList.add(new UserDetails(follow.getFollower()));
+        }
+
+        return followerList;
+    }
+
+    public List<UserDetails> getFollowings(Authentication auth){
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
+
+        List<Follow> followings = user.getFollowings();
+        List<UserDetails> followingList = new ArrayList<>();
+
+        for (Follow follow : followings) {
+            followingList.add(new UserDetails(follow.getFollowing()));
+        }
+
+        return followingList;
     }
 }
