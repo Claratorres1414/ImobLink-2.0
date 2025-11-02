@@ -23,22 +23,27 @@ public class FollowService {
             throw new IllegalArgumentException("Você não pode seguir a si mesmo.");
         }
 
-        User follower = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Seguidor não encontrado."));
-        User following = userRepository.findById(followingId)
+        User userFollowed = userRepository.findById(followingId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
-        boolean alreadyFollows = followRepository
-                .findByFollowerId(userId).stream()
-                .anyMatch(f -> f.getFollowing().getId().equals(followingId));
+        Follow alreadyFollows = followRepository.findByFollowerIdAndFollowingId(user.getId(), followingId)
+                .orElse(null);
 
-        if (alreadyFollows){
+        if (alreadyFollows != null) {
             throw new IllegalArgumentException("Você já segue esse usuário.");
         }
 
         Follow follow = new Follow();
-        follow.setFollowing(following);
-        follow.setFollower(follower);
+        follow.setFollowing(userFollowed);
+        follow.setFollower(user);
+
+        try {
+            user.getFollowings().add(follow);
+            userFollowed.getFollowers().add(follow);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Erro ao tentar dar follow: " + e.getMessage());
+        }
+
         return followRepository.save(follow);
     }
 
@@ -46,10 +51,18 @@ public class FollowService {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
-        var follows = followRepository.findByFollowerId(user.getId());
-        follows.stream()
-                .filter(f -> f.getFollowing().getId().equals(followingId))
-                .findFirst()
-                .ifPresent(followRepository::delete);
+
+        User following = userRepository.getReferenceById(followingId);
+
+        Follow follow = followRepository.findByFollowerIdAndFollowingId(user.getId(), followingId)
+                .orElseThrow(() -> new IllegalArgumentException("Follow não encontrado"));
+
+        try {
+            user.getFollowings().remove(follow);
+            following.getFollowers().remove(follow);
+            followRepository.delete(follow);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Erro ao tentar dar unfollow: " + e.getMessage());
+        }
     }
 }
