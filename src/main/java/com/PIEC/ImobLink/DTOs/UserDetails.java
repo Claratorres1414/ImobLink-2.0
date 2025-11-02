@@ -15,6 +15,8 @@ public class UserDetails {
     private String phoneNumber;
     private String bio;
     private String role;
+    private int followers;
+    private int followings;
 
     public UserDetails(User user) {
         this.id = user.getId();
@@ -25,5 +27,7 @@ public class UserDetails {
         this.phoneNumber = user.getPhoneNumber();
         this.bio = user.getBio();
         this.role = user.getRole().toString();
+        this.followers = user.getFollowers().size();
+        this.followings = user.getFollowings().size();
     }
 }
