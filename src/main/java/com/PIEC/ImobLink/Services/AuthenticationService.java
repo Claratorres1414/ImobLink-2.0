@@ -41,14 +41,20 @@ public class AuthenticationService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
-        }catch (AuthenticationException e){
+        } catch (AuthenticationException e) {
             throw new RuntimeException("Credenciais inválidas", e);
         }
 
         var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        // 🔑 Gera token com email, role e nome
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name(),
+                user.getName()
+        );
+
         return new AuthResponse(token);
     }
 }

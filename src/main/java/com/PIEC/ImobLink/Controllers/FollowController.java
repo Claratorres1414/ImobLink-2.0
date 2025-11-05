@@ -40,4 +40,14 @@ public class FollowController {
     public ResponseEntity<List<UserDetails>> getFollowings(Authentication auth) {
         return ResponseEntity.ok(followService.getFollowings(auth));
     }
+    @GetMapping("/getFollowers/{userId}")
+    public ResponseEntity<List<UserDetails>> getFollowersById(@PathVariable Long userId) {
+        return ResponseEntity.ok(followService.getFollowersById(userId));
+    }
+
+    @GetMapping("/getFollowings/{userId}")
+    public ResponseEntity<List<UserDetails>> getFollowingsById(@PathVariable Long userId) {
+        return ResponseEntity.ok(followService.getFollowingsById(userId));
+    }
+
 }

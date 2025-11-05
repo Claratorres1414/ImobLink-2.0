@@ -99,4 +99,23 @@ public class FollowService {
 
         return followingList;
     }
+    public List<UserDetails> getFollowersById(Long userId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        return followRepository.findFollowersByUser(user)
+                .stream()
+                .map(UserDetails::new)
+                .toList();
+    }
+
+    public List<UserDetails> getFollowingsById(Long userId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        return followRepository.findFollowingsByUser(user)
+                .stream()
+                .map(UserDetails::new)
+                .toList();
+    }
+
+    
 }
