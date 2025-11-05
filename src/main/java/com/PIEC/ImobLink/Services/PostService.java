@@ -145,6 +145,14 @@ public class PostService {
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
         try {
             Post post = postRepository.getPostById(id);
+            List<Favs> favs = post.getFavedTimes();
+            for (Favs fav : favs) {
+                if (fav.getUser().getEmail().equals(email)) {
+                    PostResponse response = new PostResponse(post);
+                    response.setWasFaved(true);
+                    return response;
+                }
+            }
             return new PostResponse(post);
         } catch (Exception e){
             throw new ServletException("Erro ao tentar buscar post: " + e);
