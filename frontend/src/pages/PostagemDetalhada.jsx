@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 
@@ -7,7 +7,8 @@ function PostagemDetalhada() {
   const token = localStorage.getItem("token");
 
   const [post, setPost] = useState(null);
-  const [imagemSrc, setImagemSrc] = useState("/placeholder.jpg");
+  const [imagens, setImagens] = useState([]);
+  const [indice, setIndice] = useState(0);
 
   const [likes, setLikes] = useState(0);
   const [jaCurtiu, setJaCurtiu] = useState(false);
@@ -17,32 +18,33 @@ function PostagemDetalhada() {
   const [showComentarioBox, setShowComentarioBox] = useState(false);
 
   const [autorPost, setAutorPost] = useState(null);
+  const intervalRef = useRef(null);
 
+  // ✅ Buscar foto de perfil
   async function buscarFotoPerfil(imageId) {
     if (!imageId) return "/imagemperfil.jpg";
 
     const tentativas = [
       `http://localhost:8080/api/images/get/${imageId}`,
       `http://localhost:8080/api/images/${imageId}/profile`,
-      `http://localhost:8080/api/images/profile/${imageId}`,
+      `http://localhost:8080/api/images/profile/${imageId}`
     ];
 
     for (let url of tentativas) {
       try {
         const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
-
         if (res.ok) {
           const blob = await res.blob();
           return URL.createObjectURL(blob);
         }
       } catch {}
     }
-
     return "/imagemperfil.jpg";
   }
 
+  // ✅ Carregar autor
   async function carregarAutor(userId) {
     try {
       const res = await fetch(
@@ -53,45 +55,85 @@ function PostagemDetalhada() {
       if (!res.ok) return;
 
       const dados = await res.json();
-      const fotoAutor = await buscarFotoPerfil(dados.imageProfileId);
+      const foto = await buscarFotoPerfil(dados.imageProfileId);
 
       setAutorPost({
         nome: dados.name,
         email: dados.email,
         telefone: dados.phoneNumber,
-        imagem: fotoAutor,
+        imagem: foto
       });
     } catch (err) {
       console.error("Erro ao carregar dados do autor:", err);
     }
   }
 
+  // ✅ Buscar todas as imagens do post
+  async function carregarImagens(postId) {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/images/${postId}/post/all`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.ok) {
+        const lista = await res.json();
+        const urls = [];
+
+        for (const img of lista) {
+          try {
+            const f = await fetch(
+              `http://localhost:8080/api/images/get/${img.id}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (!f.ok) continue;
+
+            const blob = await f.blob();
+            urls.push(URL.createObjectURL(blob));
+          } catch {}
+        }
+
+        if (urls.length > 0) {
+          setImagens(urls);
+          return;
+        }
+      }
+    } catch {}
+
+    // fallback: usar thumb
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/images/${postId}/post/thumb`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.ok) {
+        const blob = await res.blob();
+        setImagens([URL.createObjectURL(blob)]);
+        return;
+      }
+    } catch {}
+
+    setImagens(["/placeholder.jpg"]);
+  }
+
+  // ✅ Carregar postagem + imagens + autor + comentários
   useEffect(() => {
     async function carregar() {
       try {
-        const resPost = await fetch(
+        const res = await fetch(
           `http://localhost:8080/api/posts/getOne/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        if (!resPost.ok) throw new Error("Postagem não encontrada");
+        if (!res.ok) throw new Error("Postagem não encontrada");
 
-        const data = await resPost.json();
+        const data = await res.json();
         setPost(data);
         setLikes(data.favedTimes);
-
         carregarAutor(data.userId);
-
-        const imgRes = await fetch(
-          `http://localhost:8080/api/images/${id}/post/thumb`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (imgRes.ok) {
-          const blob = await imgRes.blob();
-          setImagemSrc(URL.createObjectURL(blob));
-        }
-
+        carregarImagens(data.id);
         carregarComentarios(data.userId);
       } catch (err) {
         console.error(err);
@@ -101,6 +143,7 @@ function PostagemDetalhada() {
     carregar();
   }, [id]);
 
+  // ✅ Carregar comentários
   async function carregarComentarios(userId) {
     try {
       const res = await fetch(
@@ -110,32 +153,34 @@ function PostagemDetalhada() {
 
       if (!res.ok) return;
 
-      const data = await res.json();
+      const lista = await res.json();
 
-      const lista = await Promise.all(
-        data.map(async (c) => {
-          const userRes = await fetch(
-            `http://localhost:8080/api/user/getAccount/${c.authorId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          let userData = {};
-          if (userRes.ok) userData = await userRes.json();
+      const completos = await Promise.all(
+        lista.map(async (c) => {
+          let autor = { name: "Usuário" };
+          try {
+            const r = await fetch(
+              `http://localhost:8080/api/user/getAccount/${c.authorId}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (r.ok) autor = await r.json();
+          } catch {}
 
           return {
             ...c,
-            autorNome: userData.name || "Usuário",
-            autorImagem: await buscarFotoPerfil(userData.imageProfileId),
+            autorNome: autor.name,
+            autorImagem: await buscarFotoPerfil(autor.imageProfileId)
           };
         })
       );
 
-      setComentarios(lista);
+      setComentarios(completos);
     } catch (err) {
       console.error("Erro ao carregar comentários:", err);
     }
   }
 
+  // ✅ Enviar comentário
   async function enviarComentario() {
     if (!novoComentario.trim()) return;
 
@@ -145,9 +190,9 @@ function PostagemDetalhada() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ content: novoComentario }),
+        body: JSON.stringify({ content: novoComentario })
       }
     );
 
@@ -158,6 +203,7 @@ function PostagemDetalhada() {
     }
   }
 
+  // ✅ Like
   async function darLike() {
     const res = await fetch(
       `http://localhost:8080/api/posts/fav/${post.id}`,
@@ -165,7 +211,7 @@ function PostagemDetalhada() {
     );
 
     if (res.ok) {
-      setLikes((l) => l + 1);
+      setLikes(l => l + 1);
       setJaCurtiu(true);
     }
   }
@@ -177,9 +223,30 @@ function PostagemDetalhada() {
     );
 
     if (res.ok) {
-      setLikes((l) => l - 1);
+      setLikes(l => l - 1);
       setJaCurtiu(false);
     }
+  }
+
+  // ✅ Slider suave — autoplay
+  useEffect(() => {
+    if (imagens.length <= 1) return;
+
+    clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
+      setIndice(i => (i + 1) % imagens.length);
+    }, 3500);
+
+    return () => clearInterval(intervalRef.current);
+  }, [imagens]);
+
+  function next() {
+    setIndice(i => (i + 1) % imagens.length);
+  }
+
+  function prev() {
+    setIndice(i => (i - 1 + imagens.length) % imagens.length);
   }
 
   if (!post) {
@@ -194,33 +261,61 @@ function PostagemDetalhada() {
     <DashboardLayout>
       <div className="max-w-3xl mx-auto p-4 space-y-8">
 
-        {/* ✅ Imagem principal */}
-        <div className="rounded-xl overflow-hidden shadow-lg">
-          <img src={imagemSrc} className="w-full" />
+        {/* ✅ Slider */}
+        <div className="relative w-full h-[420px] rounded-xl overflow-hidden shadow-lg bg-black">
+        <img
+          src={imagens[indice]}
+          className="w-full h-full object-cover object-center transition-all duration-700 ease-in-out"
+        />
+
+
+          {imagens.length > 1 && (
+            <>
+              <button
+                onClick={prev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white px-3 py-1 rounded-full"
+              >
+                ❮
+              </button>
+
+              <button
+                onClick={next}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white px-3 py-1 rounded-full"
+              >
+                ❯
+              </button>
+
+              <div className="absolute bottom-3 w-full flex justify-center gap-2">
+                {imagens.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${
+                      i === indice ? "bg-white" : "bg-white/40"
+                    }`}
+                  ></div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* ✅ Título e data */}
-        <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-          {post.description}
-        </h2>
-
-        <p className="text-sm text-gray-500 -mt-2">
-          Publicado em: {new Date(post.createdAt).toLocaleString("pt-BR")}
+        <h2 className="text-3xl font-bold text-gray-900">{post.description}</h2>
+        <p className="text-sm text-gray-500">
+          Publicado em {new Date(post.createdAt).toLocaleString("pt-BR")}
         </p>
 
-        {/* ✅ Botão de like */}
-        <div>
-          <button
-            onClick={jaCurtiu ? tirarLike : darLike}
-            className={`px-5 py-2 rounded-full flex items-center gap-2 shadow transition-colors
-              ${jaCurtiu ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}
-            `}
-          >
-            👍 Curtir · {likes}
-          </button>
-        </div>
+        {/* ✅ Likes */}
+        <button
+          onClick={jaCurtiu ? tirarLike : darLike}
+          className={`px-5 py-2 rounded-full flex items-center gap-2 shadow transition-colors ${
+            jaCurtiu ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          👍 {likes}
+        </button>
 
-        {/* ✅ Card do proprietário */}
+        {/* ✅ Autor */}
         {autorPost && (
           <div className="border rounded-xl shadow p-5 flex gap-4 items-center bg-white">
             <img
@@ -229,9 +324,7 @@ function PostagemDetalhada() {
             />
 
             <div className="flex flex-col">
-              <p className="text-xl font-semibold text-gray-900">
-                {autorPost.nome}
-              </p>
+              <p className="text-xl font-semibold">{autorPost.nome}</p>
               <p className="text-gray-600">{autorPost.email}</p>
               <p className="text-gray-500 text-sm">
                 📞 {autorPost.telefone || "Telefone não informado"}
@@ -242,47 +335,37 @@ function PostagemDetalhada() {
 
         {/* ✅ Informações do imóvel */}
         <div className="bg-white border rounded-xl p-5 shadow space-y-2">
-          <p className="text-lg">
-            <strong className="text-gray-900">Preço:</strong> R$ {post.price}
-          </p>
-          <p>
-            <strong className="text-gray-900">Rua:</strong> {post.street}
-          </p>
-          <p>
-            <strong className="text-gray-900">Bairro:</strong> {post.avenue}
-          </p>
+          <p><strong>Preço:</strong> R$ {post.price}</p>
+          <p><strong>Rua:</strong> {post.street}</p>
+          <p><strong>Bairro:</strong> {post.avenue}</p>
         </div>
 
-        {/* ✅ Seção de comentários */}
+        {/* ✅ Comentários */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-bold text-gray-900">
-              Comentários ({comentarios.length})
-            </h3>
+            <h3 className="text-2xl font-bold">Comentários ({comentarios.length})</h3>
 
-            {/* ✅ Botão para abrir caixa de comentário */}
             <button
-              onClick={() => setShowComentarioBox((v) => !v)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition"
+              onClick={() => setShowComentarioBox(v => !v)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-full shadow"
             >
               {showComentarioBox ? "Cancelar" : "+ Adicionar comentário"}
             </button>
           </div>
 
-          {/* ✅ Caixa de comentário (agora no topo) */}
           {showComentarioBox && (
-            <div className="mt-3 bg-white p-4 border rounded-xl shadow">
+            <div className="bg-white p-4 border rounded-xl shadow">
               <textarea
                 className="w-full border p-3 rounded-xl"
-                placeholder="Escreva seu comentário..."
                 rows={3}
+                placeholder="Escreva seu comentário..."
                 value={novoComentario}
                 onChange={(e) => setNovoComentario(e.target.value)}
               ></textarea>
 
               <button
                 onClick={enviarComentario}
-                className="mt-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow hover:bg-green-700"
+                className="mt-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow"
               >
                 Enviar
               </button>
@@ -300,8 +383,8 @@ function PostagemDetalhada() {
               />
 
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">{c.autorNome}</p>
-                <p className="text-gray-700">{c.content}</p>
+                <p className="font-semibold">{c.autorNome}</p>
+                <p>{c.content}</p>
 
                 <p className="text-xs text-gray-500 mt-1">
                   {new Date(c.createdAt).toLocaleString("pt-BR")}
@@ -310,6 +393,7 @@ function PostagemDetalhada() {
             </div>
           ))}
         </div>
+
       </div>
     </DashboardLayout>
   );

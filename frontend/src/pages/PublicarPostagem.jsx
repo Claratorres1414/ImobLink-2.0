@@ -8,19 +8,68 @@ function PublicarPostagem() {
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
-  const [imagem, setImagem] = useState(null);
+
+  const [imagens, setImagens] = useState([]); // ✅ AGORA SÃO VÁRIAS IMAGENS
+  const [preview, setPreview] = useState([]);
+
   const [erro, setErro] = useState("");
+  const [loadingLegenda, setLoadingLegenda] = useState(false);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
+  // ✅ Gerar legenda (IA) — usa só a primeira imagem
+  const gerarLegenda = async () => {
+    if (imagens.length === 0) {
+      setErro("Selecione pelo menos 1 imagem para gerar a legenda.");
+      return;
+    }
+
+    setLoadingLegenda(true);
+    setErro("");
+
+    const formData = new FormData();
+    formData.append("file", imagens[0]); // ✅ usa apenas a primeira imagem
+
+    try {
+      const resposta = await fetch("http://localhost:8080/integracao/legenda", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!resposta.ok) throw new Error("Erro ao gerar legenda.");
+
+      const dados = await resposta.json();
+
+      setDescricao(dados.traduzido || dados.caption || "");
+    } catch (err) {
+      console.error(err);
+      setErro("Erro ao gerar legenda com IA.");
+    } finally {
+      setLoadingLegenda(false);
+    }
+  };
+
+  // ✅ Envio de múltiplas imagens
+  const handleImagemChange = (e) => {
+    const files = Array.from(e.target.files);
+
+    setImagens(files);
+
+    const previews = files.map((file) => URL.createObjectURL(file));
+    setPreview(previews);
+  };
+
+  // ✅ Criar postagem
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!descricao || !preco || !rua || !numero || !bairro || !imagem) {
-      setErro("Preencha todos os campos e selecione uma imagem.");
+    if (!descricao || !preco || !rua || !numero || !bairro || imagens.length === 0) {
+      setErro("Preencha todos os campos e selecione pelo menos 1 imagem.");
       return;
     }
+
+    setErro("");
 
     const formData = new FormData();
     formData.append("description", descricao);
@@ -29,8 +78,7 @@ function PublicarPostagem() {
     formData.append("number", numero);
     formData.append("avenue", bairro);
 
-    // ✅ CORREÇÃO PRINCIPAL AQUI
-    formData.append("images", imagem);
+    imagens.forEach((img) => formData.append("images", img)); // ✅ várias imagens
 
     try {
       const resposta = await fetch("http://localhost:8080/api/posts/create", {
@@ -49,7 +97,7 @@ function PublicarPostagem() {
       }
     } catch (err) {
       console.error(err);
-      setErro("Erro ao conectar com o servidor.");
+      setErro("Erro ao conectar ao servidor.");
     }
   };
 
@@ -107,14 +155,44 @@ function PublicarPostagem() {
             className="w-full p-2 border rounded"
           />
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImagem(e.target.files[0])}
-            className="w-full"
-          />
+          {/* ✅ INPUT DE MÚLTIPLAS IMAGENS */}
+          <div>
+            <label className="block font-semibold mb-1">Imagens do imóvel</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImagemChange}
+              className="w-full"
+            />
 
-          <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+            {/* ✅ Preview das imagens */}
+            {preview.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {preview.map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    className="w-full h-24 object-cover rounded"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={gerarLegenda}
+            className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
+            disabled={loadingLegenda}
+          >
+            {loadingLegenda ? "Gerando legenda..." : "Gerar Legenda com IA"}
+          </button>
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+          >
             Publicar
           </button>
         </form>
