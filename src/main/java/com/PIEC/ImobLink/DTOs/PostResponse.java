@@ -21,6 +21,7 @@ public class PostResponse {
     private String number;
     private int favedTimes;
     private Long userId;
+    private boolean wasFaved;
 
     public PostResponse(Post post) {
         this.id = post.getId();
@@ -32,6 +33,7 @@ public class PostResponse {
         this.avenue = post.getAvenue();
         this.number = post.getNumber();
         this.favedTimes = post.getFavedTimes().size();
+        this.wasFaved = false;
         this.createdAt = post.getCreatedAt();
         this.updatedAt = post.getUpdatedAt();
         this.createdBy = post.getUser().getName();
