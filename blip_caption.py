@@ -5,28 +5,9 @@ import torch
 from torchvision import models, transforms
 from dotenv import load_dotenv
 from transformers import BlipProcessor, BlipForConditionalGeneration
+from googletrans import Translator
 
-# ----------------------------
-# 1. Token vindo da sua API Java
-# ----------------------------
 load_dotenv()
-
-def obter_token():
-    try:
-        resposta = requests.get("http://localhost:5001/token?auth=subarutoken123")
-        if resposta.status_code == 200:
-            data = resposta.json()
-            return data.get("token")
-        else:
-            print(f"Erro ao obter token: {resposta.status_code}")
-            return None
-    except Exception as e:
-        print(f"Erro de conexão ao obter token: {e}")
-        return None
-
-HUGGINGFACE_API_TOKEN = obter_token()
-if not HUGGINGFACE_API_TOKEN:
-    raise RuntimeError("Token não obtido da API Java")
 
 # ----------------------------
 # 2. Inicializa modelo BLIP
@@ -110,24 +91,14 @@ def gerar_legenda_blip(caminho_imagem: str, prompt_base: str = "", max_length=30
     legenda_ingles = processor.decode(output[0], skip_special_tokens=True)
     return legenda_ingles.strip()
 
+translator = Translator()
+
 def traduzir_para_portugues(texto_ingles: str) -> str:
-    url = "https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-tc-big-en-pt"
-    headers = {
-        "Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    payload = {"inputs": texto_ingles}
-    response = requests.post(url, headers=headers, json=payload)
-
-    if response.status_code == 200:
-        try:
-            traducao = response.json()[0]["translation_text"]
-            return traducao
-        except Exception as e:
-            return f"[Erro ao processar resposta da tradução: {e}]"
-    else:
-        return f"[Erro na tradução: {response.status_code} - {response.text}]"
-
+    try:
+        traducao = translator.translate(texto_ingles, src='en', dest='pt')
+        return traducao.text
+    except Exception as e:
+        return f"[Erro na tradução: {e}]"
 # ----------------------------
 # 5. Pipeline completo com prompts variados
 # ----------------------------
