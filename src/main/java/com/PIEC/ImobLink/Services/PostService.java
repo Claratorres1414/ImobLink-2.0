@@ -312,4 +312,10 @@ public class PostService {
         }
         return false;
     }
+
+    //Funcionalidades ADM
+    public int getFavedTimesByPostId(Long postId) {
+        Post post = postRepository.getPostById(postId);
+        return post.getFavedTimes().size();
+    }
 }
