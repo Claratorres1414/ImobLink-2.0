@@ -5,6 +5,7 @@ import com.PIEC.ImobLink.DTOs.DeleteProfileRequest;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
+import com.PIEC.ImobLink.Entitys.Favs;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import lombok.RequiredArgsConstructor;
@@ -147,6 +148,33 @@ public class UserService {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
+        int favTimes = 0;
+        try{
+            List<Post> posts = user.getPosts();
+            for (Post post : posts) {
+                favTimes += post.getFavedTimes().size();
+            }
+        } catch ( Exception e ) {
+            System.out.println("Erro ao tentar calcular favoritos: " + e.getMessage());
+            return 0;
+        }
+        return favTimes;
+    }
+
+    //Para ADMINS
+    public int calcNumberOfFavedsByUserId(Long id) {
+        User user = userRepository.getReferenceById(id);
+        try{
+            List<Favs> favs = user.getFavs();
+            return favs.size();
+        } catch ( Exception e ) {
+            System.out.println("Erro ao tentar calcular favoritos: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    public int calcAllPostsFavedTimesByUserId(Long id) {
+        User user = userRepository.getReferenceById(id);
         int favTimes = 0;
         try{
             List<Post> posts = user.getPosts();
