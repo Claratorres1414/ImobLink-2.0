@@ -46,6 +46,10 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Likes> likedTimes = new ArrayList<>();
 
+    private int views;
+    @OneToMany(mappedBy = "viewedPost", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<User> reacheds = new ArrayList<>();
+
     public void addImage(Images image) {
         images.add(image);
     }
