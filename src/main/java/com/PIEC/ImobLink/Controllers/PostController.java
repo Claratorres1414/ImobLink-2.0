@@ -78,4 +78,22 @@ public class PostController {
         }
         return ResponseEntity.badRequest().body("Erro ao tentar desfavoritar o post");
     }
+
+    @PostMapping("/like/{id}")
+    public ResponseEntity<String> likePost(@PathVariable Long id, Authentication auth) throws ServletException {
+        Boolean response = postService.likePost(id, auth);
+        if (response) {
+            return ResponseEntity.ok("Curtido com sucesso");
+        }
+        return ResponseEntity.badRequest().body("Erro ao tentar curtir o post");
+    }
+
+    @DeleteMapping("/unlike/{id}")
+    public ResponseEntity<String> unlikePost(@PathVariable Long id, Authentication auth) throws ServletException {
+        Boolean response = postService.unlikePost(id, auth);
+        if (response) {
+            return ResponseEntity.ok("Like removido com sucesso");
+        }
+        return ResponseEntity.badRequest().body("Erro ao tentar remover seu like do post");
+    }
 }
