@@ -66,4 +66,8 @@ public class User {
     public void addFav(Favs fav) {
         favs.add(fav);
     }
+
+    public void addLikes(Likes likedPost) {
+        likes.add(likedPost);
+    }
 }
