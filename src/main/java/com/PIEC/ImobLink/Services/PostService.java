@@ -2,10 +2,9 @@ package com.PIEC.ImobLink.Services;
 
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
-import com.PIEC.ImobLink.Entitys.Favs;
-import com.PIEC.ImobLink.Entitys.Images;
-import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Entitys.*;
 import com.PIEC.ImobLink.Repositorys.FavsRepository;
+import com.PIEC.ImobLink.Repositorys.LikesRepository;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.transaction.Transactional;
@@ -14,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +29,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final ImageService imageService;
     private final FavsRepository favsRepository;
+    private final LikesRepository likesRepository;
 
     @Transactional
     public String createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, Authentication auth) throws IOException, java.io.IOException {
@@ -134,9 +133,27 @@ public class PostService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
 
-        return user.getPosts().stream()
+        List<PostResponse> posts = user.getPosts().stream()
                 .map(PostResponse::new)
                 .toList();
+
+        List<Favs> favs = user.getFavs();
+        List<Likes> likes = user.getLikes();
+
+        for (PostResponse post : posts) {
+            for (Favs fav : favs) {
+                if (fav.getPost().getId().equals(post.getId())) {
+                    post.setWasFaved(true);
+                }
+            }
+            for (Likes like : likes) {
+                if (like.getPost().getId().equals(post.getId())) {
+                    post.setWasLiked(true);
+                }
+            }
+        }
+
+        return posts;
     }
 
     public PostResponse getPostById(Long id, Authentication auth) throws ServletException {
@@ -146,14 +163,21 @@ public class PostService {
         try {
             Post post = postRepository.getPostById(id);
             List<Favs> favs = post.getFavedTimes();
+            List<Likes> likes = post.getLikedTimes();
+            PostResponse postResponse = new PostResponse(post);
             for (Favs fav : favs) {
                 if (fav.getUser().getEmail().equals(email)) {
-                    PostResponse response = new PostResponse(post);
-                    response.setWasFaved(true);
-                    return response;
+                    postResponse.setWasFaved(true);
+                    break;
                 }
             }
-            return new PostResponse(post);
+            for (Likes like : likes) {
+                if (like.getUser().getEmail().equals(email)) {
+                    postResponse.setWasLiked(true);
+                    break;
+                }
+            }
+            return postResponse;
         } catch (Exception e){
             throw new ServletException("Erro ao tentar buscar post: " + e);
         }
@@ -191,7 +215,7 @@ public class PostService {
             post.getFavedTimes().add(favPost);
             return true;
         } catch (Exception e){
-            throw new ServletException("Erro ao tentar buscar post: " + e);
+            throw new ServletException("Erro ao tentar favoritar post: " + e);
         }
     }
 
@@ -215,6 +239,58 @@ public class PostService {
             }
         } catch (Exception e){
             throw new ServletException("Erro ao tentar remover favoritos: " + e);
+        }
+        return false;
+    }
+
+    public Boolean likePost(Long id, Authentication auth) throws ServletException {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        Post post;
+        try {
+            post = postRepository.getPostById(id);
+        } catch (Exception e) {
+            throw new ServletException("Erro ao tentar buscar post: " + e);
+        }
+        try {
+            for (Likes likedPosts : user.getLikes()) {
+                if (likedPosts.getPost().equals(post)) {
+                    return true;
+                }
+            }
+            Likes likedPost = new Likes();
+            likedPost.setUser(user);
+            likedPost.setAuthor(post.getUser());
+            likedPost.setPost(post);
+            likesRepository.save(likedPost);
+            user.addLikes(likedPost);
+            post.getLikedTimes().add(likedPost);
+            return true;
+        } catch (Exception e){
+            throw new ServletException("Erro ao tentar dar like no post: " + e);
+        }
+    }
+
+    public Boolean unlikePost(Long id, Authentication auth) throws ServletException {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        Post post;
+        try {
+            post = postRepository.getPostById(id);
+        } catch (Exception e) {
+            throw new ServletException("Erro ao tentar buscar post: " + e);
+        }
+        try {
+            for (Likes likedPost : user.getLikes()) {
+                if (likedPost.getPost().equals(post)) {
+                    post.getLikedTimes().remove(likedPost);
+                    user.getLikes().remove(likedPost);
+                    likesRepository.delete(likedPost);
+                    return true;
+                }
+            }
+        } catch (Exception e){
+            throw new ServletException("Erro ao tentar remover like: " + e);
         }
         return false;
     }
