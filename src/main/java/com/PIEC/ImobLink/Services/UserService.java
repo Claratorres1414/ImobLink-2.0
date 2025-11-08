@@ -132,6 +132,11 @@ public class UserService {
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         if(delRequest.getPassword() != null && passwordEncoder.matches(delRequest.getPassword(), user.getPassword())) {
             imageRepository.deleteByUserId(user.getId());
+            for (Post post : user.getViewedPosts()) {
+                post.getReacheds().remove(user);
+            }
+
+            user.getViewedPosts().clear();
             userRepository.delete(user);
             return true;
         }
