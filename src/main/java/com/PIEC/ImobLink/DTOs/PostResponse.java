@@ -20,8 +20,10 @@ public class PostResponse {
     private String createdBy;
     private String number;
     private int favedTimes;
+    private int likedTimes;
     private Long userId;
     private boolean wasFaved;
+    private boolean wasLiked;
 
     public PostResponse(Post post) {
         this.id = post.getId();
@@ -33,7 +35,9 @@ public class PostResponse {
         this.avenue = post.getAvenue();
         this.number = post.getNumber();
         this.favedTimes = post.getFavedTimes().size();
+        this.likedTimes = post.getLikedTimes().size();
         this.wasFaved = false;
+        this.wasLiked = false;
         this.createdAt = post.getCreatedAt();
         this.updatedAt = post.getUpdatedAt();
         this.createdBy = post.getUser().getName();
