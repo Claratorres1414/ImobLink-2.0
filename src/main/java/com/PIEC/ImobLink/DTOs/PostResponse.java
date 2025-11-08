@@ -21,6 +21,8 @@ public class PostResponse {
     private String number;
     private int favedTimes;
     private int likedTimes;
+    private int views;
+    private int reachedTimes;
     private Long userId;
     private boolean wasFaved;
     private boolean wasLiked;
@@ -36,6 +38,8 @@ public class PostResponse {
         this.number = post.getNumber();
         this.favedTimes = post.getFavedTimes().size();
         this.likedTimes = post.getLikedTimes().size();
+        this.views = post.getViews();
+        this.reachedTimes = post.getReacheds().size();
         this.wasFaved = false;
         this.wasLiked = false;
         this.createdAt = post.getCreatedAt();
