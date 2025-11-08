@@ -158,10 +158,28 @@ public class PostService {
 
     public PostResponse getPostById(Long id, Authentication auth) throws ServletException {
         String email = auth.getName();
-        userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found " + email));
         try {
             Post post = postRepository.getPostById(id);
+            post.setViews(post.getViews() + 1);
+            List<User> reacheds = post.getReacheds();
+            List<Post> vieweds = user.getPosts();
+            boolean reached = false;
+            for (User u : reacheds) {
+                if (u.getEmail().equals(email)) {
+                    reached = true;
+                    break;
+                }
+            }
+
+            if (!reached) {
+                reacheds.add(user);
+                vieweds.add(post);
+                post.setReacheds(reacheds);
+            }
+
+            postRepository.save(post);
             List<Favs> favs = post.getFavedTimes();
             List<Likes> likes = post.getLikedTimes();
             PostResponse postResponse = new PostResponse(post);
