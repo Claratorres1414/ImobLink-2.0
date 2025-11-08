@@ -63,6 +63,10 @@ public class User {
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> authoredComments = new ArrayList<>();
 
+    @ManyToMany(mappedBy = "reacheds")
+    private List<Post> viewedPosts = new ArrayList<>();
+
+
     public void addFav(Favs fav) {
         favs.add(fav);
     }
