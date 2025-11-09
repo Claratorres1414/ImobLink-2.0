@@ -21,8 +21,18 @@ public class CommentsController {
         return ResponseEntity.ok(commentsService.comment(commentRequest, userId, auth));
     }
 
+    @PostMapping("/comment/post/{postId}")
+    public ResponseEntity<CommentResponse> addCommentPost(@RequestBody CommentRequest commentRequest, @PathVariable Long postId, Authentication auth) {
+        return ResponseEntity.ok(commentsService.commentPost(commentRequest, postId, auth));
+    }
+
     @GetMapping("/getComments/{userId}")
     public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long userId, Authentication auth) {
         return ResponseEntity.ok(commentsService.getCommentsByUserId(userId, auth));
+    }
+
+    @GetMapping("/getComments/post/{postId}")
+    public ResponseEntity<List<CommentResponse>> getCommentsByPost(@PathVariable Long postId, Authentication auth) {
+        return ResponseEntity.ok(commentsService.getCommentsByPostId(postId, auth));
     }
 }
