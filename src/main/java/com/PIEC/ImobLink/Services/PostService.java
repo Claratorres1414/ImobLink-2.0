@@ -182,6 +182,7 @@ public class PostService {
             postRepository.save(post);
             List<Favs> favs = post.getFavedTimes();
             List<Likes> likes = post.getLikedTimes();
+            List<Comment> comments = post.getComments();
             PostResponse postResponse = new PostResponse(post);
             for (Favs fav : favs) {
                 if (fav.getUser().getEmail().equals(email)) {
@@ -194,6 +195,9 @@ public class PostService {
                     postResponse.setWasLiked(true);
                     break;
                 }
+            }
+            for (Comment comment : comments) {
+                postResponse.addComment(comment);
             }
             return postResponse;
         } catch (Exception e){
