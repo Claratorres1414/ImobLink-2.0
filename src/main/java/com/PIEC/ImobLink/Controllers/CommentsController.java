@@ -35,4 +35,13 @@ public class CommentsController {
     public ResponseEntity<List<CommentResponse>> getCommentsByPost(@PathVariable Long postId, Authentication auth) {
         return ResponseEntity.ok(commentsService.getCommentsByPostId(postId, auth));
     }
+
+    @DeleteMapping("/deleteComment/{id}")
+    public ResponseEntity<String> deleteComment(@PathVariable Long id, Authentication auth) {
+        boolean res = commentsService.deleteComment(id, auth);
+        if (res) {
+            return ResponseEntity.ok("Comment deleted");
+        }
+        return ResponseEntity.badRequest().body("Não foi possível deletar o comentário");
+    }
 }
