@@ -1,9 +1,12 @@
 package com.PIEC.ImobLink.DTOs;
 
+import com.PIEC.ImobLink.Entitys.Comment;
 import com.PIEC.ImobLink.Entitys.Post;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -26,6 +29,7 @@ public class PostResponse {
     private Long userId;
     private boolean wasFaved;
     private boolean wasLiked;
+    private List<CommentResponse> comments = new ArrayList<>();
 
     public PostResponse(Post post) {
         this.id = post.getId();
@@ -46,5 +50,9 @@ public class PostResponse {
         this.updatedAt = post.getUpdatedAt();
         this.createdBy = post.getUser().getName();
         this.userId = post.getUser().getId();
+    }
+
+    public void addComment(Comment comment) {
+        comments.add(new CommentResponse(comment));
     }
 }
