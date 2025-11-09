@@ -85,4 +85,29 @@ public class CommentsService {
                 .map(CommentResponse :: new)
                 .toList();
     }
+
+    public boolean deleteComment(Long id, Authentication auth) {
+        Comment comment;
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        try {
+            comment = commentRepository.findById(id).get();
+        } catch (Exception e) {
+            System.out.println("Comment not found, error: " + e.getMessage());
+            return false;
+        }
+
+        if (comment.getAuthor() == user){
+            try{
+                commentRepository.delete(comment);
+                return true;
+            } catch (Exception e) {
+                System.out.println("Comment deletion failed, error " + e.getMessage());
+                return false;
+            }
+        }
+        System.out.println("Invalid credentials!");
+        return false;
+    }
 }
