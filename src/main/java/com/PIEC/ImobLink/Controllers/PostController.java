@@ -22,9 +22,9 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("number") String number, @RequestParam("images")MultipartFile[] images, Authentication auth) throws IOException {
+    public ResponseEntity<String> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("number") String number, @RequestParam("type") String type, @RequestParam("images")MultipartFile[] images, Authentication auth) throws IOException {
         List<MultipartFile> imagesList = Arrays.asList(images);
-        String response = postService.createPost(imagesList, description, price, street, avenue, number, auth);
+        String response = postService.createPost(imagesList, description, price, street, avenue, number, type, auth);
         return ResponseEntity.ok(response);
     }
 
