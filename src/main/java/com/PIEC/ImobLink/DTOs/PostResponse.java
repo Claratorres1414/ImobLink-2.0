@@ -22,6 +22,7 @@ public class PostResponse {
     private LocalDateTime updatedAt;
     private String createdBy;
     private String number;
+    private String type;
     private int favedTimes;
     private int likedTimes;
     private int views;
@@ -40,6 +41,7 @@ public class PostResponse {
         this.street = post.getStreet();
         this.avenue = post.getAvenue();
         this.number = post.getNumber();
+        this.type = post.getType();
         this.favedTimes = post.getFavedTimes().size();
         this.likedTimes = post.getLikedTimes().size();
         this.views = post.getViews();
