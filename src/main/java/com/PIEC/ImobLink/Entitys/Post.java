@@ -30,6 +30,7 @@ public class Post {
     private String street;
     private String avenue;
     private String number;
+    private String type;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
