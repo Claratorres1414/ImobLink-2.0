@@ -11,4 +11,5 @@ public class SetPostInfoRequest {
     private String street;
     private String avenue;
     private String number;
+    private String type;
 }
