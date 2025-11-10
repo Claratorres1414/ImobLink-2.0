@@ -32,7 +32,7 @@ public class PostService {
     private final LikesRepository likesRepository;
 
     @Transactional
-    public String createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, Authentication auth) throws IOException, java.io.IOException {
+    public String createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, String type, Authentication auth) throws IOException, java.io.IOException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -48,6 +48,7 @@ public class PostService {
         post.setAvenue(avenue);
         post.setUser(user);
         post.setNumber(number);
+        post.setType(type);
 
         for (MultipartFile image : images) {
             Images savedImage = imageService.saveImage(image,auth);
@@ -108,6 +109,9 @@ public class PostService {
             }
             if (newInfoPost.getNumber() != null) {
                 post.setNumber(newInfoPost.getNumber());
+            }
+            if (newInfoPost.getType() != null) {
+                post.setType(newInfoPost.getType());
             }
 
             postRepository.save(post);
