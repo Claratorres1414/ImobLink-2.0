@@ -9,6 +9,19 @@ AdminController:
               }
 e exige header: Authorization | Bearer token (o usuário portador desse token deve ser no mínimo administrador para promover outros usuários).
 
+  GET - /api/admin/info/number/favedPosts/{userId}
+    permite que um usuário ADMIN ou SUPER_ADMIN visualize a quantidade de vezes total que o usuário favoritou posts da plataforma passando seu id, essa requisição não possui body, mas 
+  exige header: Authorization | Bearer token.
+
+  GET - /api/admin/info/number/allPosts/favedTimes/{userId}
+    permite que um usuário ADMIN ou SUPER_ADMIN visualize a quantidade de vezes total
+que os posts de um usuário foram favoritados passando seu id, essa requisição não possui body, mas
+  exige header: Authorization | Bearer token.
+  
+  GET - /api/admin//info/number/favedTimes/{postId}
+  permite que um usuário ADMIN ou SUPER_ADMIN visualize a quantidade de vezes total
+  que um post específico foi favoritado passando seu id, essa requisição não possui body, mas
+  exige header: Authorization | Bearer token.
 
 
 AuthController:
@@ -42,9 +55,22 @@ CommentsController:
         "content" : "abobrinha"
       }
     Essa requisição exige header com a estrutura: Authorization | Bearer token, para identificação do autor do comentário;
-  
+
+  POST - /api/comments/coment/{postId}
+    permite que o usuário realize comentários em publicações de outros usuários, passando o id do post no path, seu body é:
+    {
+    "content" : "abobrinha"
+    }
+    Essa requisição exige header com a estrutura: Authorization | Bearer token, para identificação do autor do comentário;
+      
   GET - /api/comments/getComments/{userId}
     esse endpoint tem como finalidade servir uma lista de comentários feitos àquele perfil com id endereçado no path, retornando-os em ordem cronológica. Essa requisição exige header com a estrutura: Authorization | Bearer token.
+
+  GET - /api/comments/getComments/{userId}
+    esse endpoint tem como finalidade servir uma lista de comentários feitos àquele post com id endereçado no path, retornando-os em ordem cronológica. Essa requisição exige header com a estrutura: Authorization | Bearer token.
+
+  DELETE - /api/comments/deleteComment/{id} 
+    esse endpoint tem como finalidade permitir que o usuário delete seu comentário apenas passando o id do mesmo no path. Essa requisição exige header com a estrutura: Authorization | Bearer token.
 
 
 
@@ -57,12 +83,24 @@ FeedController:
 
 FollowController:
 
-  POST - /api/follow/{followerId)/follow/{followingId}
-    permite que um usuário siga o outro passando o id do usuário logado no {followerId} e o id do usuário que deseja seguir no {followingId}.
+  POST - /api/follow/{followingId}
+    permite que um usuário siga o outro passando  o id do usuário que deseja seguir no {followingId}.
     Essa requisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
+
+  GET - /api/follow/getFollowers
+    permite que o usuário visualize quem o segue. Essa requisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
+
+  GET - /api/follow/getFollowings
+    permite qeu o usuário visualize quem ele está seguindo. Essa requisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
+
+  GET - /api/follow/getFollowers/{userId}
+    permite a visualização dos seguidores de um usuário passando seu id no path. Essa requisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
+
+  GET - /api/follow/getFollowings/{userId}
+    permite a visualização de quem um usuário segue passando seu id no path. Essa requisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
     
-  DELETE - /api/follow/{followerId}/unfollow/{followingId}
-    permite que um usuário deixe de seguir o outro passando o id do usuário logado no {followerId} e o id do usuário que deseja deixar de seguir no {followingId}.
+  DELETE - /api/follow/unfollow/{followingId}
+    permite que um usuário deixe de seguir o outro passando o id do usuário que deseja deixar de seguir no {followingId}.
     Essa requisição não exige body, mas exige header com a estrutura: Authorization | Bearer token.
 
 
@@ -109,8 +147,18 @@ PostController:
       street | uma rua
       avenue | um bairro
       number | número da casa
+      type | aluguel
       image | IMG_ajfkdkj.jpeg
     Essa requisição exige header com a estrutura: Authorization | Bearer token;
+
+  POST - /api/posts/fav/{id} 
+    permite que o usuário favorite uma publicação com base no id passado no path. Essa rquisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
+
+  POST - /api/posts/like/{id}
+    permite que o usuário curta uma publicação com base no id passado no path. Essa rquisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
+
+  GET - /api/posts/my-favs
+    permite que o usuário veja todas as publicações favoritadas por si em uma lista. Essa rquisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
     
   GET - /api/posts/my-posts
     permite que o usuário veja todas as suas publicações em uma lista de ordem cronológica, da mais recente para a mais antiga. Essa rquisição não exige body, mas exige header com a estrutura: Authorization | Bearer token;
@@ -122,15 +170,23 @@ PostController:
   PATCH - /api/posts/edit/{id}
     esse endpoint permite realizar a edição do post com base em seu id, seu body é flexível, já que depende das informações passadsas para atualização, mas de modo completo ele tem a seguinte estrutura:
     {
-      "description" : "AAAAAA"
-      "price" : 0.0
-      "street" : "rua 2"
-      "avenue" : "Bairro bacana esse ein"
+      "description" : "AAAAAA",
+      "price" : 0.0,
+      "street" : "rua 2",
+      "avenue" : "Bairro bacana esse ein",
+      "number" : 500,
+      "type" : venda
     }
     Essa requisição exige header com a estrutura: Authorization | Bearer token;
     
   DELETE - /api/posts/delete/{id}
     esse endpoint permite o usuário deletar publicações com base no id. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+  DELETE - /api/posts/unfav/{id}
+    esse endpoint permite o usuário remover publicações dos seus favoritos com base no id. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+  DELETE - /api/posts/unlike/{id}
+    esse endpoint permite o usuário retirar seu like de publicações com base no id. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
 
 
 
@@ -144,6 +200,9 @@ UserController
 
   GET - /api/user/getAll
     esse endpoint passa uma lista de usuários com as informações permitidas a respeito de cada um deles. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
+
+  GET - /api/user/info/favedTimes
+    esse endpoint passa o cálculo de quantas vezes todas as publicações do usuário foram favoritadas no total. Essa requisição não possui body, mas exige header com a estrutura: Authorization | Bearer token.
     
   PATCH - /api/user/setInfo
     esse endpoint permite as auterações de informação do usuário, atualmente seu body é:
