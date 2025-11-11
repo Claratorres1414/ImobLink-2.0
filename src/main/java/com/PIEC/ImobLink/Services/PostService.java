@@ -326,4 +326,18 @@ public class PostService {
         Post post = postRepository.getPostById(postId);
         return post.getFavedTimes().size();
     }
+
+    public List<PostResponse> getFavedPostsByUserId(Long userId) throws ServletException {
+        User user = userRepository.getReferenceById(userId);
+        List<PostResponse> faveds = new ArrayList<>();
+        try {
+            for (Favs fav : user.getFavs()) {
+                Post post = fav.getPost();
+                faveds.add(new PostResponse(post));
+            }
+            return faveds;
+        } catch (Exception e) {
+            throw new ServletException("Erro ao obter os favoritos" + e.getMessage());
+        }
+    }
 }
