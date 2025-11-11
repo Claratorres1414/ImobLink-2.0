@@ -96,4 +96,11 @@ public class PostController {
         }
         return ResponseEntity.badRequest().body("Erro ao tentar remover seu like do post");
     }
+
+    //Endpoint para admin, mas pode servir para qualquer usuário visualizar
+
+    @GetMapping("/topPosts")
+    public ResponseEntity<List<String>> topPosts(Authentication auth) {
+        return ResponseEntity.ok(postService.topPosts(auth));
+    }
 }
