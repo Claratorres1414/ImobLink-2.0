@@ -5,6 +5,7 @@ import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.*;
 import com.PIEC.ImobLink.Repositorys.FavsRepository;
 import com.PIEC.ImobLink.Repositorys.LikesRepository;
+import com.PIEC.ImobLink.Util.LimitedViewsHeap;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.transaction.Transactional;
@@ -339,5 +340,24 @@ public class PostService {
         } catch (Exception e) {
             throw new ServletException("Erro ao obter os favoritos" + e.getMessage());
         }
+    }
+
+    public List<String> topPosts(Authentication auth) {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        LimitedViewsHeap heap = new LimitedViewsHeap();
+        List<Post> posts = postRepository.findAll();
+        for (Post post : posts) {
+            heap.add(new PostResponse(post));
+        }
+
+        List<String> response = new ArrayList<>();
+
+        heap.getHeap().forEach(post -> response.add(
+                    "Post: " + post.getId() +
+                    " | Views: " + post.getViews() +
+                    " | Author: " + post.getUserId()));
+
+        return response;
     }
 }
