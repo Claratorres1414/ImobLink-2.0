@@ -1,12 +1,16 @@
 package com.PIEC.ImobLink.Controllers;
 
+import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.PromoteRequest;
 import com.PIEC.ImobLink.Services.PostService;
 import com.PIEC.ImobLink.Services.UserService;
 import jakarta.persistence.Index;
+import jakarta.servlet.ServletException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -25,8 +29,14 @@ public class AdminController {
         return ResponseEntity.ok("Usuário promovido a ADMIN com sucecsso!");
     }
 
+    @GetMapping("/info/posts/favedPosts/{userId}")
+    public ResponseEntity<List<PostResponse>> getFavedPostsByUser(@PathVariable Long userId) throws ServletException {
+        List<PostResponse> favedPosts = postService.getFavedPostsByUserId(userId);
+        return ResponseEntity.ok(favedPosts);
+    }
+
     @GetMapping("/info/number/favedPosts/{userId}")
-    public ResponseEntity<Integer> getFavedPostsByUser(@PathVariable Long userId) {
+    public ResponseEntity<Integer> getNumberOfFavedPostsByUser(@PathVariable Long userId) {
         Integer faveds = userService.calcNumberOfFavedsByUserId(userId);
         return ResponseEntity.ok(faveds);
     }
