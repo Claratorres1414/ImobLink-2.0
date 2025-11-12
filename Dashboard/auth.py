@@ -27,6 +27,8 @@ def fazer_login(email: str, senha: str, api_url: str):
     # 🔹 Decodifica sem verificar assinatura
     try:
         claims = jwt.decode(token, options={"verify_signature": False})
+        print("DEBUG CLAIMS:", claims)
+
     except Exception:
         claims = {}
 
@@ -58,6 +60,7 @@ def fazer_login(email: str, senha: str, api_url: str):
 
     st.success(f"✅ Login bem-sucedido! Bem-vindo {st.session_state.user['name']}")
     st.session_state.last_login_ok = True
+    st.rerun()
 
 
 def login_component(api_url: str):
@@ -68,13 +71,19 @@ def login_component(api_url: str):
 
     with st.sidebar.expander("🔐 Login"):
         if not st.session_state.token:
-            email = st.text_input("E-mail")
-            senha = st.text_input("Senha", type="password")
+            email = st.text_input("E-mail", key="login_email")
+            senha = st.text_input("Senha", type="password", key="login_senha")
+
             if st.button("Entrar"):
-                fazer_login(email, senha, api_url)
+                if not email or not senha:
+                    st.warning("Preencha todos os campos antes de entrar.")
+                else:
+                    fazer_login(email, senha, api_url)
+
         else:
             st.markdown(f"**Logado como:** {st.session_state.user.get('name')} ({st.session_state.user.get('role')})")
             if st.button("Logout"):
                 st.session_state.token = None
                 st.session_state.last_login_ok = False
-                st.experimental_rerun()
+                st.rerun()
+

@@ -43,7 +43,7 @@ if menu == "🏠 Visão Geral":
 elif menu == "📊 Gráficos":
     pagina_graficos(posts)
 elif menu == "📋 Tabelas":
-    pagina_tabelas(usuarios, posts)
+    pagina_tabelas(usuarios, posts, API_URL, st.session_state.token)
 elif menu == "👤 Usuário Específico":
     pagina_usuario(API_URL, usuarios, posts, st.session_state.token)
 elif menu == "🧩 Monitoramento":
