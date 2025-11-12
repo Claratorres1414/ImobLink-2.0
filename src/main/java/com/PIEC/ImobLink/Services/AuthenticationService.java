@@ -57,4 +57,28 @@ public class AuthenticationService {
 
         return new AuthResponse(token);
     }
+
+    public AuthResponse loginAdm(LoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (AuthenticationException e) {
+            throw new RuntimeException("Credenciais inválidas", e);
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
+            String token = jwtUtil.generateToken(
+                    user.getEmail(),
+                    user.getRole().name(),
+                    user.getName()
+            );
+            return new AuthResponse(token);
+        }
+
+        return new AuthResponse("Acesso negado, você não tem autoridade suficiente para acessar esse endpoint");
+    }
 }
