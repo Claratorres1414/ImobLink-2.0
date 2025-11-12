@@ -1,402 +1,173 @@
-import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 
-function PostagemDetalhada() {
-  const { id } = useParams();
+function PublicarPostagem() {
+  const [descricao, setDescricao] = useState("");
+  const [preco, setPreco] = useState("");
+  const [rua, setRua] = useState("");
+  const [numero, setNumero] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [imagem, setImagem] = useState(null);
+  const [erro, setErro] = useState("");
+  const [loadingLegenda, setLoadingLegenda] = useState(false);
+
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  const [post, setPost] = useState(null);
-  const [imagens, setImagens] = useState([]);
-  const [indice, setIndice] = useState(0);
-
-  const [likes, setLikes] = useState(0);
-  const [jaCurtiu, setJaCurtiu] = useState(false);
-
-  const [comentarios, setComentarios] = useState([]);
-  const [novoComentario, setNovoComentario] = useState("");
-  const [showComentarioBox, setShowComentarioBox] = useState(false);
-
-  const [autorPost, setAutorPost] = useState(null);
-  const intervalRef = useRef(null);
-
-  // ✅ Buscar foto de perfil
-  async function buscarFotoPerfil(imageId) {
-    if (!imageId) return "/imagemperfil.jpg";
-
-    const tentativas = [
-      `http://localhost:8080/api/images/get/${imageId}`,
-      `http://localhost:8080/api/images/${imageId}/profile`,
-      `http://localhost:8080/api/images/profile/${imageId}`
-    ];
-
-    for (let url of tentativas) {
-      try {
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const blob = await res.blob();
-          return URL.createObjectURL(blob);
-        }
-      } catch {}
-    }
-    return "/imagemperfil.jpg";
+  // Função para gerar legenda automática
+  const gerarLegenda = async () => {
+  if (!imagem) {
+    setErro("Selecione uma imagem para gerar a legenda.");
+    return;
   }
 
-  // ✅ Carregar autor
-  async function carregarAutor(userId) {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/user/getAccount/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  setLoadingLegenda(true);
+  setErro("");
 
-      if (!res.ok) return;
+  const formData = new FormData();
+  formData.append("file", imagem);
 
-      const dados = await res.json();
-      const foto = await buscarFotoPerfil(dados.imageProfileId);
+  try {
+    const resposta = await fetch("http://localhost:8080/integracao/legenda", {
+      method: "POST",
+      body: formData,
+    });
 
-      setAutorPost({
-        nome: dados.name,
-        email: dados.email,
-        telefone: dados.phoneNumber,
-        imagem: foto
-      });
-    } catch (err) {
-      console.error("Erro ao carregar dados do autor:", err);
-    }
+    if (!resposta.ok) throw new Error("Erro ao gerar legenda.");
+
+    // Pega como JSON
+    const dados = await resposta.json();
+    console.log("Dados recebidos do backend:", dados); // para debug
+    setDescricao(dados.legenda_pt || "");
+  } catch (err) {
+    console.error(err);
+    setErro("Erro ao gerar legenda");
+  } finally {
+    setLoadingLegenda(false);
   }
+};
 
-  // ✅ Buscar todas as imagens do post
-  async function carregarImagens(postId) {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/images/${postId}/post/all`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
 
-      if (res.ok) {
-        const lista = await res.json();
-        const urls = [];
+  // Função para enviar o post
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        for (const img of lista) {
-          try {
-            const f = await fetch(
-              `http://localhost:8080/api/images/get/${img.id}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (!f.ok) continue;
-
-            const blob = await f.blob();
-            urls.push(URL.createObjectURL(blob));
-          } catch {}
-        }
-
-        if (urls.length > 0) {
-          setImagens(urls);
-          return;
-        }
-      }
-    } catch {}
-
-    // fallback: usar thumb
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/images/${postId}/post/thumb`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (res.ok) {
-        const blob = await res.blob();
-        setImagens([URL.createObjectURL(blob)]);
-        return;
-      }
-    } catch {}
-
-    setImagens(["/placeholder.jpg"]);
-  }
-
-  // ✅ Carregar postagem + imagens + autor + comentários
-  useEffect(() => {
-    async function carregar() {
-      try {
-        const res = await fetch(
-          `http://localhost:8080/api/posts/getOne/${id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (!res.ok) throw new Error("Postagem não encontrada");
-
-        const data = await res.json();
-        setPost(data);
-        setLikes(data.favedTimes);
-        carregarAutor(data.userId);
-        carregarImagens(data.id);
-        carregarComentarios(data.userId);
-      } catch (err) {
-        console.error(err);
-      }
+    if (!descricao || !preco || !rua || !numero || !bairro || !imagem) {
+      setErro("Preencha todos os campos e selecione uma imagem.");
+      return;
     }
 
-    carregar();
-  }, [id]);
+    setErro("");
+    const formData = new FormData();
+    formData.append("description", descricao);
+    formData.append("price", preco);
+    formData.append("street", rua);
+    formData.append("number", numero);
+    formData.append("avenue", bairro);
+    formData.append("images", imagem); // nome do parâmetro esperado pelo backend
 
-  // ✅ Carregar comentários
-  async function carregarComentarios(userId) {
     try {
-      const res = await fetch(
-        `http://localhost:8080/api/comments/getComments/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!res.ok) return;
-
-      const lista = await res.json();
-
-      const completos = await Promise.all(
-        lista.map(async (c) => {
-          let autor = { name: "Usuário" };
-          try {
-            const r = await fetch(
-              `http://localhost:8080/api/user/getAccount/${c.authorId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (r.ok) autor = await r.json();
-          } catch {}
-
-          return {
-            ...c,
-            autorNome: autor.name,
-            autorImagem: await buscarFotoPerfil(autor.imageProfileId)
-          };
-        })
-      );
-
-      setComentarios(completos);
-    } catch (err) {
-      console.error("Erro ao carregar comentários:", err);
-    }
-  }
-
-  // ✅ Enviar comentário
-  async function enviarComentario() {
-    if (!novoComentario.trim()) return;
-
-    const res = await fetch(
-      `http://localhost:8080/api/comments/comment/${post.userId}`,
-      {
+      const resposta = await fetch("http://localhost:8080/api/posts/create", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ content: novoComentario })
+        body: formData,
+      });
+
+      if (resposta.ok) {
+        alert("Publicação criada com sucesso!");
+        navigate("/meus-anuncios");
+      } else {
+        setErro("Erro ao criar a publicação.");
       }
-    );
-
-    if (res.ok) {
-      setNovoComentario("");
-      setShowComentarioBox(false);
-      carregarComentarios(post.userId);
+    } catch (err) {
+      console.error(err);
+      setErro("Erro ao conectar com o servidor.");
     }
-  }
-
-  // ✅ Like
-  async function darLike() {
-    const res = await fetch(
-      `http://localhost:8080/api/posts/fav/${post.id}`,
-      { method: "POST", headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (res.ok) {
-      setLikes(l => l + 1);
-      setJaCurtiu(true);
-    }
-  }
-
-  async function tirarLike() {
-    const res = await fetch(
-      `http://localhost:8080/api/posts/unfav/${post.id}`,
-      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (res.ok) {
-      setLikes(l => l - 1);
-      setJaCurtiu(false);
-    }
-  }
-
-  // ✅ Slider suave — autoplay
-  useEffect(() => {
-    if (imagens.length <= 1) return;
-
-    clearInterval(intervalRef.current);
-
-    intervalRef.current = setInterval(() => {
-      setIndice(i => (i + 1) % imagens.length);
-    }, 3500);
-
-    return () => clearInterval(intervalRef.current);
-  }, [imagens]);
-
-  function next() {
-    setIndice(i => (i + 1) % imagens.length);
-  }
-
-  function prev() {
-    setIndice(i => (i - 1 + imagens.length) % imagens.length);
-  }
-
-  if (!post) {
-    return (
-      <DashboardLayout>
-        <p className="text-center mt-6">Carregando postagem...</p>
-      </DashboardLayout>
-    );
-  }
+  };
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto p-4 space-y-8">
-
-        {/* ✅ Slider */}
-        <div className="relative w-full h-[420px] rounded-xl overflow-hidden shadow-lg bg-black">
-        <img
-          src={imagens[indice]}
-          className="w-full h-full object-cover object-center transition-all duration-700 ease-in-out"
-        />
-
-
-          {imagens.length > 1 && (
-            <>
-              <button
-                onClick={prev}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white px-3 py-1 rounded-full"
-              >
-                ❮
-              </button>
-
-              <button
-                onClick={next}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white px-3 py-1 rounded-full"
-              >
-                ❯
-              </button>
-
-              <div className="absolute bottom-3 w-full flex justify-center gap-2">
-                {imagens.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-2 h-2 rounded-full ${
-                      i === indice ? "bg-white" : "bg-white/40"
-                    }`}
-                  ></div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* ✅ Título e data */}
-        <h2 className="text-3xl font-bold text-gray-900">{post.description}</h2>
-        <p className="text-sm text-gray-500">
-          Publicado em {new Date(post.createdAt).toLocaleString("pt-BR")}
-        </p>
-
-        {/* ✅ Likes */}
-        <button
-          onClick={jaCurtiu ? tirarLike : darLike}
-          className={`px-5 py-2 rounded-full flex items-center gap-2 shadow transition-colors ${
-            jaCurtiu ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
-          }`}
+      <div className="flex justify-center mt-10">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4"
         >
-          👍 {likes}
-        </button>
+          <h2 className="text-xl font-bold text-center text-gray-800 mb-4">
+            Nova Publicação
+          </h2>
 
-        {/* ✅ Autor */}
-        {autorPost && (
-          <div className="border rounded-xl shadow p-5 flex gap-4 items-center bg-white">
-            <img
-              src={autorPost.imagem}
-              className="w-16 h-16 rounded-full object-cover border"
-            />
+          {erro && <p className="text-red-500 text-sm">{erro}</p>}
 
-            <div className="flex flex-col">
-              <p className="text-xl font-semibold">{autorPost.nome}</p>
-              <p className="text-gray-600">{autorPost.email}</p>
-              <p className="text-gray-500 text-sm">
-                📞 {autorPost.telefone || "Telefone não informado"}
-              </p>
-            </div>
-          </div>
-        )}
+          <input
+            type="text"
+            placeholder="Descrição"
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
 
-        {/* ✅ Informações do imóvel */}
-        <div className="bg-white border rounded-xl p-5 shadow space-y-2">
-          <p><strong>Preço:</strong> R$ {post.price}</p>
-          <p><strong>Rua:</strong> {post.street}</p>
-          <p><strong>Bairro:</strong> {post.avenue}</p>
-        </div>
+          <input
+            type="number"
+            placeholder="Preço"
+            value={preco}
+            onChange={(e) => setPreco(e.target.value)}
+            className="w-full p-2 border rounded"
+            min="0"
+          />
 
-        {/* ✅ Comentários */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-bold">Comentários ({comentarios.length})</h3>
+          <input
+            type="text"
+            placeholder="Rua"
+            value={rua}
+            onChange={(e) => setRua(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
 
-            <button
-              onClick={() => setShowComentarioBox(v => !v)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-full shadow"
-            >
-              {showComentarioBox ? "Cancelar" : "+ Adicionar comentário"}
-            </button>
-          </div>
+          <input
+            type="text"
+            placeholder="Número"
+            value={numero}
+            onChange={(e) => setNumero(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
 
-          {showComentarioBox && (
-            <div className="bg-white p-4 border rounded-xl shadow">
-              <textarea
-                className="w-full border p-3 rounded-xl"
-                rows={3}
-                placeholder="Escreva seu comentário..."
-                value={novoComentario}
-                onChange={(e) => setNovoComentario(e.target.value)}
-              ></textarea>
+          <input
+            type="text"
+            placeholder="Bairro"
+            value={bairro}
+            onChange={(e) => setBairro(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
 
-              <button
-                onClick={enviarComentario}
-                className="mt-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow"
-              >
-                Enviar
-              </button>
-            </div>
-          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImagem(e.target.files[0])}
+            className="w-full"
+          />
 
-          {comentarios.map((c) => (
-            <div
-              key={c.id}
-              className="bg-white border p-4 rounded-xl shadow-sm flex gap-3"
-            >
-              <img
-                src={c.autorImagem}
-                className="w-10 h-10 rounded-full object-cover"
-              />
+          <button
+            type="button"
+            onClick={gerarLegenda}
+            className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
+            disabled={loadingLegenda}
+          >
+            {loadingLegenda ? "Gerando legenda..." : "Gerar Legenda"}
+          </button>
 
-              <div className="flex-1">
-                <p className="font-semibold">{c.autorNome}</p>
-                <p>{c.content}</p>
-
-                <p className="text-xs text-gray-500 mt-1">
-                  {new Date(c.createdAt).toLocaleString("pt-BR")}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+          >
+            Publicar
+          </button>
+        </form>
       </div>
     </DashboardLayout>
   );
 }
 
-export default PostagemDetalhada;
+export default PublicarPostagem;

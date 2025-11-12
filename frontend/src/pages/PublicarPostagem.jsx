@@ -8,8 +8,9 @@ function PublicarPostagem() {
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
+  const [tipo, setTipo] = useState(""); // ✅ tipo: venda/aluguel
 
-  const [imagens, setImagens] = useState([]); // ✅ AGORA SÃO VÁRIAS IMAGENS
+  const [imagens, setImagens] = useState([]);
   const [preview, setPreview] = useState([]);
 
   const [erro, setErro] = useState("");
@@ -18,7 +19,7 @@ function PublicarPostagem() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  // ✅ Gerar legenda (IA) — usa só a primeira imagem
+  // ✅ IA: gerar legenda automática com a primeira imagem
   const gerarLegenda = async () => {
     if (imagens.length === 0) {
       setErro("Selecione pelo menos 1 imagem para gerar a legenda.");
@@ -29,7 +30,7 @@ function PublicarPostagem() {
     setErro("");
 
     const formData = new FormData();
-    formData.append("file", imagens[0]); // ✅ usa apenas a primeira imagem
+    formData.append("file", imagens[0]);
 
     try {
       const resposta = await fetch("http://localhost:8080/integracao/legenda", {
@@ -40,7 +41,6 @@ function PublicarPostagem() {
       if (!resposta.ok) throw new Error("Erro ao gerar legenda.");
 
       const dados = await resposta.json();
-
       setDescricao(dados.traduzido || dados.caption || "");
     } catch (err) {
       console.error(err);
@@ -50,22 +50,20 @@ function PublicarPostagem() {
     }
   };
 
-  // ✅ Envio de múltiplas imagens
+  // ✅ manipular múltiplas imagens
   const handleImagemChange = (e) => {
     const files = Array.from(e.target.files);
-
     setImagens(files);
-
     const previews = files.map((file) => URL.createObjectURL(file));
     setPreview(previews);
   };
 
-  // ✅ Criar postagem
+  // ✅ enviar postagem
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!descricao || !preco || !rua || !numero || !bairro || imagens.length === 0) {
-      setErro("Preencha todos os campos e selecione pelo menos 1 imagem.");
+    if (!descricao || !preco || !rua || !numero || !bairro || !tipo || imagens.length === 0) {
+      setErro("Preencha todos os campos, selecione o tipo e pelo menos 1 imagem.");
       return;
     }
 
@@ -77,15 +75,15 @@ function PublicarPostagem() {
     formData.append("street", rua);
     formData.append("number", numero);
     formData.append("avenue", bairro);
+    formData.append("type", tipo);
 
-    imagens.forEach((img) => formData.append("images", img)); // ✅ várias imagens
+    // ✅ Corrigido: backend espera 'images'
+    imagens.forEach((img) => formData.append("images", img));
 
     try {
       const resposta = await fetch("http://localhost:8080/api/posts/create", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
@@ -93,7 +91,9 @@ function PublicarPostagem() {
         alert("Publicação criada com sucesso!");
         navigate("/meus-anuncios");
       } else {
-        setErro("Erro ao criar a publicação.");
+        const txt = await resposta.text();
+        console.error("Erro backend:", txt);
+        setErro("Erro ao criar a publicação. Verifique os campos e tente novamente.");
       }
     } catch (err) {
       console.error(err);
@@ -155,7 +155,37 @@ function PublicarPostagem() {
             className="w-full p-2 border rounded"
           />
 
-          {/* ✅ INPUT DE MÚLTIPLAS IMAGENS */}
+          {/* ✅ Checkboxes estilizados */}
+          <div>
+            <label className="block font-semibold mb-2 text-gray-800">Tipo de anúncio</label>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setTipo("venda")}
+                className={`flex-1 border rounded px-4 py-2 text-center transition ${
+                  tipo === "venda"
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                }`}
+              >
+                Venda
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTipo("aluguel")}
+                className={`flex-1 border rounded px-4 py-2 text-center transition ${
+                  tipo === "aluguel"
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                }`}
+              >
+                Aluguel
+              </button>
+            </div>
+          </div>
+
+          {/* ✅ Input múltiplas imagens */}
           <div>
             <label className="block font-semibold mb-1">Imagens do imóvel</label>
             <input
@@ -166,7 +196,6 @@ function PublicarPostagem() {
               className="w-full"
             />
 
-            {/* ✅ Preview das imagens */}
             {preview.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mt-3">
                 {preview.map((src, i) => (
