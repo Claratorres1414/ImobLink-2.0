@@ -12,7 +12,7 @@ public class LimitedViewsHeap {
     private final int maxSize;
 
     public LimitedViewsHeap() {
-        this.heap = new PriorityQueue<>(Comparator.comparingInt(PostResponse::getViews).reversed());
+        this.heap = new PriorityQueue<>(Comparator.comparingInt(PostResponse::getViews));
         this.maxSize = 10;
     }
 
