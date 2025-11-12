@@ -2,7 +2,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 
-def pagina_graficos(posts: pd.DataFrame):
+def pagina_graficos(posts: pd.DataFrame, api_url: str, token: str):
     st.subheader("📊 Gráficos detalhados")
 
     if all(col in posts.columns for col in ["street", "avenue", "number"]):
@@ -39,3 +39,43 @@ def pagina_graficos(posts: pd.DataFrame):
         fig_user_price = px.bar(df_user_price, x="createdBy", y="preco_medio", color="createdBy", text="preco_medio", title="Preço médio por usuário")
         fig_user_price.update_traces(texttemplate="%{text:.2f}", textposition="outside")
         st.plotly_chart(fig_user_price, use_container_width=True)
+    # ==========================
+    # 🔥 Top Posts (mais visualizados)
+    # ==========================
+    import re
+    import requests
+
+    st.divider()
+    st.subheader("🔥 Top Posts (mais visualizados)")
+
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        r = requests.get(f"{api_url}/posts/topPosts", headers=headers, timeout=8)
+        if r.status_code == 200:
+            data = r.json()
+            pattern = r"Post:\s*(\d+)\s*\|\s*Views:\s*(\d+)\s*\|\s*Author:\s*(\d+)"
+            parsed = [re.match(pattern, item) for item in data]
+            parsed = [p.groups() for p in parsed if p]
+
+            df_top = pd.DataFrame(parsed, columns=["post_id", "views", "author"])
+            df_top["views"] = df_top["views"].astype(int)
+            df_top["post_id"] = df_top["post_id"].astype(int)
+            df_top["author"] = df_top["author"].astype(int)
+
+            st.dataframe(df_top, use_container_width=True)
+
+            fig = px.bar(
+                df_top,
+                x="post_id",
+                y="views",
+                color="author",
+                title="Top Posts por Visualizações",
+                labels={"post_id": "ID do Post", "views": "Visualizações", "author": "Autor"},
+                text="views"
+            )
+            fig.update_traces(textposition="outside")
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Não foi possível carregar os Top Posts.")
+    except Exception as e:
+        st.error(f"Erro ao buscar top posts: {e}")
