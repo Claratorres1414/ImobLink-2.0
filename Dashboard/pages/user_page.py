@@ -11,10 +11,11 @@ def pagina_usuario(api_url: str, usuarios: pd.DataFrame, posts: pd.DataFrame, to
     headers = {"Authorization": f"Bearer {token}"}
 
     # Seleção do usuário
-    if "email" in usuarios.columns:
-        options = usuarios["email"].astype(str).tolist()
-        user_identifier = st.selectbox("Selecione usuário (por e-mail):", options)
-        user_row = usuarios[usuarios["email"].astype(str) == user_identifier]
+    if {"id", "email"}.issubset(usuarios.columns):
+        usuarios["label"] = usuarios.apply(lambda u: f"{u['email']}  (ID: {u['id']})", axis=1)
+        user_label = st.selectbox("Selecione usuário:", usuarios["label"].tolist())
+        user_row = usuarios[usuarios["label"] == user_label]
+
     else:
         options = usuarios["id"].astype(str).tolist()
         choice = st.selectbox("Selecione usuário (por id):", options)
@@ -26,7 +27,13 @@ def pagina_usuario(api_url: str, usuarios: pd.DataFrame, posts: pd.DataFrame, to
 
     user = user_row.iloc[0].to_dict()
     user_id = int(user.get("id")) if "id" in user else None
-    st.markdown(f"### {user.get('name') or user.get('email')}")
+    st.markdown(
+    f"### {user.get('name') or user.get('email')} "
+    f"<span style='color:gray; font-size:0.9em'>(ID: {user.get('id')})</span>",
+    unsafe_allow_html=True
+)
+
+
 
     # ==========================
     # POSTS DO USUÁRIO
@@ -40,14 +47,10 @@ def pagina_usuario(api_url: str, usuarios: pd.DataFrame, posts: pd.DataFrame, to
     # FAVORITOS
     # ==========================
     try:
-        # 1️⃣ Tenta buscar pelo endpoint que aceita userId (para admins)
-        r = requests.get(f"{api_url}/posts/favs/{user_id}", headers=headers, timeout=8)
-        if r.status_code != 200:
-            # 2️⃣ Se não existir, usa o /my-favs normal (para usuários comuns)
-            r = requests.get(f"{api_url}/posts/my-favs", headers=headers, timeout=8)
-
+        r = requests.get(f"{api_url}/admin/info/posts/favedPosts/{user_id}", headers=headers, timeout=8)
         favs_df = pd.DataFrame(r.json()) if r.status_code == 200 else pd.DataFrame()
-    except Exception:
+    except Exception as e:
+        st.error(f"Erro ao carregar favoritos: {e}")
         favs_df = pd.DataFrame()
 
     col2.metric("Favoritos", len(favs_df))
