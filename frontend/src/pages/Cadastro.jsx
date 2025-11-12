@@ -52,36 +52,37 @@ function Cadastro() {
   };
 
   const extrairInfoRG = async () => {
-    if (!imagemFrente || !imagemVerso) {
-      setErro("Envie as imagens da frente e verso do RG.");
-      return;
-    }
+  if (!imagemFrente || !imagemVerso) {
+    setErro("Envie as imagens da frente e verso do RG.");
+    return;
+  }
 
-    const formData = new FormData();
-    formData.append("frente", imagemFrente);
-    formData.append("verso", imagemVerso);
+  const formData = new FormData();
+  formData.append("frente", imagemFrente);
+  formData.append("verso", imagemVerso);
 
-    try {
-      console.log("Enviando para IA...");
-      const resposta = await fetch("http://localhost:8000/processar-documento", {
-        method: "POST",
-        body: formData,
-      });
+  try {
+    console.log("Enviando para o backend Spring Boot...");
+    const resposta = await fetch("http://localhost:8080/integracao/ocr", {
+      method: "POST",
+      body: formData,
+    });
 
-      if (!resposta.ok) throw new Error("Erro ao processar o documento.");
+    if (!resposta.ok) throw new Error("Erro ao processar o documento.");
 
-      const dados = await resposta.json();
+    const dados = await resposta.json(); // JSON esperado do backend
+    console.log("Resposta do backend:", dados);
 
-      setNome(dados.nome || "");
-      setCpf(dados.cpf || "");
-      // Se quiser usar a data de nascimento:
-      // console.log("Data de nascimento:", dados.data_nascimento);
+    setNome(dados.nome || "");
+    setCpf(dados.cpf || "");
 
-    } catch (err) {
-      console.error("Erro ao se comunicar com a IA:", err);
-      setErro("Erro ao se comunicar com a IA.");
-    }
-  };
+  } catch (err) {
+    console.error("Erro ao se comunicar com o backend:", err);
+    setErro("Erro ao se comunicar com o backend.");
+  }
+};
+
+
 
   return (
     <div
