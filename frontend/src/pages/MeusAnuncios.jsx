@@ -9,11 +9,13 @@ function MeusAnuncios() {
   const slideIntervals = useRef({});
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [likedMap, setLikedMap] = useState({});
+  const [commentsCount, setCommentsCount] = useState({});
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
-  // ✅ Pega todas as imagens do post igual na Home
+  // 🔹 Buscar todas as imagens do post
   async function fetchAllImagesForPost(postId) {
     try {
       const res = await fetch(
@@ -22,7 +24,6 @@ function MeusAnuncios() {
       );
 
       if (!res.ok) return null;
-
       const images = await res.json();
       const urls = [];
 
@@ -32,7 +33,6 @@ function MeusAnuncios() {
             `http://localhost:8080/api/images/get/${img.id}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-
           if (!fetchImg.ok) continue;
 
           const blob = await fetchImg.blob();
@@ -46,6 +46,7 @@ function MeusAnuncios() {
     }
   }
 
+  // 🔹 Carregar posts do usuário
   useEffect(() => {
     const controller = new AbortController();
 
@@ -61,30 +62,32 @@ function MeusAnuncios() {
         const data = await res.json();
         setPosts(data);
 
+        // Carrega imagens, likes e comentários
         for (const post of data) {
           const urls = (await fetchAllImagesForPost(post.id)) || [];
+          setImageMap((prev) => ({ ...prev, [post.id]: urls.length ? urls : ["/placeholder.jpg"] }));
+          setCurrentIndex((prev) => ({ ...prev, [post.id]: 0 }));
 
-          if (urls.length > 0) {
-            setImageMap((prev) => ({ ...prev, [post.id]: urls }));
-            setCurrentIndex((prev) => ({ ...prev, [post.id]: 0 }));
-          } else {
-            // fallback para thumb
-            try {
-              const thumb = await fetch(
-                `http://localhost:8080/api/images/${post.id}/post/thumb`,
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
+          // Likes
+          setLikedMap((prev) => ({
+            ...prev,
+            [post.id]: { count: post.favedTimes ?? 0, liked: false },
+          }));
 
-              if (thumb.ok) {
-                const blob = await thumb.blob();
-                const url = URL.createObjectURL(blob);
-                setImageMap((prev) => ({ ...prev, [post.id]: [url] }));
-                setCurrentIndex((prev) => ({ ...prev, [post.id]: 0 }));
-              }
-            } catch {
-              setImageMap((prev) => ({ ...prev, [post.id]: ["/placeholder.jpg"] }));
-              setCurrentIndex((prev) => ({ ...prev, [post.id]: 0 }));
+          // Comentários
+          try {
+            const cRes = await fetch(
+              `http://localhost:8080/api/comments/getComments/${post.userId}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (cRes.ok) {
+              const arr = await cRes.json();
+              setCommentsCount((prev) => ({ ...prev, [post.id]: arr.length }));
+            } else {
+              setCommentsCount((prev) => ({ ...prev, [post.id]: 0 }));
             }
+          } catch {
+            setCommentsCount((prev) => ({ ...prev, [post.id]: 0 }));
           }
         }
       } catch (err) {
@@ -95,18 +98,16 @@ function MeusAnuncios() {
     }
 
     carregar();
-
     return () => controller.abort();
   }, []);
 
-  // ✅ Autoplay com slide suave
+  // 🔹 Autoplay suave
   useEffect(() => {
-    Object.values(slideIntervals.current).forEach((i) => clearInterval(i));
+    Object.values(slideIntervals.current).forEach(clearInterval);
     slideIntervals.current = {};
 
     Object.entries(imageMap).forEach(([postId, imgs]) => {
       if (imgs.length <= 1) return;
-
       slideIntervals.current[postId] = setInterval(() => {
         setCurrentIndex((prev) => ({
           ...prev,
@@ -116,46 +117,43 @@ function MeusAnuncios() {
     });
 
     return () => {
-      Object.values(slideIntervals.current).forEach((i) => clearInterval(i));
-      slideIntervals.current = {};
+      Object.values(slideIntervals.current).forEach(clearInterval);
     };
   }, [imageMap]);
 
-  // ✅ Troca manual (setas)
-  function next(postId) {
+  // 🔹 Navegação manual
+  const next = (postId) => {
     const imgs = imageMap[postId];
     if (!imgs) return;
-
     setCurrentIndex((prev) => ({
       ...prev,
       [postId]: (prev[postId] + 1) % imgs.length,
     }));
-  }
+  };
 
-  function prev(postId) {
+  const prev = (postId) => {
     const imgs = imageMap[postId];
     if (!imgs) return;
-
     setCurrentIndex((prev) => ({
       ...prev,
       [postId]: (prev[postId] - 1 + imgs.length) % imgs.length,
     }));
-  }
+  };
 
+  // 🔹 Excluir postagem
   async function handleExcluir(id) {
     if (!window.confirm("Excluir este anúncio?")) return;
-
     const res = await fetch(`http://localhost:8080/api/posts/delete/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
-
     if (res.ok) {
       alert("Post excluído!");
       setPosts((p) => p.filter((x) => x.id !== id));
     }
   }
 
+  // 🔹 Carregando
   if (carregando) {
     return (
       <DashboardLayout>
@@ -169,7 +167,6 @@ function MeusAnuncios() {
       <div className="p-6">
         <div className="flex justify-between mb-6">
           <h2 className="text-2xl font-bold">Meus Anúncios</h2>
-
           <button
             onClick={() => navigate("/publicar")}
             className="bg-blue-600 text-white px-4 py-2 rounded"
@@ -185,20 +182,27 @@ function MeusAnuncios() {
             {posts.map((post) => {
               const imgs = imageMap[post.id] || ["/placeholder.jpg"];
               const idx = currentIndex[post.id] ?? 0;
+              const likeInfo = likedMap[post.id] || { count: 0, liked: false };
+              const commentQty = commentsCount[post.id] ?? 0;
 
               return (
                 <div
                   key={post.id}
                   className="bg-white rounded-lg shadow overflow-hidden relative"
                 >
-                  {/* ✅ SLIDER COM ANIMAÇÃO SUAVE */}
+                  {/* 🖼️ Slider suave */}
                   <div className="relative w-full h-48 overflow-hidden">
-                    <img
-                      src={imgs[idx]}
-                      className="w-full h-full object-cover transition-all duration-700 ease-in-out"
-                    />
+                    {imgs.map((src, i) => (
+                      <img
+                        key={i}
+                        src={src}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
+                          i === idx ? "opacity-100" : "opacity-0"
+                        }`}
+                      />
+                    ))}
 
-                    {/* ✅ Setas laterais */}
+                    {/* Setas */}
                     {imgs.length > 1 && (
                       <>
                         <button
@@ -207,7 +211,6 @@ function MeusAnuncios() {
                         >
                           ❮
                         </button>
-
                         <button
                           onClick={() => next(post.id)}
                           className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white px-2 py-1 rounded-full hover:bg-black/50"
@@ -217,7 +220,7 @@ function MeusAnuncios() {
                       </>
                     )}
 
-                    {/* ✅ Bolinhas indicadoras */}
+                    {/* Bolinhas */}
                     {imgs.length > 1 && (
                       <div className="absolute bottom-2 w-full flex justify-center gap-2">
                         {imgs.map((_, i) => (
@@ -230,14 +233,40 @@ function MeusAnuncios() {
                         ))}
                       </div>
                     )}
+
+                    {/* ⭐ Favoritado */}
+                    {likeInfo.liked && (
+                      <div className="absolute top-2 right-2 text-yellow-400 text-xl drop-shadow">
+                        ⭐
+                      </div>
+                    )}
+
+                    {/* 🏷️ Tipo da postagem */}
+                    {post.type && (
+                      <div
+                        className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xx font-semibold ${
+                          post.type.toLowerCase() === "aluguel"
+                            ? "bg-green-500 text-white"
+                            : "bg-blue-500 text-white"
+                        }`}
+                      >
+                        {post.type}
+                      </div>
+                    )}
                   </div>
 
-                  {/* ✅ Conteúdo */}
+                  {/* Conteúdo */}
                   <div className="p-4">
                     <h3 className="font-bold text-lg">{post.description}</h3>
                     <p className="text-gray-600">
                       R$ {post.price} – {post.street}, {post.number}
                     </p>
+
+                    {/* Indicadores */}
+                    <div className="flex justify-between mt-2 text-sm text-gray-600">
+                      <span>👍 {likeInfo.count}</span>
+                      <span>💬 {commentQty}</span>
+                    </div>
 
                     <div className="mt-3 flex gap-3">
                       <button
@@ -246,7 +275,6 @@ function MeusAnuncios() {
                       >
                         Editar
                       </button>
-
                       <button
                         onClick={() => handleExcluir(post.id)}
                         className="bg-red-500 text-white px-3 py-1 rounded text-sm"

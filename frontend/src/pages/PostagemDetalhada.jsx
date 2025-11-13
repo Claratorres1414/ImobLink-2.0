@@ -1,173 +1,419 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 
-function PublicarPostagem() {
-  const [descricao, setDescricao] = useState("");
-  const [preco, setPreco] = useState("");
-  const [rua, setRua] = useState("");
-  const [numero, setNumero] = useState("");
-  const [bairro, setBairro] = useState("");
-  const [imagem, setImagem] = useState(null);
-  const [erro, setErro] = useState("");
-  const [loadingLegenda, setLoadingLegenda] = useState(false);
-
-  const navigate = useNavigate();
+function PostagemDetalhada() {
+  const { id } = useParams();
   const token = localStorage.getItem("token");
 
-  // Função para gerar legenda automática
-  const gerarLegenda = async () => {
-  if (!imagem) {
-    setErro("Selecione uma imagem para gerar a legenda.");
-    return;
+  const [post, setPost] = useState(null);
+  const [imagens, setImagens] = useState([]);
+  const [indice, setIndice] = useState(0);
+  const [favoritado, setFavoritado] = useState(false);
+
+  const [comentarios, setComentarios] = useState([]);
+  const [novoComentario, setNovoComentario] = useState("");
+  const [showComentarioBox, setShowComentarioBox] = useState(false);
+  const [autorPost, setAutorPost] = useState(null);
+  const intervalRef = useRef(null);
+
+  // 🔹 Buscar foto de perfil
+  async function buscarFotoPerfil(imageId) {
+    if (!imageId) return "/imagemperfil.jpg";
+
+    const tentativas = [
+      `http://localhost:8080/api/images/get/${imageId}`,
+      `http://localhost:8080/api/images/${imageId}/profile`,
+      `http://localhost:8080/api/images/profile/${imageId}`,
+    ];
+
+    for (let url of tentativas) {
+      try {
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          return URL.createObjectURL(blob);
+        }
+      } catch {}
+    }
+    return "/imagemperfil.jpg";
   }
 
-  setLoadingLegenda(true);
-  setErro("");
+  // 🔹 Carregar autor
+  async function carregarAutor(userId) {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/user/getAccount/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-  const formData = new FormData();
-  formData.append("file", imagem);
+      if (!res.ok) return;
 
-  try {
-    const resposta = await fetch("http://localhost:8080/integracao/legenda", {
-      method: "POST",
-      body: formData,
-    });
+      const dados = await res.json();
+      const foto = await buscarFotoPerfil(dados.imageProfileId);
 
-    if (!resposta.ok) throw new Error("Erro ao gerar legenda.");
-
-    // Pega como JSON
-    const dados = await resposta.json();
-    console.log("Dados recebidos do backend:", dados); // para debug
-    setDescricao(dados.legenda_pt || "");
-  } catch (err) {
-    console.error(err);
-    setErro("Erro ao gerar legenda");
-  } finally {
-    setLoadingLegenda(false);
+      setAutorPost({
+        nome: dados.name,
+        email: dados.email,
+        telefone: dados.phoneNumber,
+        imagem: foto,
+      });
+    } catch (err) {
+      console.error("Erro ao carregar dados do autor:", err);
+    }
   }
-};
 
+  // 🔹 Buscar imagens
+  async function carregarImagens(postId) {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/images/${postId}/post/all`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-  // Função para enviar o post
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+      if (res.ok) {
+        const lista = await res.json();
+        const urls = [];
 
-    if (!descricao || !preco || !rua || !numero || !bairro || !imagem) {
-      setErro("Preencha todos os campos e selecione uma imagem.");
-      return;
+        for (const img of lista) {
+          try {
+            const f = await fetch(
+              `http://localhost:8080/api/images/get/${img.id}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (!f.ok) continue;
+            const blob = await f.blob();
+            urls.push(URL.createObjectURL(blob));
+          } catch {}
+        }
+
+        if (urls.length > 0) {
+          setImagens(urls);
+          return;
+        }
+      }
+    } catch {}
+
+    // fallback: thumb
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/images/${postId}/post/thumb`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const blob = await res.blob();
+        setImagens([URL.createObjectURL(blob)]);
+        return;
+      }
+    } catch {}
+
+    setImagens(["/placeholder.jpg"]);
+  }
+
+  // 🔹 Carregar postagem + autor + imagens + favoritos
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const res = await fetch(
+          `http://localhost:8080/api/posts/getOne/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (!res.ok) throw new Error("Postagem não encontrada");
+
+        const data = await res.json();
+        setPost(data);
+        carregarAutor(data.userId);
+        carregarImagens(data.id);
+        carregarComentarios(data.userId);
+
+        // Verificar se está favoritado
+        const favRes = await fetch(
+          "http://localhost:8080/api/posts/my-favs",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (favRes.ok) {
+          const favs = await favRes.json();
+          const isFav = favs.some((f) => f.id === data.id);
+          setFavoritado(isFav);
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    setErro("");
-    const formData = new FormData();
-    formData.append("description", descricao);
-    formData.append("price", preco);
-    formData.append("street", rua);
-    formData.append("number", numero);
-    formData.append("avenue", bairro);
-    formData.append("images", imagem); // nome do parâmetro esperado pelo backend
+    carregar();
+  }, [id]);
 
+  // 🔹 Carregar comentários
+  async function carregarComentarios(userId) {
     try {
-      const resposta = await fetch("http://localhost:8080/api/posts/create", {
+      const res = await fetch(
+        `http://localhost:8080/api/comments/getComments/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!res.ok) return;
+
+      const lista = await res.json();
+      const completos = await Promise.all(
+        lista.map(async (c) => {
+          let autor = { name: "Usuário" };
+          try {
+            const r = await fetch(
+              `http://localhost:8080/api/user/getAccount/${c.authorId}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (r.ok) autor = await r.json();
+          } catch {}
+
+          return {
+            ...c,
+            autorNome: autor.name,
+            autorImagem: await buscarFotoPerfil(autor.imageProfileId),
+          };
+        })
+      );
+
+      setComentarios(completos);
+    } catch (err) {
+      console.error("Erro ao carregar comentários:", err);
+    }
+  }
+
+  // 🔹 Enviar comentário
+  async function enviarComentario() {
+    if (!novoComentario.trim()) return;
+    const res = await fetch(
+      `http://localhost:8080/api/comments/comment/${post.userId}`,
+      {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: formData,
+        body: JSON.stringify({ content: novoComentario }),
+      }
+    );
+
+    if (res.ok) {
+      setNovoComentario("");
+      setShowComentarioBox(false);
+      carregarComentarios(post.userId);
+    }
+  }
+
+  // ⭐ Favoritar / desfavoritar
+  async function toggleFavorito() {
+    const endpoint = favoritado
+      ? `http://localhost:8080/api/posts/unfav/${post.id}`
+      : `http://localhost:8080/api/posts/fav/${post.id}`;
+    const method = favoritado ? "DELETE" : "POST";
+
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (resposta.ok) {
-        alert("Publicação criada com sucesso!");
-        navigate("/meus-anuncios");
-      } else {
-        setErro("Erro ao criar a publicação.");
-      }
-    } catch (err) {
-      console.error(err);
-      setErro("Erro ao conectar com o servidor.");
+      if (res.ok) setFavoritado((prev) => !prev);
+    } catch {
+      console.error("Erro ao favoritar/desfavoritar");
     }
-  };
+  }
+
+  // 🔹 Slider automático
+  useEffect(() => {
+    if (imagens.length <= 1) return;
+    clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setIndice((i) => (i + 1) % imagens.length);
+    }, 3500);
+    return () => clearInterval(intervalRef.current);
+  }, [imagens]);
+
+  function next() {
+    setIndice((i) => (i + 1) % imagens.length);
+  }
+
+  function prev() {
+    setIndice((i) => (i - 1 + imagens.length) % imagens.length);
+  }
+
+  if (!post) {
+    return (
+      <DashboardLayout>
+        <p className="text-center mt-6">Carregando postagem...</p>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="flex justify-center mt-10">
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4"
+      <div className="max-w-3xl mx-auto p-4 space-y-8">
+
+        {/* 🖼️ Slider */}
+        <div className="relative w-full h-[420px] rounded-xl overflow-hidden shadow-lg bg-black">
+          {imagens.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
+                i === indice ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          ))}
+
+          {/* 🏷️ Tipo da postagem */}
+          {post.type && (
+            <div
+              className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold ${
+                post.type.toLowerCase() === "aluguel"
+                  ? "bg-green-500 text-white"
+                  : "bg-blue-500 text-white"
+              }`}
+            >
+              {post.type}
+            </div>
+          )}
+
+          {/* Setas */}
+          {imagens.length > 1 && (
+            <>
+              <button
+                onClick={prev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white px-3 py-1 rounded-full"
+              >
+                ❮
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white px-3 py-1 rounded-full"
+              >
+                ❯
+              </button>
+
+              <div className="absolute bottom-3 w-full flex justify-center gap-2">
+                {imagens.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${
+                      i === indice ? "bg-white" : "bg-white/40"
+                    }`}
+                  ></div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* 🏠 Informações principais */}
+        <h2 className="text-3xl font-bold text-gray-900">{post.description}</h2>
+        <p className="text-sm text-gray-500">
+          Publicado em {new Date(post.createdAt).toLocaleString("pt-BR")}
+        </p>
+
+        {/* ⭐ Botão de Favoritar */}
+        <button
+          onClick={toggleFavorito}
+          className="flex items-center gap-2 mt-2 text-lg transition"
         >
-          <h2 className="text-xl font-bold text-center text-gray-800 mb-4">
-            Nova Publicação
-          </h2>
-
-          {erro && <p className="text-red-500 text-sm">{erro}</p>}
-
-          <input
-            type="text"
-            placeholder="Descrição"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="number"
-            placeholder="Preço"
-            value={preco}
-            onChange={(e) => setPreco(e.target.value)}
-            className="w-full p-2 border rounded"
-            min="0"
-          />
-
-          <input
-            type="text"
-            placeholder="Rua"
-            value={rua}
-            onChange={(e) => setRua(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="text"
-            placeholder="Número"
-            value={numero}
-            onChange={(e) => setNumero(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="text"
-            placeholder="Bairro"
-            value={bairro}
-            onChange={(e) => setBairro(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImagem(e.target.files[0])}
-            className="w-full"
-          />
-
-          <button
-            type="button"
-            onClick={gerarLegenda}
-            className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
-            disabled={loadingLegenda}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill={favoritado ? "#facc15" : "none"}
+            viewBox="0 0 24 24"
+            strokeWidth={1.8}
+            stroke="#facc15"
+            className="w-7 h-7 transition-all duration-300 ease-in-out"
           >
-            {loadingLegenda ? "Gerando legenda..." : "Gerar Legenda"}
-          </button>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M11.48 3.499a.562.562 0 011.04 0l2.07 4.195a.563.563 0 00.424.307l4.63.673a.563.563 0 01.312.96l-3.35 3.27a.563.563 0 00-.162.498l.79 4.6a.563.563 0 01-.817.593l-4.137-2.176a.563.563 0 00-.524 0l-4.137 2.176a.563.563 0 01-.817-.593l.79-4.6a.563.563 0 00-.162-.498l-3.35-3.27a.563.563 0 01.312-.96l4.63-.673a.563.563 0 00.424-.307l2.07-4.195z"
+            />
+          </svg>
+          {favoritado ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+        </button>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
-          >
-            Publicar
-          </button>
-        </form>
+        {/* 👤 Autor */}
+        {autorPost && (
+          <div className="border rounded-xl shadow p-5 flex gap-4 items-center bg-white">
+            <img
+              src={autorPost.imagem}
+              className="w-16 h-16 rounded-full object-cover border"
+            />
+            <div className="flex flex-col">
+              <p className="text-xl font-semibold">{autorPost.nome}</p>
+              <p className="text-gray-600">{autorPost.email}</p>
+              <p className="text-gray-500 text-sm">
+                📞 {autorPost.telefone || "Telefone não informado"}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 🏡 Informações do imóvel */}
+        <div className="bg-white border rounded-xl p-5 shadow space-y-2">
+          <p><strong>Preço:</strong> R$ {post.price}</p>
+          <p><strong>Rua:</strong> {post.street}</p>
+          <p><strong>Bairro:</strong> {post.avenue}</p>
+        </div>
+
+        {/* 💬 Comentários */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-2xl font-bold">Comentários ({comentarios.length})</h3>
+            <button
+              onClick={() => setShowComentarioBox(v => !v)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-full shadow"
+            >
+              {showComentarioBox ? "Cancelar" : "+ Adicionar comentário"}
+            </button>
+          </div>
+
+          {showComentarioBox && (
+            <div className="bg-white p-4 border rounded-xl shadow">
+              <textarea
+                className="w-full border p-3 rounded-xl"
+                rows={3}
+                placeholder="Escreva seu comentário..."
+                value={novoComentario}
+                onChange={(e) => setNovoComentario(e.target.value)}
+              ></textarea>
+
+              <button
+                onClick={enviarComentario}
+                className="mt-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow"
+              >
+                Enviar
+              </button>
+            </div>
+          )}
+
+          {comentarios.map((c) => (
+            <div
+              key={c.id}
+              className="bg-white border p-4 rounded-xl shadow-sm flex gap-3"
+            >
+              <img
+                src={c.autorImagem}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+              <div className="flex-1">
+                <p className="font-semibold">{c.autorNome}</p>
+                <p>{c.content}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(c.createdAt).toLocaleString("pt-BR")}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </DashboardLayout>
   );
 }
 
-export default PublicarPostagem;
+export default PostagemDetalhada;

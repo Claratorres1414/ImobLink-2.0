@@ -39,7 +39,6 @@ function Home() {
       );
 
       if (!res.ok) return null;
-
       const images = await res.json();
       const urls = [];
 
@@ -81,8 +80,6 @@ function Home() {
 
         for (const post of data || []) {
           const id = post.id;
-
-          // ✅ BUSCAR TODAS AS IMAGENS
           const urls = (await fetchAllImagesForPost(id)) || [];
 
           if (urls.length > 0) {
@@ -90,7 +87,6 @@ function Home() {
             setImageMap((prev) => ({ ...prev, [id]: urls }));
             setCarouselIndex((prev) => ({ ...prev, [id]: 0 }));
           } else {
-            // fallback thumb
             try {
               const t = await fetch(
                 `http://localhost:8080/api/images/${id}/post/thumb`,
@@ -103,20 +99,26 @@ function Home() {
                 setImageMap((prev) => ({ ...prev, [id]: [u] }));
                 setCarouselIndex((prev) => ({ ...prev, [id]: 0 }));
               } else {
-                setImageMap((prev) => ({ ...prev, [id]: ["/placeholder.jpg"] }));
+                setImageMap((prev) => ({
+                  ...prev,
+                  [id]: ["/placeholder.jpg"],
+                }));
               }
             } catch {
-              setImageMap((prev) => ({ ...prev, [id]: ["/placeholder.jpg"] }));
+              setImageMap((prev) => ({
+                ...prev,
+                [id]: ["/placeholder.jpg"],
+              }));
             }
           }
 
-          // ✅ LIKES
+          // Likes
           setLikedMap((prev) => ({
             ...prev,
             [id]: { count: post.favedTimes ?? 0, liked: false },
           }));
 
-          // ✅ COMENTÁRIOS
+          // Comentários
           try {
             const cRes = await fetch(
               `http://localhost:8080/api/comments/getComments/${post.userId}`,
@@ -133,7 +135,7 @@ function Home() {
           }
         }
 
-        // ✅ MARCAR POSTS FAVORITOS
+        // Favoritos
         if (token) {
           const favsRes = await fetch(
             "http://localhost:8080/api/posts/my-favs",
@@ -173,14 +175,12 @@ function Home() {
 
     Object.entries(imageMap).forEach(([postId, urls]) => {
       if (!urls || urls.length <= 1) return;
-
       const intId = setInterval(() => {
         setCarouselIndex((prev) => {
           const cur = prev[postId] ?? 0;
           return { ...prev, [postId]: (cur + 1) % urls.length };
         });
       }, 3000);
-
       slideIntervals.current[postId] = intId;
     });
 
@@ -189,42 +189,12 @@ function Home() {
     };
   }, [imageMap]);
 
-  // ------------------------------
-  // LIKE
-  // ------------------------------
-  async function toggleLike(postId) {
-    const atual = likedMap[postId];
-    if (!atual) return;
-
-    const endpoint = atual.liked
-      ? `http://localhost:8080/api/posts/unfav/${postId}`
-      : `http://localhost:8080/api/posts/fav/${postId}`;
-
-    const method = atual.liked ? "DELETE" : "POST";
-
-    try {
-      const res = await fetch(endpoint, {
-        method,
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        setLikedMap((prev) => ({
-          ...prev,
-          [postId]: {
-            liked: !atual.liked,
-            count: atual.count + (atual.liked ? -1 : +1),
-          },
-        }));
-      }
-    } catch {
-      console.warn("Erro ao curtir");
-    }
-  }
-
   const postsFiltrados =
     user && user.name ? posts.filter((p) => p.createdBy !== user.name) : posts;
 
+  // ------------------------------
+  // RENDERIZAÇÃO
+  // ------------------------------
   return (
     <DashboardLayout>
       <h2 className="text-2xl font-bold mb-6">Imóveis disponíveis</h2>
@@ -245,9 +215,7 @@ function Home() {
                 key={id}
                 className="relative bg-white shadow rounded overflow-hidden hover:shadow-lg transition"
               >
-                {/* ------------------------------ */}
-                {/* SLIDER SUAVE estilo Instagram */}
-                {/* ------------------------------ */}
+                {/* Slider suave */}
                 <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
                   <div className="relative w-full h-full">
                     {urls.map((u, i) => (
@@ -261,82 +229,75 @@ function Home() {
                     ))}
                   </div>
 
-                  {/* Setinha Esquerda */}
+                  {/* Setas e bolinhas */}
                   {urls.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCarouselIndex((prev) => ({
-                          ...prev,
-                          [id]: (prev[id] - 1 + urls.length) % urls.length,
-                        }));
-                      }}
-                      className="absolute top-1/2 -translate-y-1/2 left-2 bg-black/40 text-white rounded-full px-2 py-1 text-sm"
-                    >
-                      ❮
-                    </button>
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCarouselIndex((prev) => ({
+                            ...prev,
+                            [id]: (prev[id] - 1 + urls.length) % urls.length,
+                          }));
+                        }}
+                        className="absolute top-1/2 -translate-y-1/2 left-2 bg-black/40 text-white rounded-full px-2 py-1 text-sm"
+                      >
+                        ❮
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCarouselIndex((prev) => ({
+                            ...prev,
+                            [id]: (prev[id] + 1) % urls.length,
+                          }));
+                        }}
+                        className="absolute top-1/2 -translate-y-1/2 right-2 bg-black/40 text-white rounded-full px-2 py-1 text-sm"
+                      >
+                        ❯
+                      </button>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                        {urls.map((_, i) => (
+                          <div
+                            key={i}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCarouselIndex((prev) => ({
+                                ...prev,
+                                [id]: i,
+                              }));
+                            }}
+                            className={`w-2 h-2 rounded-full cursor-pointer ${
+                              i === idx ? "bg-white" : "bg-white/50"
+                            }`}
+                          ></div>
+                        ))}
+                      </div>
+                    </>
                   )}
 
-                  {/* Setinha Direita */}
-                  {urls.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCarouselIndex((prev) => ({
-                          ...prev,
-                          [id]: (prev[id] + 1) % urls.length,
-                        }));
-                      }}
-                      className="absolute top-1/2 -translate-y-1/2 right-2 bg-black/40 text-white rounded-full px-2 py-1 text-sm"
-                    >
-                      ❯
-                    </button>
-                  )}
-
-                  {/* Bolinhas */}
-                  {urls.length > 1 && (
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                      {urls.map((_, i) => (
-                        <div
-                          key={i}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCarouselIndex((prev) => ({
-                              ...prev,
-                              [id]: i,
-                            }));
-                          }}
-                          className={`w-2 h-2 rounded-full cursor-pointer ${
-                            i === idx ? "bg-white" : "bg-white/50"
-                          }`}
-                        ></div>
-                      ))}
+                  {/* ⭐ Indicador de favorito */}
+                  {likeInfo.liked && (
+                    <div className="absolute top-2 right-2 text-yellow-400 text-xl drop-shadow">
+                      ⭐
                     </div>
                   )}
 
-                  {/* Likes */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLike(id);
-                    }}
-                    className={`absolute top-3 right-3 flex items-center gap-2 px-3 py-1 rounded-full text-sm shadow-md transition
-                      ${
-                        likeInfo.liked
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-700"
+                  {/* 🏷️ Tipo da postagem */}
+                  {post.type && (
+                    <div
+                      className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xx font-semibold ${
+                        post.type.toLowerCase() === "aluguel"
+                          ? "bg-green-500 text-white"
+                          : "bg-blue-500 text-white"
                       }`}
-                  >
-                    👍 {likeInfo.count}
-                  </button>
-
-                  {/* Comentários */}
-                  <div className="absolute bottom-3 left-3 bg-white/90 px-3 py-1 rounded-full text-sm shadow">
-                    💬 {commentQty}
-                  </div>
+                    >
+                      {post.type}
+                    </div>
+                  )}
                 </div>
 
-                {/* INFO DA POSTAGEM */}
+                {/* Conteúdo abaixo da imagem */}
                 <div
                   onClick={() => navigate(`/post/${id}`)}
                   className="p-4 cursor-pointer space-y-1"
@@ -345,9 +306,17 @@ function Home() {
                     {post.description}
                   </p>
                   <p className="text-gray-600 text-sm">Preço: R$ {post.price}</p>
-                  <p className="text-gray-600 text-sm">Rua: {post.street}</p>
+                  <p className="text-gray-600 text-sm">
+                    {post.street}, {post.number}
+                  </p>
 
-                  <p className="text-gray-400 text-xs mt-2">
+                  {/* Indicadores fora da imagem */}
+                  <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
+                    <span>👍 {likeInfo.count}</span>
+                    <span>💬 {commentQty}</span>
+                  </div>
+
+                  <p className="text-gray-400 text-xs mt-1">
                     {post.createdAt
                       ? `Publicado em ${format(
                           new Date(post.createdAt),
