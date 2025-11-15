@@ -38,10 +38,19 @@ public class LimitedViewsHeap {
         }
     }
 
-    public synchronized void remove(long postId) {
+    public synchronized void clear() {
+        if (!heap.isEmpty()) {
+            map.clear();
+            heap.clear();
+        }
+    }
+
+    public synchronized boolean remove(long postId) {
         if (map.containsKey(postId)) {
             heap.remove(map.get(postId));
             map.remove(postId);
+            return true;
         }
+        return false;
     }
 }
