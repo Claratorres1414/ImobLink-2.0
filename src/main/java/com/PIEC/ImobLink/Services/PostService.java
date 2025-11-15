@@ -11,7 +11,6 @@ import jakarta.servlet.ServletException;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
@@ -24,13 +23,28 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Getter
-@Setter
 public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ImageService imageService;
     private final FavsRepository favsRepository;
     private final LikesRepository likesRepository;
+    private final LimitedViewsHeap heap;
+    private boolean initialized = false;
+
+    public void initHeap() {
+        if (initialized) return;
+
+        List<Post> posts = postRepository.findAll();
+        if (!posts.isEmpty()) {
+            heap.clear();
+            for (Post post : posts) {
+                heap.add(new PostResponse(post));
+            }
+            initialized = true;
+        }
+        System.out.println("Heap inicializado com sucesso");
+    }
 
     @Transactional
     public String createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, String type, Authentication auth) throws IOException, java.io.IOException {
@@ -128,6 +142,10 @@ public class PostService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         try{
             postRepository.delete(get(id));
+            boolean resp = heap.remove(id);
+            if (resp){
+                initialized = false;
+            }
             return "post deleted!";
         } catch (Exception e){
             throw new ServletException("Erro ao excluir post: " + e);
@@ -168,6 +186,7 @@ public class PostService {
         try {
             Post post = postRepository.getPostById(id);
             post.setViews(post.getViews() + 1);
+            heap.add(new PostResponse(post));
             List<User> reacheds = post.getReacheds();
             List<Post> vieweds = user.getPosts();
             boolean reached = false;
@@ -345,12 +364,8 @@ public class PostService {
     public List<String> topPosts(Authentication auth) {
         String email = auth.getName();
         userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
-        LimitedViewsHeap heap = new LimitedViewsHeap();
-        List<Post> posts = postRepository.findAll();
-        for (Post post : posts) {
-            heap.add(new PostResponse(post));
-        }
 
+        initHeap();
         List<String> response = new ArrayList<>();
 
         heap.getHeap().forEach(post -> response.add(
