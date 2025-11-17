@@ -48,7 +48,7 @@ public class PostController {
 
     @GetMapping("/likedTimes/{id}")
     public ResponseEntity<Integer> likedTimes(@PathVariable Long id, Authentication auth) throws ServletException {
-        int likedTimes = postService.getLikedTimesByPostId(id);
+        int likedTimes = postService.getLikedTimesByPostId(id, auth);
         return ResponseEntity.ok(likedTimes);
     }
 
