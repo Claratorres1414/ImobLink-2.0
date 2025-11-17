@@ -347,6 +347,12 @@ public class PostService {
         return post.getFavedTimes().size();
     }
 
+    public int getLikedTimesByPostId(Long postId, Authentication auth) throws ServletException {
+        userRepository.findByEmail(auth.getName()).orElseThrow(() -> new ServletException("User not found " + auth.getName()));
+        Post post = postRepository.getPostById(postId);
+        return post.getLikedTimes().size();
+    }
+
     public List<PostResponse> getFavedPostsByUserId(Long userId) throws ServletException {
         User user = userRepository.getReferenceById(userId);
         List<PostResponse> faveds = new ArrayList<>();
