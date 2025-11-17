@@ -1,0 +1,84 @@
+package com.PIEC.ImobLink.Services;
+
+import Role.Role;
+import com.PIEC.ImobLink.DTOs.AuthResponse;
+import com.PIEC.ImobLink.DTOs.LoginRequest;
+import com.PIEC.ImobLink.DTOs.RegisterRequest;
+import com.PIEC.ImobLink.Jwt.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Repositorys.UserRepository;
+
+@Service
+@RequiredArgsConstructor
+public class AuthenticationService {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+
+    public AuthResponse register(RegisterRequest request) {
+        User user = new User();
+        user.setImageProfilePath("/uploads/holder.jpeg");
+        user.setCpf(request.getCpf());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.USER);
+        userRepository.save(user);
+
+        return new AuthResponse("Cadastrado com sucesso!");
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (AuthenticationException e) {
+            throw new RuntimeException("Credenciais inválidas", e);
+        }
+
+        var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // 🔑 Gera token com email, role e nome
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name(),
+                user.getName()
+        );
+
+        return new AuthResponse(token);
+    }
+
+    public AuthResponse loginAdm(LoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (AuthenticationException e) {
+            throw new RuntimeException("Credenciais inválidas", e);
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
+            String token = jwtUtil.generateToken(
+                    user.getEmail(),
+                    user.getRole().name(),
+                    user.getName()
+            );
+            return new AuthResponse(token);
+        }
+
+        return new AuthResponse("Acesso negado, você não tem autoridade suficiente para acessar esse endpoint");
+    }
+}

@@ -1,0 +1,12 @@
+# Gradle build
+/build/
+/.gradle/
+
+/out/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Arquivos temporários do sistema
+.DS_Store
