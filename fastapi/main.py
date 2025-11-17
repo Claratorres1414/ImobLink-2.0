@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from blip_caption import gerar_legendas_completas
-from ocr_processor import processar_documento
+from fastapi.ocr_processor import processar_documento
 import shutil
 import os
 import uuid
