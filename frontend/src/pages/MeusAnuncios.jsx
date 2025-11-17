@@ -71,7 +71,7 @@ function MeusAnuncios() {
           // Likes
           setLikedMap((prev) => ({
             ...prev,
-            [post.id]: { count: post.favedTimes ?? 0, liked: false },
+            [post.id]: { count: post.likedTimes ?? 0, liked: false },
           }));
 
           // Comentários

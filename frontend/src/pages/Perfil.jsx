@@ -8,16 +8,21 @@ function Perfil() {
   const [fotoPerfil, setFotoPerfil] = useState("/imagemperfil.jpg");
   const [favoritos, setFavoritos] = useState([]);
   const [imageMap, setImageMap] = useState({});
+  const [followers, setFollowers] = useState([]);
+  const [followings, setFollowings] = useState([]);
+  const [showModal, setShowModal] = useState({ open: false, which: null });
+  const [avatarMap, setAvatarMap] = useState({}); // Map para armazenar Blob URLs dos avatares
+
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
+  // Carregar dados do usuário logado
   useEffect(() => {
     if (!token) {
       navigate("/");
       return;
     }
 
-    // ✅ Carregar dados do usuário
     fetch("http://localhost:8080/api/user/account", {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -26,7 +31,6 @@ function Perfil() {
         const data = await res.json();
         setDadosUsuario(data);
 
-        // ✅ Carregar imagem de perfil
         if (data.imageProfileId) {
           fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -42,7 +46,27 @@ function Perfil() {
       });
   }, [navigate, token]);
 
-  // ✅ Buscar posts favoritados
+  // Carregar seguidores e seguindo
+  useEffect(() => {
+    async function fetchFollowData() {
+      try {
+        const followersRes = await fetch("http://localhost:8080/api/follow/getFollowers", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const followingsRes = await fetch("http://localhost:8080/api/follow/getFollowings", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (followersRes.ok) setFollowers(await followersRes.json());
+        if (followingsRes.ok) setFollowings(await followingsRes.json());
+      } catch (err) {
+        console.error("Erro ao carregar seguidores:", err);
+      }
+    }
+    fetchFollowData();
+  }, [token]);
+
+  // Carregar favoritos
   useEffect(() => {
     async function carregarFavoritos() {
       try {
@@ -54,7 +78,6 @@ function Perfil() {
         const data = await res.json();
         setFavoritos(data);
 
-        // ✅ Buscar imagem de capa de cada post
         for (const post of data) {
           try {
             const imgRes = await fetch(
@@ -81,13 +104,48 @@ function Perfil() {
     carregarFavoritos();
   }, [token]);
 
+  // Pré-carregar avatares dos seguidores/seguindo em Blob URL
+  useEffect(() => {
+    async function carregarAvatares(users) {
+      const newAvatarMap = {};
+      for (const u of users) {
+        if (u.imageProfileId) {
+          try {
+            const res = await fetch(`http://localhost:8080/api/images/get/${u.imageProfileId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+              const blob = await res.blob();
+              newAvatarMap[u.id ?? u.userId ?? u.email] = URL.createObjectURL(blob);
+            } else {
+              newAvatarMap[u.id ?? u.userId ?? u.email] = "/imagemperfil.jpg";
+            }
+          } catch {
+            newAvatarMap[u.id ?? u.userId ?? u.email] = "/imagemperfil.jpg";
+          }
+        } else {
+          newAvatarMap[u.id ?? u.userId ?? u.email] = "/imagemperfil.jpg";
+        }
+      }
+      setAvatarMap((prev) => ({ ...prev, ...newAvatarMap }));
+    }
+
+    carregarAvatares(followers);
+    carregarAvatares(followings);
+  }, [followers, followings, token]);
+
+  // Função de navegar para perfil de outro usuário
+  function handleVerUsuario(u) {
+    navigate(`/user/${u.id ?? u.userId}`);
+    setShowModal({ open: false, which: null });
+  }
+
   return (
     <DashboardLayout>
       <div className="min-h-screen flex flex-col items-center bg-slate-100 p-6 mt-8 space-y-8">
-
-        {/* 🧍 Perfil principal */}
+        {/* CARD DE PERFIL */}
         <div className="bg-white rounded-lg shadow-lg p-6 flex w-full max-w-4xl">
-          {/* Foto de perfil */}
+          {/* FOTO */}
           <div className="w-1/3 flex justify-center items-start">
             <img
               src={fotoPerfil}
@@ -96,17 +154,36 @@ function Perfil() {
             />
           </div>
 
-          {/* Informações */}
+          {/* DADOS */}
           <div className="w-2/3 pl-6 space-y-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                {dadosUsuario.name}
-              </h2>
-              <p className="text-gray-600">
-                Telefone: {dadosUsuario.phoneNumber || "Não informado"}
-              </p>
-              <p className="text-gray-600">Email: {dadosUsuario.email}</p>
-              <p className="text-gray-600">{dadosUsuario.role}</p>
+            {/* Header com email à esquerda e contadores à direita */}
+            <div className="flex justify-between items-start w-full">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">{dadosUsuario.name}</h2>
+                <p className="text-gray-600">
+                  Telefone: {dadosUsuario.phoneNumber || "Não informado"}
+                </p>
+                <p className="text-gray-600">Email: {dadosUsuario.email}</p>
+              </div>
+
+              {/* Contadores lado a lado */}
+              <div className="flex gap-6 text-center">
+                <button
+                  className="hover:opacity-80"
+                  onClick={() => setShowModal({ open: true, which: "followers" })}
+                >
+                  <p className="font-bold text-lg">{followers.length}</p>
+                  <span className="text-sm text-gray-600">Seguidores</span>
+                </button>
+
+                <button
+                  className="hover:opacity-80"
+                  onClick={() => setShowModal({ open: true, which: "followings" })}
+                >
+                  <p className="font-bold text-lg">{followings.length}</p>
+                  <span className="text-sm text-gray-600">Seguindo</span>
+                </button>
+              </div>
             </div>
 
             {/* Bio */}
@@ -117,9 +194,10 @@ function Perfil() {
               </div>
             </div>
 
+            {/* Botão Editar */}
             <button
               onClick={() => navigate("/editar-perfil")}
-              className="flex items-center gap-2 text-blue-600 border border-blue-500 px-4 py-1 rounded hover:bg-blue-100 mt-4"
+              className="flex items-center gap-2 text-blue-600 border border-blue-500 px-4 py-1 rounded hover:bg-blue-100 mt-3"
             >
               <Pencil size={16} />
               Editar Perfil
@@ -127,11 +205,9 @@ function Perfil() {
           </div>
         </div>
 
-        {/* ⭐ Favoritos */}
+        {/* FAVORITOS */}
         <div className="w-full max-w-5xl bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-2xl font-bold mb-4 text-gray-800">
-            Publicações Favoritadas
-          </h3>
+          <h3 className="text-2xl font-bold mb-4 text-gray-800">Publicações Favoritadas</h3>
 
           {favoritos.length === 0 ? (
             <p className="text-gray-600 text-center">
@@ -145,29 +221,25 @@ function Perfil() {
                   onClick={() => navigate(`/post/${post.id}`)}
                   className="cursor-pointer bg-white border rounded-xl shadow hover:shadow-md transition overflow-hidden"
                 >
-                  {/* Imagem */}
                   <div className="relative w-full h-40 overflow-hidden">
                     <img
                       src={imageMap[post.id] || "/placeholder.jpg"}
                       alt={post.description}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                      className="w-full h-full object-cover hover:scale-105 duration-300"
                     />
-
-                    {/* Tipo da postagem */}
                     {post.type && (
-                      <div
-                        className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-semibold ${
+                      <span
+                        className={`absolute top-2 left-2 px-2 py-1 text-xs rounded-full text-white font-semibold ${
                           post.type.toLowerCase() === "aluguel"
-                            ? "bg-green-500 text-white"
-                            : "bg-blue-500 text-white"
+                            ? "bg-green-500"
+                            : "bg-blue-500"
                         }`}
                       >
                         {post.type}
-                      </div>
+                      </span>
                     )}
                   </div>
 
-                  {/* Informações */}
                   <div className="p-3 space-y-1">
                     <p className="font-semibold text-gray-800 line-clamp-2">
                       {post.description}
@@ -184,6 +256,57 @@ function Perfil() {
             </div>
           )}
         </div>
+
+        {/* MODAL FOLLOWERS/FOLLOWING */}
+        {showModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white rounded-lg w-11/12 md:w-1/2 max-h-[80vh] overflow-auto p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold">
+                  {showModal.which === "followers" ? "Seguidores" : "Seguindo"}
+                </h4>
+                <button
+                  className="text-gray-600"
+                  onClick={() => setShowModal({ open: false, which: null })}
+                >
+                  Fechar
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(showModal.which === "followers" ? followers : followings).length === 0 ? (
+                  <p className="text-gray-600">Nenhum usuário encontrado.</p>
+                ) : (
+                  (showModal.which === "followers" ? followers : followings).map((u) => (
+                    <div
+                      key={u.id ?? u.userId ?? u.email}
+                      className="flex items-center gap-3 p-2 border-b"
+                    >
+                      <img
+                        src={avatarMap[u.id ?? u.userId ?? u.email] || "/imagemperfil.jpg"}
+                        alt="avatar"
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => (e.currentTarget.src = "/imagemperfil.jpg")}
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold">{u.name ?? u.nome ?? u.email}</div>
+                        <div className="text-xs text-gray-500">{u.email}</div>
+                      </div>
+                      <div>
+                        <button
+                          onClick={() => handleVerUsuario(u)}
+                          className="text-sm px-3 py-1 rounded border"
+                        >
+                          Ver
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

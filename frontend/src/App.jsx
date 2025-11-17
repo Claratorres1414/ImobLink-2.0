@@ -3,13 +3,14 @@ import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Home from "./pages/Home";
 import Perfil from "./pages/Perfil";
-import EditarPerfil from "./pages/EditarPerfil"; // ✅ novo import
+import EditarPerfil from "./pages/EditarPerfil";
 import PublicarPostagem from "./pages/PublicarPostagem";
 import MeusAnuncios from "./pages/MeusAnuncios";
 import EditarPostagem from "./pages/EditarPostagem";
 import PostagemDetalhada from "./pages/PostagemDetalhada";
+import UserProfile from "./pages/UserProfile"; // <-- NOVO IMPORT
 
-// 🔒 Componente para proteger rotas
+// 🔒 Proteção de rotas
 function RotaProtegida({ children }) {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
@@ -42,7 +43,6 @@ function App() {
           }
         />
 
-        {/* ✅ Nova rota de edição de perfil */}
         <Route
           path="/editar-perfil"
           element={
@@ -79,12 +79,21 @@ function App() {
           }
         />
 
-        {/* ✅ Página de detalhes da postagem */}
         <Route
           path="/post/:id"
           element={
             <RotaProtegida>
               <PostagemDetalhada />
+            </RotaProtegida>
+          }
+        />
+
+        {/* NOVA ROTA - perfil público */}
+        <Route
+          path="/user/:id"
+          element={
+            <RotaProtegida>
+              <UserProfile />
             </RotaProtegida>
           }
         />

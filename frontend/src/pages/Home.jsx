@@ -115,7 +115,7 @@ function Home() {
           // Likes
           setLikedMap((prev) => ({
             ...prev,
-            [id]: { count: post.favedTimes ?? 0, liked: false },
+            [id]: { count: post.likedTimes ?? 0, liked: false },
           }));
 
           // Comentários
