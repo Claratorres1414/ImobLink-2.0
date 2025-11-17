@@ -46,6 +46,12 @@ public class PostController {
         return ResponseEntity.ok(post);
     }
 
+    @GetMapping("/likedTimes/{id}")
+    public ResponseEntity<Integer> likedTimes(@PathVariable Long id, Authentication auth) throws ServletException {
+        int likedTimes = postService.getLikedTimesByPostId(id);
+        return ResponseEntity.ok(likedTimes);
+    }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deletePost(@PathVariable Long id,  Authentication auth) throws ServletException {
         String response = postService.deletePost(id, auth);
