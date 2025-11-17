@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 
 function PostagemDetalhada() {
@@ -9,31 +9,29 @@ function PostagemDetalhada() {
   const [post, setPost] = useState(null);
   const [imagens, setImagens] = useState([]);
   const [indice, setIndice] = useState(0);
-
-  const [likes, setLikes] = useState(0);
-  const [jaCurtiu, setJaCurtiu] = useState(false);
-
+  const [favoritado, setFavoritado] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
   const [comentarios, setComentarios] = useState([]);
   const [novoComentario, setNovoComentario] = useState("");
   const [showComentarioBox, setShowComentarioBox] = useState(false);
-
   const [autorPost, setAutorPost] = useState(null);
+
   const intervalRef = useRef(null);
 
-  // ✅ Buscar foto de perfil
   async function buscarFotoPerfil(imageId) {
     if (!imageId) return "/imagemperfil.jpg";
 
     const tentativas = [
       `http://localhost:8080/api/images/get/${imageId}`,
       `http://localhost:8080/api/images/${imageId}/profile`,
-      `http://localhost:8080/api/images/profile/${imageId}`
+      `http://localhost:8080/api/images/profile/${imageId}`,
     ];
 
     for (let url of tentativas) {
       try {
         const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const blob = await res.blob();
@@ -44,7 +42,6 @@ function PostagemDetalhada() {
     return "/imagemperfil.jpg";
   }
 
-  // ✅ Carregar autor
   async function carregarAutor(userId) {
     try {
       const res = await fetch(
@@ -58,17 +55,17 @@ function PostagemDetalhada() {
       const foto = await buscarFotoPerfil(dados.imageProfileId);
 
       setAutorPost({
+        id: userId,
         nome: dados.name,
         email: dados.email,
         telefone: dados.phoneNumber,
-        imagem: foto
+        imagem: foto,
       });
     } catch (err) {
       console.error("Erro ao carregar dados do autor:", err);
     }
   }
 
-  // ✅ Buscar todas as imagens do post
   async function carregarImagens(postId) {
     try {
       const res = await fetch(
@@ -86,9 +83,7 @@ function PostagemDetalhada() {
               `http://localhost:8080/api/images/get/${img.id}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
-
             if (!f.ok) continue;
-
             const blob = await f.blob();
             urls.push(URL.createObjectURL(blob));
           } catch {}
@@ -101,13 +96,11 @@ function PostagemDetalhada() {
       }
     } catch {}
 
-    // fallback: usar thumb
     try {
       const res = await fetch(
         `http://localhost:8080/api/images/${postId}/post/thumb`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       if (res.ok) {
         const blob = await res.blob();
         setImagens([URL.createObjectURL(blob)]);
@@ -118,32 +111,6 @@ function PostagemDetalhada() {
     setImagens(["/placeholder.jpg"]);
   }
 
-  // ✅ Carregar postagem + imagens + autor + comentários
-  useEffect(() => {
-    async function carregar() {
-      try {
-        const res = await fetch(
-          `http://localhost:8080/api/posts/getOne/${id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (!res.ok) throw new Error("Postagem não encontrada");
-
-        const data = await res.json();
-        setPost(data);
-        setLikes(data.favedTimes);
-        carregarAutor(data.userId);
-        carregarImagens(data.id);
-        carregarComentarios(data.userId);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    carregar();
-  }, [id]);
-
-  // ✅ Carregar comentários
   async function carregarComentarios(userId) {
     try {
       const res = await fetch(
@@ -154,7 +121,6 @@ function PostagemDetalhada() {
       if (!res.ok) return;
 
       const lista = await res.json();
-
       const completos = await Promise.all(
         lista.map(async (c) => {
           let autor = { name: "Usuário" };
@@ -169,7 +135,7 @@ function PostagemDetalhada() {
           return {
             ...c,
             autorNome: autor.name,
-            autorImagem: await buscarFotoPerfil(autor.imageProfileId)
+            autorImagem: await buscarFotoPerfil(autor.imageProfileId),
           };
         })
       );
@@ -180,73 +146,97 @@ function PostagemDetalhada() {
     }
   }
 
-  // ✅ Enviar comentário
-  async function enviarComentario() {
-    if (!novoComentario.trim()) return;
+  async function toggleFavorito() {
+    const endpoint = favoritado
+      ? `http://localhost:8080/api/posts/unfav/${post.id}`
+      : `http://localhost:8080/api/posts/fav/${post.id}`;
+    const method = favoritado ? "DELETE" : "POST";
 
-    const res = await fetch(
-      `http://localhost:8080/api/comments/comment/${post.userId}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ content: novoComentario })
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) setFavoritado((prev) => !prev);
+    } catch {
+      console.error("Erro ao favoritar/desfavoritar");
+    }
+  }
+
+  async function toggleLike() {
+    const endpoint = liked
+      ? `http://localhost:8080/api/posts/unlike/${post.id}`
+      : `http://localhost:8080/api/posts/like/${post.id}`;
+
+    const method = liked ? "DELETE" : "POST";
+
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setLiked(!liked);
+        setLikesCount((prev) => (liked ? prev - 1 : prev + 1));
       }
-    );
-
-    if (res.ok) {
-      setNovoComentario("");
-      setShowComentarioBox(false);
-      carregarComentarios(post.userId);
+    } catch (err) {
+      console.error("Erro ao dar like/deslike:", err);
     }
   }
 
-  // ✅ Like
-  async function darLike() {
-    const res = await fetch(
-      `http://localhost:8080/api/posts/fav/${post.id}`,
-      { method: "POST", headers: { Authorization: `Bearer ${token}` } }
-    );
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const res = await fetch(
+          `http://localhost:8080/api/posts/getOne/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-    if (res.ok) {
-      setLikes(l => l + 1);
-      setJaCurtiu(true);
+        if (!res.ok) throw new Error("Postagem não encontrada");
+
+        const data = await res.json();
+        setPost(data);
+        setLiked(data.wasLiked);
+        setLikesCount(data.likedTimes);
+
+        carregarAutor(data.userId);
+        carregarImagens(data.id);
+        carregarComentarios(data.userId);
+
+        const favRes = await fetch(
+          "http://localhost:8080/api/posts/my-favs",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (favRes.ok) {
+          const favs = await favRes.json();
+          const isFav = favs.some((f) => f.id === data.id);
+          setFavoritado(isFav);
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
-  }
 
-  async function tirarLike() {
-    const res = await fetch(
-      `http://localhost:8080/api/posts/unfav/${post.id}`,
-      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
-    );
+    carregar();
+  }, [id]);
 
-    if (res.ok) {
-      setLikes(l => l - 1);
-      setJaCurtiu(false);
-    }
-  }
-
-  // ✅ Slider suave — autoplay
   useEffect(() => {
     if (imagens.length <= 1) return;
-
     clearInterval(intervalRef.current);
-
     intervalRef.current = setInterval(() => {
-      setIndice(i => (i + 1) % imagens.length);
+      setIndice((i) => (i + 1) % imagens.length);
     }, 3500);
-
     return () => clearInterval(intervalRef.current);
   }, [imagens]);
 
   function next() {
-    setIndice(i => (i + 1) % imagens.length);
+    setIndice((i) => (i + 1) % imagens.length);
   }
 
   function prev() {
-    setIndice(i => (i - 1 + imagens.length) % imagens.length);
+    setIndice((i) => (i - 1 + imagens.length) % imagens.length);
   }
 
   if (!post) {
@@ -260,14 +250,30 @@ function PostagemDetalhada() {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto p-4 space-y-8">
-
-        {/* ✅ Slider */}
+        
+        {/* SLIDER */}
         <div className="relative w-full h-[420px] rounded-xl overflow-hidden shadow-lg bg-black">
-        <img
-          src={imagens[indice]}
-          className="w-full h-full object-cover object-center transition-all duration-700 ease-in-out"
-        />
+          {imagens.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
+                i === indice ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          ))}
 
+          {post.type && (
+            <div
+              className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold ${
+                post.type.toLowerCase() === "aluguel"
+                  ? "bg-green-500 text-white"
+                  : "bg-blue-500 text-white"
+              }`}
+            >
+              {post.type}
+            </div>
+          )}
 
           {imagens.length > 1 && (
             <>
@@ -277,7 +283,6 @@ function PostagemDetalhada() {
               >
                 ❮
               </button>
-
               <button
                 onClick={next}
                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white px-3 py-1 rounded-full"
@@ -299,52 +304,93 @@ function PostagemDetalhada() {
           )}
         </div>
 
-        {/* ✅ Título e data */}
-        <h2 className="text-3xl font-bold text-gray-900">{post.description}</h2>
+        {/* INFO */}
+        <h2 className="text-3xl font-bold text-gray-900">
+          {post.description}
+        </h2>
         <p className="text-sm text-gray-500">
           Publicado em {new Date(post.createdAt).toLocaleString("pt-BR")}
         </p>
 
-        {/* ✅ Likes */}
+        {/* FAVORITO */}
         <button
-          onClick={jaCurtiu ? tirarLike : darLike}
-          className={`px-5 py-2 rounded-full flex items-center gap-2 shadow transition-colors ${
-            jaCurtiu ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
-          }`}
+          onClick={toggleFavorito}
+          className="flex items-center gap-2 mt-2 text-lg transition"
         >
-          👍 {likes}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill={favoritado ? "#facc15" : "none"}
+            viewBox="0 0 24 24"
+            strokeWidth={1.8}
+            stroke="#facc15"
+            className="w-7 h-7 transition-all duration-300 ease-in-out"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M11.48 3.499a.562.562 0 011.04 0l2.07 4.195a.563.563 0 00.424.307l4.63.673a.563.563 0 01.312.96l-3.35 3.27a.563.563 0 00-.162.498l.79 4.6a.563.563 0 01-.817.593l-4.137-2.176a.563.563 0 00-.524 0l-4.137 2.176a.563.563 0 01-.817-.593l.79-4.6a.563.563 0 00-.162-.498l-3.35-3.27a.563.563 0 01.312-.96l4.63-.673a.563.563 0 00.424-.307l2.07-4.195z"
+            />
+          </svg>
+          {favoritado ? "Remover dos favoritos" : "Adicionar aos favoritos"}
         </button>
 
-        {/* ✅ Autor */}
+        {/* LIKE */}
+        <button
+          onClick={toggleLike}
+          className="flex items-center gap-2 mt-2 text-lg transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill={liked ? "red" : "none"}
+            viewBox="0 0 24 24"
+            strokeWidth={1.8}
+            stroke="red"
+            className="w-7 h-7 transition-all duration-300 ease-in-out"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 
+               4.5 0 116.364 6.364L12 21.364l-7.682-7.682a4.5 4.5 
+               0 010-6.364z"
+            />
+          </svg>
+          {likesCount} curtidas
+        </button>
+
+        {/* AUTOR - AGORA LINK CORRETO */}
         {autorPost && (
-          <div className="border rounded-xl shadow p-5 flex gap-4 items-center bg-white">
+          <Link
+            to={`/user/${autorPost.id}`}
+            className="block border rounded-xl shadow p-5 flex gap-4 items-center bg-white hover:bg-gray-50 transition"
+          >
             <img
               src={autorPost.imagem}
               className="w-16 h-16 rounded-full object-cover border"
             />
-
             <div className="flex flex-col">
-              <p className="text-xl font-semibold">{autorPost.nome}</p>
+              <p className="text-xl font-semibold text-blue-600 hover:underline">
+                {autorPost.nome}
+              </p>
               <p className="text-gray-600">{autorPost.email}</p>
               <p className="text-gray-500 text-sm">
                 📞 {autorPost.telefone || "Telefone não informado"}
               </p>
             </div>
-          </div>
+          </Link>
         )}
 
-        {/* ✅ Informações do imóvel */}
+        {/* INFO IMÓVEL */}
         <div className="bg-white border rounded-xl p-5 shadow space-y-2">
           <p><strong>Preço:</strong> R$ {post.price}</p>
           <p><strong>Rua:</strong> {post.street}</p>
           <p><strong>Bairro:</strong> {post.avenue}</p>
         </div>
 
-        {/* ✅ Comentários */}
+        {/* COMENTÁRIOS */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-2xl font-bold">Comentários ({comentarios.length})</h3>
-
             <button
               onClick={() => setShowComentarioBox(v => !v)}
               className="px-4 py-2 bg-blue-600 text-white rounded-full shadow"
@@ -364,7 +410,27 @@ function PostagemDetalhada() {
               ></textarea>
 
               <button
-                onClick={enviarComentario}
+                onClick={async () => {
+                  if (!novoComentario.trim()) return;
+
+                  const res = await fetch(
+                    `http://localhost:8080/api/comments/comment/${post.userId}`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ content: novoComentario }),
+                    }
+                  );
+
+                  if (res.ok) {
+                    setNovoComentario("");
+                    setShowComentarioBox(false);
+                    carregarComentarios(post.userId);
+                  }
+                }}
                 className="mt-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow"
               >
                 Enviar
@@ -381,11 +447,9 @@ function PostagemDetalhada() {
                 src={c.autorImagem}
                 className="w-10 h-10 rounded-full object-cover"
               />
-
               <div className="flex-1">
                 <p className="font-semibold">{c.autorNome}</p>
                 <p>{c.content}</p>
-
                 <p className="text-xs text-gray-500 mt-1">
                   {new Date(c.createdAt).toLocaleString("pt-BR")}
                 </p>
@@ -393,7 +457,6 @@ function PostagemDetalhada() {
             </div>
           ))}
         </div>
-
       </div>
     </DashboardLayout>
   );

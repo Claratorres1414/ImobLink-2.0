@@ -4,7 +4,10 @@ import { useState, useRef, useEffect } from "react";
 function DashboardLayout({ children }) {
   const navigate = useNavigate();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [fotoPerfil, setFotoPerfil] = useState("/imagemperfil.jpg"); // Avatar do usuário
   const menuRef = useRef(null);
+
+  const token = localStorage.getItem("token");
 
   const sair = () => {
     localStorage.removeItem("token");
@@ -17,7 +20,6 @@ function DashboardLayout({ children }) {
   };
 
   const irParaConfiguracoes = () => {
-    // Página futura de configurações
     alert("Configurações ainda em desenvolvimento!");
     setMenuAberto(false);
   };
@@ -33,11 +35,46 @@ function DashboardLayout({ children }) {
     return () => document.removeEventListener("mousedown", handleClickFora);
   }, []);
 
+  // Buscar avatar do usuário logado
+  useEffect(() => {
+    if (!token) return;
+
+    fetch("http://localhost:8080/api/user/account", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Erro ao carregar dados");
+        const data = await res.json();
+
+        if (data.imageProfileId) {
+          try {
+            const resImg = await fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (resImg.ok) {
+              const blob = await resImg.blob();
+              setFotoPerfil(URL.createObjectURL(blob));
+            }
+          } catch (err) {
+            console.error("Erro ao carregar avatar:", err);
+            setFotoPerfil("/imagemperfil.jpg");
+          }
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        setFotoPerfil("/imagemperfil.jpg");
+      });
+  }, [token]);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Topo */}
       <header className="bg-white shadow-md p-4 flex justify-between items-center relative">
-        <h1 className="text-2xl font-bold text-blue-600 cursor-pointer" onClick={() => navigate("/home")}>
+        <h1
+          className="text-2xl font-bold text-blue-600 cursor-pointer"
+          onClick={() => navigate("/home")}
+        >
           ImobLink
         </h1>
 
@@ -51,7 +88,7 @@ function DashboardLayout({ children }) {
           {/* Imagem de perfil e menu */}
           <div className="relative">
             <img
-              src="http://localhost:8080/api/images/get/${dadosUsuario.imageProfileId}"
+              src={fotoPerfil}
               alt="Perfil"
               onClick={() => setMenuAberto((prev) => !prev)}
               className="w-10 h-10 rounded-full cursor-pointer border-2 border-blue-600 hover:scale-105 transition"
@@ -88,10 +125,16 @@ function DashboardLayout({ children }) {
         {/* Menu lateral */}
         <aside className="w-64 bg-white shadow-md p-4 flex flex-col justify-between md:flex">
           <nav className="space-y-4">
-            <a href="/home" className="block text-blue-700 font-semibold hover:text-blue-800 transition">
+            <a
+              href="/home"
+              className="block text-blue-700 font-semibold hover:text-blue-800 transition"
+            >
               Imóveis
             </a>
-            <a href="/meus-anuncios" className="block text-gray-700 hover:text-blue-600 transition">
+            <a
+              href="/meus-anuncios"
+              className="block text-gray-700 hover:text-blue-600 transition"
+            >
               Meus Anúncios
             </a>
           </nav>
