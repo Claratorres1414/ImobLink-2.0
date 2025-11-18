@@ -5,7 +5,9 @@ import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.*;
 import com.PIEC.ImobLink.Repositorys.FavsRepository;
 import com.PIEC.ImobLink.Repositorys.LikesRepository;
-import com.PIEC.ImobLink.Util.LimitedViewsHeap;
+import com.PIEC.ImobLink.Util.FavsLimitedHeap;
+import com.PIEC.ImobLink.Util.LikesLimitedHeap;
+import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.transaction.Transactional;
@@ -29,21 +31,53 @@ public class PostService {
     private final ImageService imageService;
     private final FavsRepository favsRepository;
     private final LikesRepository likesRepository;
-    private final LimitedViewsHeap heap;
-    private boolean initialized = false;
+    private final ViewsLimitedHeap viewsHeap;
+    private final FavsLimitedHeap favsHeap;
+    private final LikesLimitedHeap likesHeap;
+    private boolean initializedV = false;
+    private boolean initializedF = false;
+    private boolean initializedL = false;
 
-    public void initHeap() {
-        if (initialized) return;
+    public void initViewsHeap() {
+        if (initializedV) return;
 
         List<Post> posts = postRepository.findAll();
         if (!posts.isEmpty()) {
-            heap.clear();
+            viewsHeap.clear();
             for (Post post : posts) {
-                heap.add(new PostResponse(post));
+                viewsHeap.add(new PostResponse(post));
             }
-            initialized = true;
+            initializedV = true;
         }
-        System.out.println("Heap inicializado com sucesso");
+        System.out.println("Heap de Views inicializado com sucesso");
+    }
+
+    public void initFavsHeap() {
+        if (initializedF) return;
+
+        List<Post> posts = postRepository.findAll();
+        if (!posts.isEmpty()) {
+            favsHeap.clear();
+            for (Post post : posts) {
+                favsHeap.add(new PostResponse(post));
+            }
+            initializedF = true;
+        }
+        System.out.println("Heap de Favs inicializado com sucesso");
+    }
+
+    public void initLikesHeap() {
+        if (initializedL) return;
+
+        List<Post> posts = postRepository.findAll();
+        if (!posts.isEmpty()) {
+            likesHeap.clear();
+            for (Post post : posts) {
+                likesHeap.add(new PostResponse(post));
+            }
+            initializedL = true;
+        }
+        System.out.println("Heap de Likes inicializado com sucesso");
     }
 
     @Transactional
@@ -142,9 +176,17 @@ public class PostService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         try{
             postRepository.delete(get(id));
-            boolean resp = heap.remove(id);
-            if (resp){
-                initialized = false;
+            boolean viewsResp = viewsHeap.remove(id);
+            boolean favsResp = favsHeap.remove(id);
+            boolean likesResp = likesHeap.remove(id);
+            if (viewsResp){
+                initializedV = false;
+            }
+            if (favsResp){
+                initializedF = false;
+            }
+            if (likesResp){
+                initializedL = false;
             }
             return "post deleted!";
         } catch (Exception e){
@@ -186,7 +228,7 @@ public class PostService {
         try {
             Post post = postRepository.getPostById(id);
             post.setViews(post.getViews() + 1);
-            heap.add(new PostResponse(post));
+            viewsHeap.add(new PostResponse(post));
             List<User> reacheds = post.getReacheds();
             List<Post> vieweds = user.getPosts();
             boolean reached = false;
@@ -259,6 +301,7 @@ public class PostService {
             favsRepository.save(favPost);
             user.addFav(favPost);
             post.getFavedTimes().add(favPost);
+            favsHeap.add(new PostResponse(post));
             return true;
         } catch (Exception e){
             throw new ServletException("Erro ao tentar favoritar post: " + e);
@@ -280,6 +323,10 @@ public class PostService {
                     post.getFavedTimes().remove(favPost);
                     user.getFavs().remove(favPost);
                     favsRepository.delete(favPost);
+                    boolean favsResp = favsHeap.remove(id);
+                    if (favsResp) {
+                        initializedF = false;
+                    }
                     return true;
                 }
             }
@@ -311,6 +358,7 @@ public class PostService {
             likesRepository.save(likedPost);
             user.addLikes(likedPost);
             post.getLikedTimes().add(likedPost);
+            likesHeap.add(new PostResponse(post));
             return true;
         } catch (Exception e){
             throw new ServletException("Erro ao tentar dar like no post: " + e);
@@ -332,6 +380,10 @@ public class PostService {
                     post.getLikedTimes().remove(likedPost);
                     user.getLikes().remove(likedPost);
                     likesRepository.delete(likedPost);
+                    boolean likeResp = likesHeap.remove(id);
+                    if (likeResp) {
+                        initializedL = false;
+                    }
                     return true;
                 }
             }
@@ -367,18 +419,44 @@ public class PostService {
         }
     }
 
-    public List<String> topPosts(Authentication auth) {
+    public List<String> topViewedPosts(Authentication auth) {
         String email = auth.getName();
         userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
 
-        initHeap();
+        initViewsHeap();
         List<String> response = new ArrayList<>();
 
-        heap.getHeap().forEach(post -> response.add(
+        viewsHeap.getHeap().forEach(post -> response.add(
                     "Post: " + post.getId() +
                     " | Views: " + post.getViews() +
                     " | Author: " + post.getUserId()));
 
+        return response;
+    }
+
+    public List<String> topFavedPosts(Authentication auth) {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        initFavsHeap();
+        List<String> response = new ArrayList<>();
+        favsHeap.getHeap().forEach(post -> response.add(
+                "Post " + post.getId() +
+                        " | Faved Times: " + post.getFavedTimes() +
+                        " | Author: " + post.getUserId()));
+        return response;
+    }
+
+    public List<String> topLikedPosts(Authentication auth) {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+
+        initLikesHeap();
+        List<String> response = new ArrayList<>();
+        likesHeap.getHeap().forEach(post -> response.add(
+                "Post" + post.getId() +
+                        " | Liked Times: " + post.getLikedTimes() +
+                        " | Author: " + post.getUserId()));
         return response;
     }
 }

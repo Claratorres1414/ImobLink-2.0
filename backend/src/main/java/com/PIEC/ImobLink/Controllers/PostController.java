@@ -105,8 +105,18 @@ public class PostController {
 
     //Endpoint para admin, mas pode servir para qualquer usuário visualizar
 
-    @GetMapping("/topPosts")
-    public ResponseEntity<List<String>> topPosts(Authentication auth) {
-        return ResponseEntity.ok(postService.topPosts(auth));
+    @GetMapping("/topPosts/views")
+    public ResponseEntity<List<String>> topVieweds(Authentication auth) {
+        return ResponseEntity.ok(postService.topViewedPosts(auth));
+    }
+
+    @GetMapping("/topPosts/favs")
+    public ResponseEntity<List<String>> topFaveds(Authentication auth) {
+        return ResponseEntity.ok(postService.topFavedPosts(auth));
+    }
+
+    @GetMapping("/topPosts/likes")
+    public ResponseEntity<List<String>> topLikeds(Authentication auth) {
+        return ResponseEntity.ok(postService.topLikedPosts(auth));
     }
 }

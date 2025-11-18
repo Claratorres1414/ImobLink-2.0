@@ -10,15 +10,15 @@ import java.util.Map;
 import java.util.PriorityQueue;
 
 @Component
-public class LimitedViewsHeap {
+public class LikesLimitedHeap {
     @Getter
     private final PriorityQueue<PostResponse> heap;
     private final int maxSize;
     private final Map<Long, PostResponse> map = new HashMap<>();
 
 
-    public LimitedViewsHeap() {
-        this.heap = new PriorityQueue<>(Comparator.comparingInt(PostResponse::getViews));
+    public LikesLimitedHeap() {
+        this.heap = new PriorityQueue<>(Comparator.comparingInt(PostResponse::getLikedTimes));
         this.maxSize = 10;
     }
 
