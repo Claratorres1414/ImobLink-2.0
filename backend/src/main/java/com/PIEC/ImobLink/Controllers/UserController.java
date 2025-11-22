@@ -48,6 +48,11 @@ public class UserController {
         return ResponseEntity.ok(userService.loadAllUsers());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<UserDetails>> searchUsers(@RequestParam String search, Authentication auth) {
+        return ResponseEntity.ok(userService.searchUsers(search, auth));
+    }
+
     @PatchMapping("/setInfo")
     public ResponseEntity<String> setInfo(@RequestBody SetInfoRequest setRequest, Authentication auth) {
         userService.setInfo(setRequest, auth);

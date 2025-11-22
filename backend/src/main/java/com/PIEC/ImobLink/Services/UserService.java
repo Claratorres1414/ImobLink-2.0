@@ -70,6 +70,16 @@ public class UserService {
                 .toList();
     }
 
+    public List<UserDetails> searchUsers(String search, Authentication auth) {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+        List<User> users = userRepository.findTop10ByEmailContainingIgnoreCase(search);
+
+        return users.stream()
+                .map(UserDetails::new)
+                .toList();
+    }
+
     public void setInfo(SetInfoRequest newInfo, Authentication auth) throws UsernameNotFoundException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
