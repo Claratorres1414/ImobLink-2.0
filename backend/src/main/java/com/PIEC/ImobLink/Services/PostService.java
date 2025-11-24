@@ -3,8 +3,7 @@ package com.PIEC.ImobLink.Services;
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.*;
-import com.PIEC.ImobLink.Repositorys.FavsRepository;
-import com.PIEC.ImobLink.Repositorys.LikesRepository;
+import com.PIEC.ImobLink.Repositorys.*;
 import com.PIEC.ImobLink.Util.FavsLimitedHeap;
 import com.PIEC.ImobLink.Util.LikesLimitedHeap;
 import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
@@ -15,8 +14,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import com.PIEC.ImobLink.Repositorys.PostRepository;
-import com.PIEC.ImobLink.Repositorys.UserRepository;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
@@ -34,6 +31,7 @@ public class PostService {
     private final ViewsLimitedHeap viewsHeap;
     private final FavsLimitedHeap favsHeap;
     private final LikesLimitedHeap likesHeap;
+    private final ImageRepository imageRepository;
     private boolean initializedV = false;
     private boolean initializedF = false;
     private boolean initializedL = false;
@@ -192,6 +190,18 @@ public class PostService {
         } catch (Exception e){
             throw new ServletException("Erro ao excluir post: " + e);
         }
+    }
+
+    public String removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) throws IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new IOException("User not found"));
+        Post post = postRepository.getPostById(postId);
+        if (post.getImages().size() > 1){
+            post.removeImage(imageId);
+            imageRepository.deleteById(imageId);
+            return "Image removed!";
+        }
+        return "Erro ao remover a imagem ou o post está com uma única imagem!";
     }
 
     public List<PostResponse> getPostsByUser(String email) {

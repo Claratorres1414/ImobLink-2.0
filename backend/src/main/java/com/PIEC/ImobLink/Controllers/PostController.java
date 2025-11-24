@@ -58,6 +58,12 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/deleteImage/{id}/{imageId}")
+    public ResponseEntity<String> deleteImage(@PathVariable Long id, @PathVariable Long imageId, Authentication auth) {
+        String response = postService.removeImageByPostIdAndImageId(id, imageId, auth);
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/edit/{id}")
     public ResponseEntity<String> editPost(@PathVariable Long id, @RequestBody SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
         Boolean response = postService.editPost(id, newInfoPost, auth);
