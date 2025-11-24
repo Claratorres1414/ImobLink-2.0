@@ -58,4 +58,13 @@ public class Post {
     public void addImage(Images image) {
         images.add(image);
     }
+
+    public void removeImage(Long imageId) {
+        for (Images image : images) {
+            if (image.getId().equals(imageId)) {
+                images.remove(image);
+                break;
+            }
+        }
+    }
 }
