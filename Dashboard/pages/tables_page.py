@@ -44,7 +44,7 @@ def pagina_tabelas(usuarios: pd.DataFrame, posts: pd.DataFrame, api_url: str, to
 
     headers = {"Authorization": f"Bearer {token}"}
     try:
-        r = requests.get(f"{api_url}/posts/topPosts", headers=headers, timeout=8)
+        r = requests.get(f"{api_url}/posts/topPosts/views", headers=headers, timeout=8)
         if r.status_code == 200:
             data = r.json()
             pattern = r"Post:\s*(\d+)\s*\|\s*Views:\s*(\d+)\s*\|\s*Author:\s*(\d+)"
