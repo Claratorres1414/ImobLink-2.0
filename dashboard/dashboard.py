@@ -27,13 +27,15 @@ if not st.session_state.token or not st.session_state.last_login_ok:
 st.sidebar.title("⚙️ Menu Lateral")
 menu = st.sidebar.radio(
     "Navegar:",
-    ["🏠 Visão Geral", "📊 Gráficos", "📋 Tabelas", "👤 Usuário Específico", "🧩 Monitoramento"]
+    ["🏠 Visão Geral", "📊 Gráficos", "📋 Tabelas", "👤 Usuário Específico", "🧩 Monitoramento", "💬 Comentários"]
 )
+
 
 # ========================
 # CARREGAMENTO DE DADOS
 # ========================
-usuarios, posts, followers_df, followings_df, my_favs_df = carregar_todos_dados(API_URL, st.session_state.token)
+usuarios, posts, followers_df, followings_df, my_favs_df, comentarios_df = carregar_todos_dados(API_URL, st.session_state.token)
+
 
 # ========================
 # ROTAS DE PÁGINAS
@@ -48,5 +50,8 @@ elif menu == "👤 Usuário Específico":
     pagina_usuario(API_URL, usuarios, posts, st.session_state.token)
 elif menu == "🧩 Monitoramento":
     pagina_monitoramento()
+elif menu == "💬 Comentários":
+    from pages.comments_page import pagina_comentarios
+    pagina_comentarios(comentarios_df, usuarios, posts)
 
 #python -m streamlit run Dashboard.py 

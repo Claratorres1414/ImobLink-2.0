@@ -23,5 +23,6 @@ def carregar_todos_dados(api_url, token):
     followers = get_df(api_url, "/follow/getFollowers", headers)
     followings = get_df(api_url, "/follow/getFollowings", headers)
     favs = get_df(api_url, "/posts/my-favs", headers)
-
-    return usuarios, posts, followers, followings, favs
+    comentarios = get_df(api_url, "/comments/getAll", headers)
+    
+    return usuarios, posts, followers, followings, favs, comentarios
