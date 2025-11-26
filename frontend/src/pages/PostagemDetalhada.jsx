@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
+import Comentarios from "../components/Comentarios";
 
 function PostagemDetalhada() {
   const { id } = useParams();
@@ -12,9 +13,11 @@ function PostagemDetalhada() {
   const [favoritado, setFavoritado] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+
   const [comentarios, setComentarios] = useState([]);
   const [novoComentario, setNovoComentario] = useState("");
   const [showComentarioBox, setShowComentarioBox] = useState(false);
+
   const [autorPost, setAutorPost] = useState(null);
 
   const intervalRef = useRef(null);
@@ -111,16 +114,17 @@ function PostagemDetalhada() {
     setImagens(["/placeholder.jpg"]);
   }
 
-  async function carregarComentarios(userId) {
+  async function carregarComentarios(postId) {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/comments/getComments/${userId}`,
+        `http://localhost:8080/api/comments/getComments/post/${postId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!res.ok) return;
 
-      const lista = await res.json();
+      let lista = await res.json();
+
       const completos = await Promise.all(
         lista.map(async (c) => {
           let autor = { name: "Usuário" };
@@ -203,7 +207,7 @@ function PostagemDetalhada() {
 
         carregarAutor(data.userId);
         carregarImagens(data.id);
-        carregarComentarios(data.userId);
+        carregarComentarios(data.id);
 
         const favRes = await fetch(
           "http://localhost:8080/api/posts/my-favs",
@@ -250,7 +254,6 @@ function PostagemDetalhada() {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto p-4 space-y-8">
-        
         {/* SLIDER */}
         <div className="relative w-full h-[420px] rounded-xl overflow-hidden shadow-lg bg-black">
           {imagens.map((src, i) => (
@@ -328,7 +331,7 @@ function PostagemDetalhada() {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M11.48 3.499a.562.562 0 011.04 0l2.07 4.195a.563.563 0 00.424.307l4.63.673a.563.563 0 01.312.96l-3.35 3.27a.563.563 0 00-.162.498l.79 4.6a.563.563 0 01-.817.593l-4.137-2.176a.563.563 0 00-.524 0l-4.137 2.176a.563.563 0 01-.817-.593l.79-4.6a.563.563 0 00-.162-.498l-3.35-3.27a.563.563 0 01.312-.96l4.63-.673a.563.563 0 00.424-.307l2.07-4.195z"
+              d="M11.48 3.499a.562.562 0 011.04 0l2.07 4.195a.563.563 0 00.424.307l4.63.673a.563.563 0 01.312.96l-3.35 3.27a.563.563 0 00-.162.498l.79 4.6a.563.563 0 01-.817.593l-4.137-2.176a.563.563 0 00-.524 0l-4.137 2.176a.563.563 0 01-.817-.593l.79-4.6a.563.562 0 00-.162-.498l-3.35-3.27a.563.563 0 01.312-.96l4.63-.673a.563.563 0 00.424-.307l2.07-4.195z"
             />
           </svg>
           {favoritado ? "Remover dos favoritos" : "Adicionar aos favoritos"}
@@ -351,14 +354,14 @@ function PostagemDetalhada() {
               strokeLinecap="round"
               strokeLinejoin="round"
               d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 
-               4.5 0 116.364 6.364L12 21.364l-7.682-7.682a4.5 4.5 
-               0 010-6.364z"
+               4.5 0 116.364 6.364L12 21.364l-7.682-7.682a4.5 
+               4.5 0 010-6.364z"
             />
           </svg>
           {likesCount} curtidas
         </button>
 
-        {/* AUTOR - AGORA LINK CORRETO */}
+        {/* AUTOR */}
         {autorPost && (
           <Link
             to={`/user/${autorPost.id}`}
@@ -383,6 +386,7 @@ function PostagemDetalhada() {
         {/* INFO IMÓVEL */}
         <div className="bg-white border rounded-xl p-5 shadow space-y-2">
           <p><strong>Preço:</strong> R$ {post.price}</p>
+          <p><strong>Tipo:</strong> {post.type}</p>
           <p><strong>Rua:</strong> {post.street}</p>
           <p><strong>Bairro:</strong> {post.avenue}</p>
         </div>
@@ -414,7 +418,7 @@ function PostagemDetalhada() {
                   if (!novoComentario.trim()) return;
 
                   const res = await fetch(
-                    `http://localhost:8080/api/comments/comment/${post.userId}`,
+                    `http://localhost:8080/api/comments/comment/post/${post.id}`,
                     {
                       method: "POST",
                       headers: {
@@ -428,7 +432,9 @@ function PostagemDetalhada() {
                   if (res.ok) {
                     setNovoComentario("");
                     setShowComentarioBox(false);
-                    carregarComentarios(post.userId);
+                    carregarComentarios(post.id);
+                  } else {
+                    console.error("Falha ao enviar comentário", res.status);
                   }
                 }}
                 className="mt-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow"
@@ -438,24 +444,12 @@ function PostagemDetalhada() {
             </div>
           )}
 
-          {comentarios.map((c) => (
-            <div
-              key={c.id}
-              className="bg-white border p-4 rounded-xl shadow-sm flex gap-3"
-            >
-              <img
-                src={c.autorImagem}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-              <div className="flex-1">
-                <p className="font-semibold">{c.autorNome}</p>
-                <p>{c.content}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {new Date(c.createdAt).toLocaleString("pt-BR")}
-                </p>
-              </div>
-            </div>
-          ))}
+          {/* COMPONENTE DE COMENTÁRIOS */}
+          <Comentarios
+            comentarios={comentarios}
+            token={token}
+            onDelete={(id) => setComentarios((prev) => prev.filter(c => c.id !== id))}
+          />
         </div>
       </div>
     </DashboardLayout>

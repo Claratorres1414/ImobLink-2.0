@@ -15,7 +15,6 @@ function MeusAnuncios() {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
-  // 🔹 Buscar todas as imagens do post
   async function fetchAllImagesForPost(postId) {
     try {
       const res = await fetch(
@@ -46,7 +45,6 @@ function MeusAnuncios() {
     }
   }
 
-  // 🔹 Carregar posts do usuário
   useEffect(() => {
     const controller = new AbortController();
 
@@ -62,10 +60,12 @@ function MeusAnuncios() {
         const data = await res.json();
         setPosts(data);
 
-        // Carrega imagens, likes e comentários
         for (const post of data) {
           const urls = (await fetchAllImagesForPost(post.id)) || [];
-          setImageMap((prev) => ({ ...prev, [post.id]: urls.length ? urls : ["/placeholder.jpg"] }));
+          setImageMap((prev) => ({
+            ...prev,
+            [post.id]: urls.length ? urls : ["/placeholder.jpg"],
+          }));
           setCurrentIndex((prev) => ({ ...prev, [post.id]: 0 }));
 
           // Likes
@@ -74,12 +74,13 @@ function MeusAnuncios() {
             [post.id]: { count: post.likedTimes ?? 0, liked: false },
           }));
 
-          // Comentários
+          // 🛠️ AQUI É A ÚNICA ALTERAÇÃO:
           try {
             const cRes = await fetch(
-              `http://localhost:8080/api/comments/getComments/${post.userId}`,
+              `http://localhost:8080/api/comments/getComments/post/${post.id}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
+
             if (cRes.ok) {
               const arr = await cRes.json();
               setCommentsCount((prev) => ({ ...prev, [post.id]: arr.length }));
@@ -101,7 +102,6 @@ function MeusAnuncios() {
     return () => controller.abort();
   }, []);
 
-  // 🔹 Autoplay suave
   useEffect(() => {
     Object.values(slideIntervals.current).forEach(clearInterval);
     slideIntervals.current = {};
@@ -121,7 +121,6 @@ function MeusAnuncios() {
     };
   }, [imageMap]);
 
-  // 🔹 Navegação manual
   const next = (postId) => {
     const imgs = imageMap[postId];
     if (!imgs) return;
@@ -140,7 +139,6 @@ function MeusAnuncios() {
     }));
   };
 
-  // 🔹 Excluir postagem
   async function handleExcluir(id) {
     if (!window.confirm("Excluir este anúncio?")) return;
     const res = await fetch(`http://localhost:8080/api/posts/delete/${id}`, {
@@ -153,7 +151,6 @@ function MeusAnuncios() {
     }
   }
 
-  // 🔹 Carregando
   if (carregando) {
     return (
       <DashboardLayout>
@@ -190,7 +187,6 @@ function MeusAnuncios() {
                   key={post.id}
                   className="bg-white rounded-lg shadow overflow-hidden relative"
                 >
-                  {/* 🖼️ Slider suave */}
                   <div className="relative w-full h-48 overflow-hidden">
                     {imgs.map((src, i) => (
                       <img
@@ -202,7 +198,6 @@ function MeusAnuncios() {
                       />
                     ))}
 
-                    {/* Setas */}
                     {imgs.length > 1 && (
                       <>
                         <button
@@ -211,6 +206,7 @@ function MeusAnuncios() {
                         >
                           ❮
                         </button>
+
                         <button
                           onClick={() => next(post.id)}
                           className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white px-2 py-1 rounded-full hover:bg-black/50"
@@ -220,7 +216,6 @@ function MeusAnuncios() {
                       </>
                     )}
 
-                    {/* Bolinhas */}
                     {imgs.length > 1 && (
                       <div className="absolute bottom-2 w-full flex justify-center gap-2">
                         {imgs.map((_, i) => (
@@ -234,14 +229,12 @@ function MeusAnuncios() {
                       </div>
                     )}
 
-                    {/* ⭐ Favoritado */}
                     {likeInfo.liked && (
                       <div className="absolute top-2 right-2 text-yellow-400 text-xl drop-shadow">
                         ⭐
                       </div>
                     )}
 
-                    {/* 🏷️ Tipo da postagem */}
                     {post.type && (
                       <div
                         className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xx font-semibold ${
@@ -255,14 +248,12 @@ function MeusAnuncios() {
                     )}
                   </div>
 
-                  {/* Conteúdo */}
                   <div className="p-4">
                     <h3 className="font-bold text-lg">{post.description}</h3>
                     <p className="text-gray-600">
                       R$ {post.price} – {post.street}, {post.number}
                     </p>
 
-                    {/* Indicadores */}
                     <div className="flex justify-between mt-2 text-sm text-gray-600">
                       <span>👍 {likeInfo.count}</span>
                       <span>💬 {commentQty}</span>
@@ -275,6 +266,7 @@ function MeusAnuncios() {
                       >
                         Editar
                       </button>
+
                       <button
                         onClick={() => handleExcluir(post.id)}
                         className="bg-red-500 text-white px-3 py-1 rounded text-sm"

@@ -41,12 +41,7 @@ function PublicarPostagem() {
       if (!resposta.ok) throw new Error("Erro ao gerar legenda.");
 
       const dados = await resposta.json();
-      setDescricao(
-        dados.legenda_pt || // antigo
-        dados.traduzido ||  // caso o backend novo envie assim
-        dados.caption || "" // fallback
-      );
-
+      setDescricao(dados.traduzido || dados.caption || "");
     } catch (err) {
       console.error(err);
       setErro("Erro ao gerar legenda com IA.");

@@ -118,12 +118,15 @@ function Home() {
             [id]: { count: post.likedTimes ?? 0, liked: false },
           }));
 
-          // Comentários
+          // ---------------------------------------------------
+          // Comentários — CORRIGIDO AQUI
+          // ---------------------------------------------------
           try {
             const cRes = await fetch(
-              `http://localhost:8080/api/comments/getComments/${post.userId}`,
+              `http://localhost:8080/api/comments/getComments/post/${post.id}`,
               { headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
+
             if (cRes.ok) {
               const arr = await cRes.json();
               setCommentsCount((prev) => ({ ...prev, [id]: arr.length }));
@@ -204,6 +207,11 @@ function Home() {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {postsFiltrados.map((post) => {
+
+            console.log("Post ID:", post.id);
+            console.log("createdAt:", post.createdAt);
+            console.log("updatedAt:", post.updatedAt);
+
             const id = post.id;
             const urls = imageMap[id] || ["/placeholder.jpg"];
             const idx = carouselIndex[id] ?? 0;
@@ -324,6 +332,12 @@ function Home() {
                         )}`
                       : ""}
                   </p>
+                  {post.updatedAt &&
+                    new Date(post.updatedAt).getTime() > new Date(post.createdAt).getTime() + 10000000 && (
+                    <p className="text-gray-400 text-xs mt-1">
+                      Editado em {format(new Date(post.updatedAt), "dd/MM/yyyy")}
+                    </p>
+                  )}
                 </div>
               </div>
             );
