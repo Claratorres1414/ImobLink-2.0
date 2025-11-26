@@ -96,6 +96,7 @@ public class PostService {
         post.setUser(user);
         post.setNumber(number);
         post.setType(type);
+        post.setWasUpdated(false);
 
         for (MultipartFile image : images) {
             Images savedImage = imageService.saveImage(image,auth);
@@ -161,6 +162,7 @@ public class PostService {
                 post.setType(newInfoPost.getType());
             }
 
+            post.setWasUpdated(true);
             postRepository.save(post);
             return true;
         }catch (Exception e){
