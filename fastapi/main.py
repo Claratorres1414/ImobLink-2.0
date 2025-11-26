@@ -2,9 +2,11 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from blip_caption import gerar_legendas_completas
 from ocr_processor import processar_documento
+from model import treinar_modelo, prever_post, prever_feed
 import shutil
 import os
 import uuid
+from fastapi import FastAPI, Body
 
 app = FastAPI()
 
@@ -14,10 +16,12 @@ def salvar_temporariamente(file: UploadFile):
         shutil.copyfileobj(file.file, buffer)
     return filename
 
+# ----------------------------
+# 📌 1. GERAR LEGENDA
+# ----------------------------
 @app.post("/gerar-legenda")
 async def gerar_legenda(file: UploadFile = File(...)):
     caminho = salvar_temporariamente(file)
-
     try:
         legendas = gerar_legendas_completas(caminho)
         os.remove(caminho)
@@ -26,11 +30,13 @@ async def gerar_legenda(file: UploadFile = File(...)):
         os.remove(caminho)
         return JSONResponse(content={"erro": str(e)}, status_code=500)
 
+# ----------------------------
+# 📌 2. PROCESSAR DOCUMENTO
+# ----------------------------
 @app.post("/processar-documento")
 async def processar_documento_api(frente: UploadFile = File(...), verso: UploadFile = File(...)):
     frente_path = salvar_temporariamente(frente)
     verso_path = salvar_temporariamente(verso)
-
     try:
         resultado = processar_documento(frente_path, verso_path)
         os.remove(frente_path)
@@ -40,5 +46,45 @@ async def processar_documento_api(frente: UploadFile = File(...), verso: UploadF
         os.remove(frente_path)
         os.remove(verso_path)
         return JSONResponse(content={"erro": str(e)}, status_code=500)
+
+@app.post("/treinar-popularidade")
+async def treinar(posts: list = Body(..., description="Lista de posts históricos para treinar o modelo")):
+    """
+    Recebe lista de posts históricos e treina o modelo de regressão para prever popularidade.
+    """
+    try:
+        resultado = treinar_modelo(posts)
+        return resultado
+    except Exception as e:
+        return JSONResponse(content={"erro": str(e)}, status_code=500)
+
+# ----------------------------
+# Prever popularidade de um único post novo
+# ----------------------------
+@app.post("/prever-popularidade")
+async def prever(post: dict = Body(..., description="Post novo para prever popularidade")):
+    """
+    Recebe um post novo e devolve a previsão de popularidade.
+    """
+    try:
+        resultado = prever_post(post)
+        return resultado
+    except Exception as e:
+        return JSONResponse(content={"erro": str(e)}, status_code=500)
+
+# ----------------------------
+# Prever popularidade de vários posts novos
+# ----------------------------
+@app.post("/prever-feed")
+async def prever_feed_endpoint(posts: list = Body(..., description="Lista de posts novos para prever popularidade")):
+    """
+    Recebe uma lista de posts novos e devolve a previsão de popularidade de cada um.
+    """
+    try:
+        resultados = prever_feed(posts)
+        return resultados
+    except Exception as e:
+        return JSONResponse(content={"erro": str(e)}, status_code=500)
+
 #python -m uvicorn main:app --reload
 #http://127.0.0.1:8000/docs
