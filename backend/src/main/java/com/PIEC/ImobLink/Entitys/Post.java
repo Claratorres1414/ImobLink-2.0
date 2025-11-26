@@ -3,6 +3,7 @@ package com.PIEC.ImobLink.Entitys;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -31,6 +32,7 @@ public class Post {
     private String avenue;
     private String number;
     private String type;
+    private Boolean wasUpdated;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
