@@ -48,7 +48,7 @@ st.sidebar.title("⚙️ Menu Lateral")
 menu = st.sidebar.radio(
     "Navegar:",
     ["🏠 Visão Geral", "📊 Gráficos", "📋 Tabelas",
-     "👤 Usuário Específico", "🧩 Monitoramento", "💬 Comentários"]
+     "👤 Usuário Específico", "🧩 Monitoramento", "💬 Comentários", "🔥 Popularidade"]
 )
 
 # ======================================================
@@ -74,5 +74,9 @@ elif menu == "🧩 Monitoramento":
 elif menu == "💬 Comentários":
     from pages.comments_page import pagina_comentarios
     pagina_comentarios(comentarios_df, usuarios, posts)
+elif menu == "🔥 Popularidade":
+    from pages.popularity_page import pagina_popularidade
+    pagina_popularidade(posts)
+
 
 #python -m streamlit run Dashboard.py 
