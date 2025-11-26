@@ -8,7 +8,8 @@ import PublicarPostagem from "./pages/PublicarPostagem";
 import MeusAnuncios from "./pages/MeusAnuncios";
 import EditarPostagem from "./pages/EditarPostagem";
 import PostagemDetalhada from "./pages/PostagemDetalhada";
-import UserProfile from "./pages/UserProfile"; // <-- NOVO IMPORT
+import UserProfile from "./pages/UserProfile";
+import Busca from "./pages/Busca"; // <-- IMPORT DA PÁGINA DE BUSCA
 
 // 🔒 Proteção de rotas
 function RotaProtegida({ children }) {
@@ -88,12 +89,21 @@ function App() {
           }
         />
 
-        {/* NOVA ROTA - perfil público */}
         <Route
           path="/user/:id"
           element={
             <RotaProtegida>
               <UserProfile />
+            </RotaProtegida>
+          }
+        />
+
+        {/* ROTA DE BUSCA */}
+        <Route
+          path="/busca"
+          element={
+            <RotaProtegida>
+              <Busca />
             </RotaProtegida>
           }
         />

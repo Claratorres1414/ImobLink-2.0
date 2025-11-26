@@ -6,7 +6,6 @@ function DashboardLayout({ children }) {
   const [menuAberto, setMenuAberto] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState("/imagemperfil.jpg"); // Avatar do usuário
   const menuRef = useRef(null);
-
   const token = localStorage.getItem("token");
 
   const sair = () => {
@@ -48,9 +47,10 @@ function DashboardLayout({ children }) {
 
         if (data.imageProfileId) {
           try {
-            const resImg = await fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+            const resImg = await fetch(
+              `http://localhost:8080/api/images/get/${data.imageProfileId}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
             if (resImg.ok) {
               const blob = await resImg.blob();
               setFotoPerfil(URL.createObjectURL(blob));
@@ -67,6 +67,16 @@ function DashboardLayout({ children }) {
       });
   }, [token]);
 
+  // Função para capturar Enter na barra de pesquisa
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      const query = e.target.value.trim();
+      if (query) {
+        navigate(`/busca?query=${encodeURIComponent(query)}`);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Topo */}
@@ -79,10 +89,12 @@ function DashboardLayout({ children }) {
         </h1>
 
         <div className="flex items-center gap-4 relative" ref={menuRef}>
+          {/* Barra de pesquisa funcional */}
           <input
             type="text"
-            placeholder="Buscar imóveis..."
+            placeholder="Buscar..."
             className="border p-2 rounded"
+            onKeyDown={handleSearchKeyDown}
           />
 
           {/* Imagem de perfil e menu */}
@@ -140,6 +152,7 @@ function DashboardLayout({ children }) {
           </nav>
         </aside>
 
+        {/* Conteúdo principal */}
         <main className="flex-1 p-6 space-y-6">{children}</main>
       </div>
     </div>

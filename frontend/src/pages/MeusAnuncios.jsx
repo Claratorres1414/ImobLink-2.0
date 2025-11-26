@@ -11,6 +11,11 @@ function MeusAnuncios() {
   const [erro, setErro] = useState("");
   const [likedMap, setLikedMap] = useState({});
   const [commentsCount, setCommentsCount] = useState({});
+  const [comentariosModal, setComentariosModal] = useState({
+    aberto: false,
+    postId: null,
+    comentarios: [],
+  });
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -45,6 +50,25 @@ function MeusAnuncios() {
     }
   }
 
+  async function fetchUserAvatar(userId) {
+    if (!userId) return "/imagemperfil.jpg";
+    const tentativas = [
+      `http://localhost:8080/api/images/get/${userId}`,
+      `http://localhost:8080/api/images/${userId}/profile`,
+      `http://localhost:8080/api/images/profile/${userId}`,
+    ];
+    for (const url of tentativas) {
+      try {
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const blob = await res.blob();
+          return URL.createObjectURL(blob);
+        }
+      } catch {}
+    }
+    return "/imagemperfil.jpg";
+  }
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -74,7 +98,7 @@ function MeusAnuncios() {
             [post.id]: { count: post.likedTimes ?? 0, liked: false },
           }));
 
-          // 🛠️ AQUI É A ÚNICA ALTERAÇÃO:
+          // Comentários
           try {
             const cRes = await fetch(
               `http://localhost:8080/api/comments/getComments/post/${post.id}`,
@@ -151,6 +175,29 @@ function MeusAnuncios() {
     }
   }
 
+  async function abrirComentarios(postId) {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/comments/getComments/post/${postId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error("Erro ao carregar comentários");
+      const arr = await res.json();
+
+      // Buscar imagens dos usuários
+      const arrComAvatar = await Promise.all(
+        arr.map(async (c) => {
+          const avatar = await fetchUserAvatar(c.userId);
+          return { ...c, avatar };
+        })
+      );
+
+      setComentariosModal({ aberto: true, postId, comentarios: arrComAvatar });
+    } catch {
+      alert("Erro ao carregar comentários.");
+    }
+  }
+
   if (carregando) {
     return (
       <DashboardLayout>
@@ -216,19 +263,6 @@ function MeusAnuncios() {
                       </>
                     )}
 
-                    {imgs.length > 1 && (
-                      <div className="absolute bottom-2 w-full flex justify-center gap-2">
-                        {imgs.map((_, i) => (
-                          <div
-                            key={i}
-                            className={`w-2 h-2 rounded-full ${
-                              i === idx ? "bg-white" : "bg-white/40"
-                            }`}
-                          ></div>
-                        ))}
-                      </div>
-                    )}
-
                     {likeInfo.liked && (
                       <div className="absolute top-2 right-2 text-yellow-400 text-xl drop-shadow">
                         ⭐
@@ -259,7 +293,7 @@ function MeusAnuncios() {
                       <span>💬 {commentQty}</span>
                     </div>
 
-                    <div className="mt-3 flex gap-3">
+                    <div className="mt-3 flex gap-3 flex-wrap">
                       <button
                         onClick={() => navigate(`/editar-postagem/${post.id}`)}
                         className="bg-yellow-500 text-white px-3 py-1 rounded text-sm"
@@ -273,11 +307,60 @@ function MeusAnuncios() {
                       >
                         Excluir
                       </button>
+
+                      <button
+                        onClick={() => abrirComentarios(post.id)}
+                        className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                      >
+                        Ver Comentários
+                      </button>
                     </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Modal de comentários */}
+        {comentariosModal.aberto && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg w-11/12 max-w-lg max-h-[80vh] overflow-y-auto relative">
+              <button
+                onClick={() => setComentariosModal({ aberto: false, postId: null, comentarios: [] })}
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl font-bold"
+              >
+                &times;
+              </button>
+              <h3 className="font-bold text-xl mb-4">Comentários do Post</h3>
+              {comentariosModal.comentarios.length === 0 ? (
+                <p>Nenhum comentário ainda.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {comentariosModal.comentarios.map((c) => (
+                    <li key={c.id} className="border-b pb-2 flex gap-3 items-start">
+                      <img
+                        src={c.avatar}
+                        alt={c.userName}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-blue-600"
+                      />
+                      <div>
+                        <p
+                          className="font-semibold cursor-pointer hover:underline text-blue-700"
+                          onClick={() => navigate(`/user/${c.userId}`)}
+                        >
+                          {c.userName}
+                        </p>
+                        <p className="text-gray-700 text-sm">{c.content}</p>
+                        <p className="text-gray-400 text-xs">
+                          {new Date(c.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
       </div>
