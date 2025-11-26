@@ -5,6 +5,12 @@ import pandas as pd
 def pagina_graficos(posts: pd.DataFrame):
     st.subheader("📊 Gráficos detalhados")
 
+    # Pequeno espaço no topo para não grudar
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ==========================
+    # Gerar endereço completo
+    # ==========================
     if all(col in posts.columns for col in ["street", "avenue", "number"]):
         posts["endereco_completo"] = (
             posts["street"].astype(str)
@@ -101,3 +107,24 @@ def pagina_graficos(posts: pd.DataFrame):
             texttemplate="%{text:.2f}", textposition="outside"
         )
         st.plotly_chart(fig_user_price, use_container_width=True)
+
+    # ==========================
+    # 🏷️ Tipos de imóveis (venda/aluguel/etc.)
+    # ==========================
+    if "type" in posts.columns:
+        st.divider()
+        df_tipo = (
+            posts.groupby("type")["id"]
+            .count()
+            .reset_index()
+            .rename(columns={"id": "qtd"})
+        )
+        fig_tipo = px.pie(
+            df_tipo,
+            names="type",
+            values="qtd",
+            title="Tipos de Imóveis (Venda / Aluguel / etc.)",
+            hover_data=["qtd"]
+        )
+        fig_tipo.update_traces(textinfo="percent+label")
+        st.plotly_chart(fig_tipo, use_container_width=True)
