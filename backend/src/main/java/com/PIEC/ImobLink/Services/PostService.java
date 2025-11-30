@@ -12,6 +12,8 @@ import jakarta.servlet.ServletException;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -204,6 +206,25 @@ public class PostService {
             return "Image removed!";
         }
         return "Erro ao remover a imagem ou o post está com uma única imagem!";
+    }
+
+    public ResponseEntity<String> addImageToPost(Long postId, MultipartFile image, Authentication auth) throws IOException, java.io.IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new IOException("Erro ao buscar usuário"));
+        Post post = postRepository.getPostById(postId);
+        if (post.getImages().size() == 10){
+            throw new IOException("Esse Post já possui o máximo de imagens permitidas!");
+        }
+        Images savedImage = imageService.saveImage(image,auth);
+        post.addImage(savedImage);
+        try {
+            postRepository.save(post);
+            savedImage.setPost(post);
+            imageRepository.save(savedImage);
+        } catch (Exception e){
+            throw new IOException("Erro ao tentar adicionar imagem: " + e);
+        }
+        return new ResponseEntity<>("Imagem adicionada!", HttpStatus.OK);
     }
 
     public List<PostResponse> getPostsByUser(String email) {
