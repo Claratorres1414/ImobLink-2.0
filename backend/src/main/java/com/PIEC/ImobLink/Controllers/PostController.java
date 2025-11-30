@@ -64,6 +64,11 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/addImage/{id}")
+    public ResponseEntity<String> addImage(@PathVariable Long id, @RequestParam MultipartFile image, Authentication auth) throws IOException {
+        return postService.addImageToPost(id, image, auth);
+    }
+
     @PatchMapping("/edit/{id}")
     public ResponseEntity<String> editPost(@PathVariable Long id, @RequestBody SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
         Boolean response = postService.editPost(id, newInfoPost, auth);
