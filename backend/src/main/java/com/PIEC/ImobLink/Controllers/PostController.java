@@ -54,7 +54,20 @@ public class PostController {
 
     @GetMapping("/search/avenue")
     public ResponseEntity<List<PostResponse>> searchByAvenue(@RequestParam("avenue") String avenue, Authentication auth) throws IOException {
-        return postService.searchPostByAvenue(avenue, auth);
+        try {
+            return postService.searchPostByAvenue(avenue, auth);
+        } catch (Exception e) {
+            throw new IOException("Erro ao tentar executar search: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/search/street")
+    public ResponseEntity<List<PostResponse>> searchByStreet(@RequestParam("street") String street, Authentication auth) throws IOException {
+        try{
+            return postService.searchPostByStreet(street, auth);
+        }  catch (Exception e) {
+            throw new IOException("Erro ao tentar executar search: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/delete/{id}")
