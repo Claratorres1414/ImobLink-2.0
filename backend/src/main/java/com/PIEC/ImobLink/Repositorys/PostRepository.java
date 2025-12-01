@@ -10,4 +10,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findAllByOrderByCreatedAtDesc();
     Post getPostById(Long id);
     List<Post> findTop10ByAvenueContainingIgnoreCase(String search);
+    List<Post> findTop10ByStreetContainingIgnoreCase(String search);
 }
