@@ -155,6 +155,22 @@ public class PostService {
         }
     }
 
+    public ResponseEntity<List<PostResponse>> searchPostByStreet(String street, Authentication auth) throws IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new IOException("User not found"));
+        try {
+            List<Post> responses = postRepository.findTop10ByStreetContainingIgnoreCase(street);
+            List<PostResponse> postResponses = new ArrayList<>();
+            for (Post post : responses) {
+                postResponses.add(new PostResponse(post));
+            }
+            return new ResponseEntity<>(postResponses, HttpStatus.OK);
+        } catch (Exception e) {
+            throw new IOException("Erro ao tentar realizar pesquisa: " + e.getMessage());
+        }
+    }
+
     public Boolean editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
         String email = auth.getName();
         userRepository.findByEmail(email)
