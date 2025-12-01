@@ -12,6 +12,8 @@ import jakarta.servlet.ServletException;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -96,6 +98,7 @@ public class PostService {
         post.setUser(user);
         post.setNumber(number);
         post.setType(type);
+        post.setWasUpdated(false);
 
         for (MultipartFile image : images) {
             Images savedImage = imageService.saveImage(image,auth);
@@ -136,6 +139,38 @@ public class PostService {
         }
     }
 
+    public ResponseEntity<List<PostResponse>> searchPostByAvenue(String avenue, Authentication auth) throws IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new IOException("User not found"));
+        try {
+            List<Post> responses = postRepository.findTop10ByAvenueContainingIgnoreCase(avenue);
+            List<PostResponse> postResponses = new ArrayList<>();
+            for (Post post : responses) {
+                postResponses.add(new PostResponse(post));
+            }
+            return new ResponseEntity<>(postResponses, HttpStatus.OK);
+        } catch (Exception e) {
+            throw new IOException("Erro ao tentar realizar pesquisa: " + e.getMessage());
+        }
+    }
+
+    public ResponseEntity<List<PostResponse>> searchPostByStreet(String street, Authentication auth) throws IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new IOException("User not found"));
+        try {
+            List<Post> responses = postRepository.findTop10ByStreetContainingIgnoreCase(street);
+            List<PostResponse> postResponses = new ArrayList<>();
+            for (Post post : responses) {
+                postResponses.add(new PostResponse(post));
+            }
+            return new ResponseEntity<>(postResponses, HttpStatus.OK);
+        } catch (Exception e) {
+            throw new IOException("Erro ao tentar realizar pesquisa: " + e.getMessage());
+        }
+    }
+
     public Boolean editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
         String email = auth.getName();
         userRepository.findByEmail(email)
@@ -161,6 +196,7 @@ public class PostService {
                 post.setType(newInfoPost.getType());
             }
 
+            post.setWasUpdated(true);
             postRepository.save(post);
             return true;
         }catch (Exception e){
@@ -202,6 +238,25 @@ public class PostService {
             return "Image removed!";
         }
         return "Erro ao remover a imagem ou o post está com uma única imagem!";
+    }
+
+    public ResponseEntity<String> addImageToPost(Long postId, MultipartFile image, Authentication auth) throws IOException, java.io.IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email).orElseThrow(() -> new IOException("Erro ao buscar usuário"));
+        Post post = postRepository.getPostById(postId);
+        if (post.getImages().size() == 10){
+            throw new IOException("Esse Post já possui o máximo de imagens permitidas!");
+        }
+        Images savedImage = imageService.saveImage(image,auth);
+        post.addImage(savedImage);
+        try {
+            postRepository.save(post);
+            savedImage.setPost(post);
+            imageRepository.save(savedImage);
+        } catch (Exception e){
+            throw new IOException("Erro ao tentar adicionar imagem: " + e);
+        }
+        return new ResponseEntity<>("Imagem adicionada!", HttpStatus.OK);
     }
 
     public List<PostResponse> getPostsByUser(String email) {

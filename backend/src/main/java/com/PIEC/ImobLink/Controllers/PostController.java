@@ -52,6 +52,24 @@ public class PostController {
         return ResponseEntity.ok(likedTimes);
     }
 
+    @GetMapping("/search/avenue")
+    public ResponseEntity<List<PostResponse>> searchByAvenue(@RequestParam("avenue") String avenue, Authentication auth) throws IOException {
+        try {
+            return postService.searchPostByAvenue(avenue, auth);
+        } catch (Exception e) {
+            throw new IOException("Erro ao tentar executar search: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/search/street")
+    public ResponseEntity<List<PostResponse>> searchByStreet(@RequestParam("street") String street, Authentication auth) throws IOException {
+        try{
+            return postService.searchPostByStreet(street, auth);
+        }  catch (Exception e) {
+            throw new IOException("Erro ao tentar executar search: " + e.getMessage());
+        }
+    }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deletePost(@PathVariable Long id,  Authentication auth) throws ServletException {
         String response = postService.deletePost(id, auth);
@@ -62,6 +80,11 @@ public class PostController {
     public ResponseEntity<String> deleteImage(@PathVariable Long id, @PathVariable Long imageId, Authentication auth) {
         String response = postService.removeImageByPostIdAndImageId(id, imageId, auth);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/addImage/{id}")
+    public ResponseEntity<String> addImage(@PathVariable Long id, @RequestParam MultipartFile image, Authentication auth) throws IOException {
+        return postService.addImageToPost(id, image, auth);
     }
 
     @PatchMapping("/edit/{id}")

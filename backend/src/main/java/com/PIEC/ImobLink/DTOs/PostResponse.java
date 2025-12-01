@@ -30,6 +30,7 @@ public class PostResponse {
     private Long userId;
     private boolean wasFaved;
     private boolean wasLiked;
+    private Boolean wasUpdated;
     private List<CommentResponse> comments = new ArrayList<>();
 
     public PostResponse(Post post) {
@@ -49,7 +50,10 @@ public class PostResponse {
         this.wasFaved = false;
         this.wasLiked = false;
         this.createdAt = post.getCreatedAt();
-        this.updatedAt = post.getUpdatedAt();
+        this.wasUpdated = post.getWasUpdated();
+        if (Boolean.TRUE.equals(this.wasUpdated)) {
+            this.updatedAt = post.getUpdatedAt();
+        }
         this.createdBy = post.getUser().getName();
         this.userId = post.getUser().getId();
     }
