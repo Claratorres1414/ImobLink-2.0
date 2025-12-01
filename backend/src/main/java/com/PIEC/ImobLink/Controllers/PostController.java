@@ -52,6 +52,11 @@ public class PostController {
         return ResponseEntity.ok(likedTimes);
     }
 
+    @GetMapping("/search/avenue")
+    public ResponseEntity<List<PostResponse>> searchByAvenue(@RequestParam("avenue") String avenue, Authentication auth) throws IOException {
+        return postService.searchPostByAvenue(avenue, auth);
+    }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deletePost(@PathVariable Long id,  Authentication auth) throws ServletException {
         String response = postService.deletePost(id, auth);
