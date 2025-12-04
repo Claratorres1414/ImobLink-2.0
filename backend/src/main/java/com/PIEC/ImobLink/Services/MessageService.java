@@ -11,7 +11,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,7 +19,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
 
-    public ResponseEntity<String> sendMessage(String content, Long userId, Authentication auth) throws IOException {
+    public ResponseEntity<MessageResponse> sendMessage(String content, Long userId, Authentication auth) throws IOException {
         String email = auth.getName();
         User sender = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IOException("User not found"));
@@ -35,19 +34,32 @@ public class MessageService {
         } catch (Exception e) {
             throw new IOException("Erro ao salvar mensagem: " + e.getMessage());
         }
-        return ResponseEntity.ok("Mensagem enviada com sucesso!");
+        return ResponseEntity.ok(new MessageResponse(message));
     }
 
     public ResponseEntity<List<MessageResponse>> getMessages(Long userId, Authentication auth) throws IOException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IOException("User not found"));
-        List<Message> messages = messageRepository.searchMessageBySenderAndReceiverId(user.getId(), userId);
-        List<MessageResponse> responses = new ArrayList<>();
-        for (Message message : messages) {
-            MessageResponse messageResponse = new MessageResponse(message);
-            responses.add(messageResponse);
-        }
+
+        List<Message> messages = messageRepository.findConversation(user.getId(), userId);
+
+        List<MessageResponse> responses = messages.stream()
+                .map(MessageResponse::new)
+                .toList();
+
         return ResponseEntity.ok(responses);
+    }
+
+    public ResponseEntity<String> deleteMessage(Long messageId, Authentication auth) throws IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new IOException("User not found"));
+        try {
+            messageRepository.deleteById(messageId);
+            return ResponseEntity.ok("Mensagem deletada com sucesso!");
+        } catch (Exception e) {
+            throw new IOException("Erro ao deletar mensagem: " + e.getMessage());
+        }
     }
 }
