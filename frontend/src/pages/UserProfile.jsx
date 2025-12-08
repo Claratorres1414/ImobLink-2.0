@@ -294,6 +294,14 @@ async function carregarComentarios(userId) {
   }, [id]);
 
   // -------------------------
+  // Função adicionada: openModal (apenas esta função foi inserida)
+  // -------------------------
+  function openModal(which) {
+    setShowModal({ open: true, which });
+  }
+  // ---------------------------------------------------------------
+
+  // -------------------------
   // render
   // -------------------------
   return (
@@ -336,18 +344,46 @@ async function carregarComentarios(userId) {
                   </div>
                 </div>
 
-                <div className="mt-2">
+                <div className="mt-2 flex flex-col gap-2">
                   {currentUser && String(currentUser.id) === String(id) ? (
-                    <button onClick={() => navigate("/editar-perfil")} className="px-4 py-2 border rounded bg-white text-gray-700">
+                    <button 
+                      onClick={() => navigate("/editar-perfil")} 
+                      className="px-4 py-2 border rounded bg-white text-gray-700"
+                    >
                       Editar Perfil
                     </button>
                   ) : isFollowing ? (
-                    <button onClick={handleUnfollow} className="px-4 py-2 rounded border bg-white text-gray-800 hover:bg-gray-50">
+                    <button 
+                      onClick={handleUnfollow} 
+                      className="px-4 py-2 rounded border bg-white text-gray-800 hover:bg-gray-50"
+                    >
                       Deixar de seguir
                     </button>
                   ) : (
-                    <button onClick={handleFollow} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                    <button 
+                      onClick={handleFollow} 
+                      className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                    >
                       Seguir
+                    </button>
+                  )}
+                  {currentUser && String(currentUser.id) !== String(id) && (
+                    <button
+                      onClick={() => {
+                        // SALVAR NO LOCALSTORAGE
+                        const contatos = JSON.parse(localStorage.getItem("contatos") || "[]");
+                        const jaExiste = contatos.some(c => c.id === id);
+                        if (!jaExiste) {
+                          contatos.push({ id, name: user?.name || "Usuário" });
+                          localStorage.setItem("contatos", JSON.stringify(contatos));
+                        }
+
+                        // Navegar para o chat
+                        navigate(`/chat/${id}`);
+                      }}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                    >
+                      Enviar mensagem
                     </button>
                   )}
                 </div>

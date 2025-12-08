@@ -51,23 +51,21 @@ function MeusAnuncios() {
   }
 
   async function fetchUserAvatar(userId) {
-    if (!userId) return "/imagemperfil.jpg";
-    const tentativas = [
-      `http://localhost:8080/api/images/get/${userId}`,
-      `http://localhost:8080/api/images/${userId}/profile`,
-      `http://localhost:8080/api/images/profile/${userId}`,
-    ];
-    for (const url of tentativas) {
-      try {
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) {
-          const blob = await res.blob();
-          return URL.createObjectURL(blob);
-        }
-      } catch {}
+    if (!userId) return "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+    try {
+      const res = await fetch(`http://localhost:8080/api/images/get/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        return "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+      }
+      const blob = await res.blob();
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      return "https://cdn-icons-png.flaticon.com/512/149/149071.png";
     }
-    return "/imagemperfil.jpg";
   }
+
 
   useEffect(() => {
     const controller = new AbortController();
@@ -92,13 +90,11 @@ function MeusAnuncios() {
           }));
           setCurrentIndex((prev) => ({ ...prev, [post.id]: 0 }));
 
-          // Likes
           setLikedMap((prev) => ({
             ...prev,
             [post.id]: { count: post.likedTimes ?? 0, liked: false },
           }));
 
-          // Comentários
           try {
             const cRes = await fetch(
               `http://localhost:8080/api/comments/getComments/post/${post.id}`,
@@ -115,7 +111,7 @@ function MeusAnuncios() {
             setCommentsCount((prev) => ({ ...prev, [post.id]: 0 }));
           }
         }
-      } catch (err) {
+      } catch {
         setErro("Erro ao carregar seus anúncios.");
       }
 
@@ -176,27 +172,65 @@ function MeusAnuncios() {
   }
 
   async function abrirComentarios(postId) {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/comments/getComments/post/${postId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (!res.ok) throw new Error("Erro ao carregar comentários");
-      const arr = await res.json();
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/comments/getComments/post/${postId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      // Buscar imagens dos usuários
-      const arrComAvatar = await Promise.all(
-        arr.map(async (c) => {
-          const avatar = await fetchUserAvatar(c.userId);
-          return { ...c, avatar };
-        })
-      );
+    if (!res.ok) throw new Error("Erro ao carregar comentários");
 
-      setComentariosModal({ aberto: true, postId, comentarios: arrComAvatar });
-    } catch {
-      alert("Erro ao carregar comentários.");
+    const arr = await res.json();
+
+    const comentariosComAvatar = [];
+
+    for (const c of arr) {
+      let avatarFinal = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+      try {
+        // BUSCA O USUÁRIO PRIMEIRO
+        const resUser = await fetch(
+          `http://localhost:8080/api/user/getAccount/${c.authorId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (resUser.ok) {
+          const userJson = await resUser.json();
+          const imgProfileId = userJson.imageProfileId;
+
+          if (imgProfileId) {
+            const resImg = await fetch(
+              `http://localhost:8080/api/images/get/${imgProfileId}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (resImg.ok) {
+              const blob = await resImg.blob();
+              avatarFinal = URL.createObjectURL(blob);
+            }
+          }
+        }
+      } catch {}
+
+      comentariosComAvatar.push({
+        ...c,
+        avatar: avatarFinal,
+        userName: c.authorName,
+        userId: c.authorId,
+      });
     }
+
+    setComentariosModal({
+      aberto: true,
+      postId,
+      comentarios: comentariosComAvatar,
+    });
+  } catch {
+    alert("Erro ao carregar comentários.");
   }
+}
+
+
 
   if (carregando) {
     return (
@@ -209,6 +243,8 @@ function MeusAnuncios() {
   return (
     <DashboardLayout>
       <div className="p-6">
+        
+        {/* ---- HEADER ---- */}
         <div className="flex justify-between mb-6">
           <h2 className="text-2xl font-bold">Meus Anúncios</h2>
           <button
@@ -219,6 +255,7 @@ function MeusAnuncios() {
           </button>
         </div>
 
+        {/* ---- LISTAGEM ---- */}
         {posts.length === 0 ? (
           <p>Você ainda não publicou nada.</p>
         ) : (
@@ -230,10 +267,9 @@ function MeusAnuncios() {
               const commentQty = commentsCount[post.id] ?? 0;
 
               return (
-                <div
-                  key={post.id}
-                  className="bg-white rounded-lg shadow overflow-hidden relative"
-                >
+                <div key={post.id} className="bg-white rounded-lg shadow overflow-hidden relative">
+                  
+                  {/* IMAGENS */}
                   <div className="relative w-full h-48 overflow-hidden">
                     {imgs.map((src, i) => (
                       <img
@@ -244,46 +280,12 @@ function MeusAnuncios() {
                         }`}
                       />
                     ))}
-
-                    {imgs.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => prev(post.id)}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white px-2 py-1 rounded-full hover:bg-black/50"
-                        >
-                          ❮
-                        </button>
-
-                        <button
-                          onClick={() => next(post.id)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white px-2 py-1 rounded-full hover:bg-black/50"
-                        >
-                          ❯
-                        </button>
-                      </>
-                    )}
-
-                    {likeInfo.liked && (
-                      <div className="absolute top-2 right-2 text-yellow-400 text-xl drop-shadow">
-                        ⭐
-                      </div>
-                    )}
-
-                    {post.type && (
-                      <div
-                        className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xx font-semibold ${
-                          post.type.toLowerCase() === "aluguel"
-                            ? "bg-green-500 text-white"
-                            : "bg-blue-500 text-white"
-                        }`}
-                      >
-                        {post.type}
-                      </div>
-                    )}
                   </div>
 
+                  {/* ---- DADOS ---- */}
                   <div className="p-4">
                     <h3 className="font-bold text-lg">{post.description}</h3>
+
                     <p className="text-gray-600">
                       R$ {post.price} – {post.street}, {post.number}
                     </p>
@@ -322,17 +324,20 @@ function MeusAnuncios() {
           </div>
         )}
 
-        {/* Modal de comentários */}
+        {/* ---- MODAL ---- */}
         {comentariosModal.aberto && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-11/12 max-w-lg max-h-[80vh] overflow-y-auto relative">
+
               <button
                 onClick={() => setComentariosModal({ aberto: false, postId: null, comentarios: [] })}
                 className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl font-bold"
               >
                 &times;
               </button>
+
               <h3 className="font-bold text-xl mb-4">Comentários do Post</h3>
+
               {comentariosModal.comentarios.length === 0 ? (
                 <p>Nenhum comentário ainda.</p>
               ) : (
@@ -351,7 +356,9 @@ function MeusAnuncios() {
                         >
                           {c.userName}
                         </p>
+
                         <p className="text-gray-700 text-sm">{c.content}</p>
+
                         <p className="text-gray-400 text-xs">
                           {new Date(c.createdAt).toLocaleString()}
                         </p>

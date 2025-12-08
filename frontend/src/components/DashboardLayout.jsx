@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 function DashboardLayout({ children }) {
   const navigate = useNavigate();
   const [menuAberto, setMenuAberto] = useState(false);
-  const [fotoPerfil, setFotoPerfil] = useState("/imagemperfil.jpg"); // Avatar do usuário
+  const [fotoPerfil, setFotoPerfil] = useState("/imagemperfil.jpg");
   const menuRef = useRef(null);
   const token = localStorage.getItem("token");
 
@@ -23,7 +23,6 @@ function DashboardLayout({ children }) {
     setMenuAberto(false);
   };
 
-  // Fecha o menu ao clicar fora
   useEffect(() => {
     function handleClickFora(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -34,7 +33,6 @@ function DashboardLayout({ children }) {
     return () => document.removeEventListener("mousedown", handleClickFora);
   }, []);
 
-  // Buscar avatar do usuário logado
   useEffect(() => {
     if (!token) return;
 
@@ -67,7 +65,6 @@ function DashboardLayout({ children }) {
       });
   }, [token]);
 
-  // Função para capturar Enter na barra de pesquisa
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter") {
       const query = e.target.value.trim();
@@ -79,7 +76,6 @@ function DashboardLayout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* Topo */}
       <header className="bg-white shadow-md p-4 flex justify-between items-center relative">
         <h1
           className="text-2xl font-bold text-blue-600 cursor-pointer"
@@ -89,7 +85,6 @@ function DashboardLayout({ children }) {
         </h1>
 
         <div className="flex items-center gap-4 relative" ref={menuRef}>
-          {/* Barra de pesquisa funcional */}
           <input
             type="text"
             placeholder="Buscar..."
@@ -97,7 +92,6 @@ function DashboardLayout({ children }) {
             onKeyDown={handleSearchKeyDown}
           />
 
-          {/* Imagem de perfil e menu */}
           <div className="relative">
             <img
               src={fotoPerfil}
@@ -132,9 +126,7 @@ function DashboardLayout({ children }) {
         </div>
       </header>
 
-      {/* Conteúdo com menu + principal */}
       <div className="flex flex-1">
-        {/* Menu lateral */}
         <aside className="w-64 bg-white shadow-md p-4 flex flex-col justify-between md:flex">
           <nav className="space-y-4">
             <a
@@ -149,10 +141,16 @@ function DashboardLayout({ children }) {
             >
               Meus Anúncios
             </a>
+
+            <a
+              href="/conversas"
+              className="block text-gray-700 hover:text-blue-600 transition"
+            >
+              Conversas
+            </a>
           </nav>
         </aside>
 
-        {/* Conteúdo principal */}
         <main className="flex-1 p-6 space-y-6">{children}</main>
       </div>
     </div>

@@ -9,7 +9,11 @@ import MeusAnuncios from "./pages/MeusAnuncios";
 import EditarPostagem from "./pages/EditarPostagem";
 import PostagemDetalhada from "./pages/PostagemDetalhada";
 import UserProfile from "./pages/UserProfile";
-import Busca from "./pages/Busca"; // <-- IMPORT DA PÁGINA DE BUSCA
+import Busca from "./pages/Busca";
+
+// Chat pages
+import ChatPage from "./pages/ChatPage";
+import ConversasPage from "./pages/ConversasPage";
 
 // 🔒 Proteção de rotas
 function RotaProtegida({ children }) {
@@ -25,7 +29,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
 
-        {/* Rotas protegidas */}
+        {/* Rotas protegidas (renderam as páginas — as páginas devem conter DashboardLayout se preciso) */}
         <Route
           path="/home"
           element={
@@ -98,12 +102,31 @@ function App() {
           }
         />
 
-        {/* ROTA DE BUSCA */}
         <Route
           path="/busca"
           element={
             <RotaProtegida>
               <Busca />
+            </RotaProtegida>
+          }
+        />
+
+        {/* Conversas (lista) */}
+        <Route
+          path="/conversas"
+          element={
+            <RotaProtegida>
+              <ConversasPage />
+            </RotaProtegida>
+          }
+        />
+
+        {/* Chat individual */}
+        <Route
+          path="/chat/:id"
+          element={
+            <RotaProtegida>
+              <ChatPage />
             </RotaProtegida>
           }
         />

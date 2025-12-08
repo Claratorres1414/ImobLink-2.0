@@ -388,6 +388,9 @@ function PostagemDetalhada() {
           <p><strong>Preço:</strong> R$ {post.price}</p>
           <p><strong>Tipo:</strong> {post.type}</p>
           <p><strong>Rua:</strong> {post.street}</p>
+          {post.number && (
+            <p><strong>Número:</strong> {post.number}</p>
+          )}
           <p><strong>Bairro:</strong> {post.avenue}</p>
         </div>
 
