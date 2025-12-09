@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.Services;
 
 import com.PIEC.ImobLink.DTOs.MessageResponse;
+import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Entitys.Message;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.MessageRepository;
@@ -61,5 +62,16 @@ public class MessageService {
         } catch (Exception e) {
             throw new IOException("Erro ao deletar mensagem: " + e.getMessage());
         }
+    }
+
+    public ResponseEntity<List<UserDetails>> getContacts(Authentication auth) {
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new io.jsonwebtoken.io.IOException("User not found"));
+        List<Long> resp = messageRepository.findContacts(user.getId());
+        List<User> contacts = userRepository.findAllById(resp);
+        return ResponseEntity.ok(contacts.stream()
+                .map(UserDetails :: new)
+                .toList());
     }
 }
