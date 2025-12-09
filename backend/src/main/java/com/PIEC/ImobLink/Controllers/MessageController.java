@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.Controllers;
 
 import com.PIEC.ImobLink.DTOs.MessageResponse;
+import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Services.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MessageController {
     private final MessageService messageService;
+
+    @GetMapping("/chats")
+    public ResponseEntity<List<UserDetails>> getChats(Authentication auth) {
+        return messageService.getContacts(auth);
+    }
 
     @PostMapping("/send/{id}")
     public ResponseEntity<MessageResponse> sendMessage(@PathVariable Long id, @RequestParam String content, Authentication auth) throws IOException {
