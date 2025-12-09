@@ -13,4 +13,16 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             "ORDER BY m.sendedAt ASC")
     List<Message> findConversation(Long user1, Long user2);
 
+    @Query("""
+    SELECT DISTINCT
+        CASE
+            WHEN m.sender.id = :userId THEN m.receiver.id
+            ELSE m.sender.id
+        END
+    FROM Message m
+    WHERE m.sender.id = :userId
+       OR m.receiver.id = :userId
+    """)
+    List<Long> findContacts(Long userId);
+
 }
