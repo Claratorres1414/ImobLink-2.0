@@ -9,87 +9,93 @@ export default function ConversasPage() {
   const [meuId, setMeuId] = useState(null);
 
   useEffect(() => {
-    // Buscar ID do usuário logado
     async function carregarMeuId() {
       if (!token) return;
       try {
         const res = await fetch("http://localhost:8080/api/user/account", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) return;
         const data = await res.json();
         setMeuId(data.id);
       } catch (err) {
         console.error("Erro ao buscar usuário logado:", err);
       }
     }
-
     carregarMeuId();
   }, [token]);
+
+  async function carregarContatosBackend() {
+    try {
+      const res = await fetch("http://localhost:8080/api/messages/chats", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) return;
+
+      let listaUsers = await res.json();
+
+      // Remove o próprio usuário
+      listaUsers = listaUsers.filter((u) => u.id !== meuId);
+
+      const listCompleta = await Promise.all(
+        listaUsers.map(async (user) => {
+          // Foto padrão
+          let foto = "/imagemperfil.jpg";
+          let ultimaMensagem = "";
+          let remetente = "";
+
+          try {
+            if (user.imageProfileId) {
+              const resImg = await fetch(`http://localhost:8080/api/images/get/${user.imageProfileId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (resImg.ok) {
+                const blob = await resImg.blob();
+                foto = URL.createObjectURL(blob);
+              }
+            }
+          } catch (err) {}
+
+          // Buscar última mensagem
+          try {
+            const resMsg = await fetch(`http://localhost:8080/api/messages/loadChat/${user.id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (resMsg.ok) {
+              const msgs = await resMsg.json();
+              if (msgs.length > 0) {
+                const ultima = msgs[msgs.length - 1];
+                ultimaMensagem = ultima.content;
+                remetente = ultima.senderId === meuId ? "Você" : user.name;
+              }
+            }
+          } catch (err) {}
+
+          return {
+            id: user.id,
+            name: user.name,
+            foto,
+            ultimaMensagem,
+            remetente,
+          };
+        })
+      );
+
+      setContatos(listCompleta);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   useEffect(() => {
     if (!meuId) return;
 
-    let interval;
-    async function carregarContatos() {
-      const contatosSalvos = JSON.parse(localStorage.getItem("contatos") || "[]");
-
-      const contatosComInfo = await Promise.all(
-        contatosSalvos
-          .filter((c) => c.id && c.id !== meuId) // 🔹 filtra o próprio usuário
-          .map(async (c) => {
-            let foto = "/imagemperfil.jpg";
-            let ultimaMensagem = "";
-            let remetente = "";
-
-            // Buscar foto do usuário
-            try {
-              const resUser = await fetch(`http://localhost:8080/api/user/getAccount/${c.id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (resUser.ok) {
-                const data = await resUser.json();
-                if (data.imageProfileId) {
-                  const resImg = await fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
-                  if (resImg.ok) {
-                    const blob = await resImg.blob();
-                    foto = URL.createObjectURL(blob);
-                  }
-                }
-              }
-            } catch {}
-
-            // Buscar última mensagem
-            try {
-              const resMsg = await fetch(`http://localhost:8080/api/messages/loadChat/${c.id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (resMsg.ok) {
-                const msgs = await resMsg.json();
-                if (msgs.length > 0) {
-                  const ultima = msgs[msgs.length - 1];
-                  ultimaMensagem = ultima.content;
-                  remetente = ultima.senderId === meuId ? "Você" : c.name; // 🔹 identifica quem enviou
-                }
-              }
-            } catch {}
-
-            return { ...c, foto, ultimaMensagem, remetente };
-          })
-      );
-
-      setContatos(contatosComInfo);
-    }
-
-    carregarContatos();
-
-    // Polling a cada 5 segundos para atualizar últimas mensagens
-    interval = setInterval(carregarContatos, 5000);
+    carregarContatosBackend();
+    const interval = setInterval(carregarContatosBackend, 5000);
 
     return () => clearInterval(interval);
-  }, [token, meuId]);
+  }, [meuId]);
 
   return (
     <DashboardLayout>
@@ -105,9 +111,15 @@ export default function ConversasPage() {
               onClick={() => navigate(`/chat/${c.id}`)}
               className="cursor-pointer p-4 bg-white rounded shadow hover:bg-gray-100 flex items-center gap-4"
             >
-              <img src={c.foto} alt={c.name} className="w-12 h-12 rounded-full object-cover" />
+              <img
+                src={c.foto}
+                alt={c.name}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+
               <div className="flex-1">
                 <strong>{c.name}</strong>
+
                 {c.ultimaMensagem && (
                   <p className="text-gray-500 text-sm truncate">
                     <span className="font-semibold">{c.remetente}: </span>

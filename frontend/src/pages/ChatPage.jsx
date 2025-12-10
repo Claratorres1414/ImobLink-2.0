@@ -97,7 +97,7 @@ export default function ChatPage() {
         {usuarioAlvo ? `Conversando com ${usuarioAlvo.name}` : "Carregando..."}
       </h2>
 
-      <div className="flex flex-col px-4 h-[85vh]">
+      <div className="flex flex-col px-4 h-[85vh] pb-[70px] relative">
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
           {mensagens.length === 0 && (
             <p className="text-gray-500 text-center mt-10">Nenhuma mensagem ainda. Inicie a conversa!</p>
@@ -125,7 +125,7 @@ export default function ChatPage() {
                   )}
                   <p className="text-sm">{msg.content}</p>
                   <p className="text-[10px] opacity-70 mt-1 text-right">
-                    {new Date(msg.sendedAt).toLocaleString("pt-BR")}
+                    {msg.sendedAt && new Date(msg.sendedAt).toLocaleString("pt-BR")}
                   </p>
                 </div>
               </div>
@@ -133,7 +133,7 @@ export default function ChatPage() {
           })}
         </div>
 
-        <div className="flex gap-3 mt-3">
+        <div className="flex gap-3 p-3 bg-white border-t border-gray-300 fixed bottom-0 left-0 right-0 max-w-[calc(100%-260px)] ml-[260px]">
           <input
             className="flex-grow border rounded-lg p-2"
             placeholder="Digite sua mensagem..."
