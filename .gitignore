@@ -1,0 +1,6 @@
+# Node
+node_modules/
+frontend/node_modules/
+# IDEs
+.idea/
+*.iml
