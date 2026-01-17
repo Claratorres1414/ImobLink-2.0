@@ -1,5 +1,12 @@
 # ImobLink 2.0
 
+![Java](https://img.shields.io/badge/Java-17-blue)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
+![Build](https://img.shields.io/badge/build-passing-success)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
+[![Contributing](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 ImobLink é uma plataforma voltada para o setor imobiliário, funcionando como uma rede social de anúncios de imóveis, onde usuários podem publicar, interagir, favoritar e comentar anúncios.
 
 Este repositório contém **todo o ecossistema da aplicação**, incluindo:
@@ -94,3 +101,18 @@ Este repositório contém **todo o ecossistema da aplicação**, incluindo:
 - Organização de uma API REST de médio porte
 - Integração com microserviços externos
 - Boas práticas de arquitetura backend com Spring Boot
+
+---
+
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas!  
+Se você deseja colaborar com o projeto, por favor leia o guia de contribuição:
+
+➡️ [CONTRIBUTING.md](CONTRIBUTING.md)
+
+Lá você encontrará:
+- Padrões de branch e commits
+- Estrutura do projeto
+- Regras para Pull Requests
+- Boas práticas para frontend e backend
