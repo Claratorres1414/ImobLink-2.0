@@ -94,6 +94,35 @@ Este repositório contém **todo o ecossistema da aplicação**, incluindo:
 
 ---
 
+## 🗒️ Documentação da API
+
+### Swagger UI (Ambiente local)
+http://localhost:8080/swagger-ui/index.html
+
+### OpenAPI Contract
+O contrato da API está versionado neste repositório:
+docs/api/openapi.json
+
+Esse arquivo é gerado automaticamente a partir do Swagger ao subir o backend.
+
+### Autenticação
+Esta API utiliza autenticação via JWT Bearer Token.
+
+No Swagger, clique em **Authorize** e cole seu token no formato:
+Bearer SEU_TOKEN_AQUI
+
+### Usuário de teste
+O token pode ser obtido utilizando o endpoint de login com o usuário de exemplo:
+
+```json
+{
+  "email": "user0@gmail.com",
+  "password": "123456"
+}
+```
+
+---
+
 ## 📚 O que Aprendi com este Projeto (Clara Torres)
 
 - Implementação prática de autenticação e autorização com JWT
