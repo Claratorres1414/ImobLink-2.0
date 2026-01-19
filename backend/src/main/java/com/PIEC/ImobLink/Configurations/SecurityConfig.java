@@ -38,6 +38,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // libera apenas as rotas de integração com o FastAPI
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/integracao/**").permitAll()
                         .requestMatchers("/api/feed").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
