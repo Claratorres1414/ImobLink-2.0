@@ -52,6 +52,20 @@ public class MessageService {
         return ResponseEntity.ok(responses);
     }
 
+    public ResponseEntity<MessageResponse> editMessage(Long messageId, String content, Authentication auth) throws IOException {
+        String email = auth.getName();
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new IOException("User not found"));
+        try {
+            Message message = messageRepository.findMessageById(messageId);
+            message.setContent(content);
+            messageRepository.save(message);
+            return ResponseEntity.ok(new MessageResponse(message));
+        } catch (Exception e) {
+            throw new IOException("Erro ao salvar mensagem: " + e.getMessage());
+        }
+    }
+
     public ResponseEntity<String> deleteMessage(Long messageId, Authentication auth) throws IOException {
         String email = auth.getName();
         userRepository.findByEmail(email)

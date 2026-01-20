@@ -50,6 +50,15 @@ public class MessageController {
     }
 
     @Operation(
+            summary = "Editar mensagem",
+            description = "Permite editar o conteúdo de uma mensagem posteriormente enviada"
+    )
+    @PatchMapping("/edit/{mId}")
+    public ResponseEntity<MessageResponse> editMessage(@PathVariable Long mId, @RequestParam String content, Authentication auth) throws IOException {
+        return messageService.editMessage(mId, content, auth);
+    }
+
+    @Operation(
             summary = "Deletar mensagem",
             description = "Permite deletar uma mensagem anteriormente enviada"
     )

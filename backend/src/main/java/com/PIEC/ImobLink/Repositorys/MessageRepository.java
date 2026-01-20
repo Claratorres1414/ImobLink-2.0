@@ -25,4 +25,5 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     """)
     List<Long> findContacts(Long userId);
 
+    Message findMessageById(Long messageId);
 }
