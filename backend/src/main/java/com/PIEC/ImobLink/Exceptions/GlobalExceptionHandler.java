@@ -1,58 +1,88 @@
 package com.PIEC.ImobLink.Exceptions;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
-import java.util.Map;
-
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
-    //Exceções genéricas
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
-        return buildResponse("Erro interno: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    //Usuário não encontrado
-    @ExceptionHandler({UsernameNotFoundException.class})
-    public ResponseEntity<Object> handleUsernameNotFoundException(Exception ex) {
-        return buildResponse("Usuário não encontrado: " + ex.getMessage(), HttpStatus.NOT_FOUND);
-    }
-
-    //Token ou cred. inválidas
-    @ExceptionHandler({BadCredentialsException.class})
-    public ResponseEntity<Object> handleBadCredentialsException(Exception ex) {
-        return buildResponse("Credênciais inválidas: " + ex.getMessage(), HttpStatus.UNAUTHORIZED);
-    }
-
-    //Erro na validação de argumento
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Object> handleValidationException(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage())
+    private ResponseEntity<ApiError> buildResponse(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request
+    ) {
+        ApiError error = new ApiError(
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI()
         );
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+
+        return ResponseEntity.status(status).body(error);
     }
 
-    //Token inválido
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ApiError> handleUserNotFound(
+            UsernameNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                "Usuário não encontrado",
+                request
+        );
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(
+            BadCredentialsException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                "Credenciais inválidas",
+                request
+        );
+    }
+
     @ExceptionHandler(io.jsonwebtoken.JwtException.class)
-    public ResponseEntity<Object> handleJwtException(Exception ex) {
-        return buildResponse("Token inválido ou expirado: " + ex.getMessage(), HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<ApiError> handleJwt(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                "Token inválido ou expirado",
+                request
+        );
     }
 
-    private ResponseEntity<Object> buildResponse(String msg, HttpStatus status) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("menssagem", msg);
-        body.put("status", status.value());
-        body.put("sucesso", false);
-        return new ResponseEntity<>(body, status);
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "Campos inválidos na requisição",
+                request
+        );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleGeneric(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Erro interno no servidor",
+                request
+        );
     }
 }
