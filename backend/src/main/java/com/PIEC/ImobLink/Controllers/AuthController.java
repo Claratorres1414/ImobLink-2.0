@@ -3,13 +3,17 @@ package com.PIEC.ImobLink.Controllers;
 import com.PIEC.ImobLink.DTOs.AuthResponse;
 import com.PIEC.ImobLink.DTOs.LoginRequest;
 import com.PIEC.ImobLink.DTOs.RegisterRequest;
+import com.PIEC.ImobLink.Response.ApiResponse;
+import com.PIEC.ImobLink.Response.ResponseUtil;
 import com.PIEC.ImobLink.Services.AuthenticationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.nio.file.AccessDeniedException;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,13 +27,11 @@ public class AuthController {
             description = "Permite que o user faça login na aplicação"
     )
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        try{
-            AuthResponse response = authenticationService.login(request);
-            return ResponseEntity.ok(response);
-        } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody LoginRequest request) {
+        return ResponseUtil.ok(
+                "Bem-vindo(a) à ImobLinnk",
+                authenticationService.login(request)
+        );
     }
 
     @Operation(
@@ -37,8 +39,11 @@ public class AuthController {
             description = "Permite que o user crie uma conta na aplicação"
     )
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request){
-        return ResponseEntity.ok(authenticationService.register(request));
+    public ResponseEntity<ApiResponse<AuthResponse>> register(@RequestBody RegisterRequest request){
+        return ResponseUtil.created(
+                "Conta criada com sucesso",
+                authenticationService.register(request)
+        );
     }
 
     @Operation(
@@ -46,7 +51,10 @@ public class AuthController {
             description = "Permite que o ADMIN realize login na interface administrativa"
     )
     @PostMapping("/adm/login")
-    public ResponseEntity<AuthResponse> admLogin(@RequestBody LoginRequest request){
-        return ResponseEntity.ok(authenticationService.loginAdm(request));
+    public ResponseEntity<ApiResponse<AuthResponse>> admLogin(@RequestBody @Valid LoginRequest request) throws AccessDeniedException {
+        return ResponseUtil.ok(
+                "Bem-vindo, ADM",
+                authenticationService.loginAdm(request)
+        );
     }
 }
