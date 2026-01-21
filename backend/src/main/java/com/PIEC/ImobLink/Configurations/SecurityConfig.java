@@ -1,6 +1,8 @@
 package com.PIEC.ImobLink.Configurations;
 
 import com.PIEC.ImobLink.SecurityFilter.JwtAuthFilter;
+import com.PIEC.ImobLink.SecurityFilter.JwtAuthenticationEntryPoint;
+import com.PIEC.ImobLink.SecurityFilter.CustomAccessDeniedHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,9 +31,10 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableMethodSecurity
 public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) throws Exception {
         System.out.println("SecurityFilterChain carregada com sucesso");
         return http
                 .cors(withDefaults())
@@ -51,6 +54,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/comments/**").hasAnyAuthority("USER", "ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/follow/**").hasAnyAuthority("USER", "ADMIN", "SUPER_ADMIN")
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

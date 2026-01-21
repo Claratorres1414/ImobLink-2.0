@@ -8,13 +8,12 @@ import com.PIEC.ImobLink.Jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
-
-import java.nio.file.AccessDeniedException;
 
 @Service
 @RequiredArgsConstructor
@@ -44,7 +43,7 @@ public class AuthenticationService {
         );
 
         var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 
         // 🔑 Gera token com email, role e nome
         String token = jwtUtil.generateToken(
@@ -62,7 +61,7 @@ public class AuthenticationService {
         );
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 
         if (user.getRole() != Role.ADMIN && user.getRole() != Role.SUPER_ADMIN) {
             throw new AccessDeniedException("Usuário não é ADM");
