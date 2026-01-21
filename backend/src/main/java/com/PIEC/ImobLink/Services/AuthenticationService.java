@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 
+import java.nio.file.AccessDeniedException;
+
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -37,13 +39,9 @@ public class AuthenticationService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-            );
-        } catch (AuthenticationException e) {
-            throw new RuntimeException("Credenciais inválidas", e);
-        }
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
 
         var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
@@ -58,27 +56,22 @@ public class AuthenticationService {
         return new AuthResponse(token);
     }
 
-    public AuthResponse loginAdm(LoginRequest request) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-            );
-        } catch (AuthenticationException e) {
-            throw new RuntimeException("Credenciais inválidas", e);
-        }
+    public AuthResponse loginAdm(LoginRequest request) throws AccessDeniedException {
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
-            String token = jwtUtil.generateToken(
-                    user.getEmail(),
-                    user.getRole().name(),
-                    user.getName()
-            );
-            return new AuthResponse(token);
+        if (user.getRole() != Role.ADMIN && user.getRole() != Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Usuário não é ADM");
         }
-
-        return new AuthResponse("Acesso negado, você não tem autoridade suficiente para acessar esse endpoint");
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name(),
+                user.getName()
+        );
+        return new AuthResponse(token);
     }
 }
