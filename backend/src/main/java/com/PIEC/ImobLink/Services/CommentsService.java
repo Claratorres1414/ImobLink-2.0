@@ -9,8 +9,11 @@ import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,7 +27,7 @@ public class CommentsService {
     public CommentResponse comment(CommentRequest req, Long userId, Authentication auth){
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         LocalDateTime createdAt = LocalDateTime.now();
 
@@ -34,18 +37,14 @@ public class CommentsService {
         comment.setUser(userRepository.findById(userId).get());
         comment.setAuthor(user);
 
-        try{
-            commentRepository.save(comment);
-            return new CommentResponse(comment);
-        }catch (Exception e){
-            throw new RuntimeException("Comment creation failed");
-        }
+        commentRepository.save(comment);
+        return new CommentResponse(comment);
     }
 
     public CommentResponse commentPost(CommentRequest req, Long postId, Authentication auth){
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         LocalDateTime createdAt = LocalDateTime.now();
 
@@ -56,18 +55,14 @@ public class CommentsService {
         comment.setAuthor(user);
         comment.setPost(postRepository.findById(postId).get());
 
-        try{
-            commentRepository.save(comment);
-            return new CommentResponse(comment);
-        }catch (Exception e){
-            throw new RuntimeException("Comment creation failed");
-        }
+        commentRepository.save(comment);
+        return new CommentResponse(comment);
     }
 
     public List<CommentResponse> getCommentsByUserId(Long userId, Authentication auth){
         String email = auth.getName();
         userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return commentRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
@@ -78,7 +73,7 @@ public class CommentsService {
     public List<CommentResponse> getCommentsByPostId(Long postId, Authentication auth){
         String email = auth.getName();
         userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return commentRepository.findAllByPostIdOrderByCreatedAtDesc(postId)
                 .stream()
@@ -86,28 +81,19 @@ public class CommentsService {
                 .toList();
     }
 
-    public boolean deleteComment(Long id, Authentication auth) {
+    public void deleteComment(Long id, Authentication auth) throws IOException {
         Comment comment;
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        try {
-            comment = commentRepository.findById(id).get();
-        } catch (Exception e) {
-            System.out.println("Comment not found, error: " + e.getMessage());
-            return false;
-        }
+
+        comment = commentRepository.findById(id).get();
 
         if (comment.getAuthor() == user){
-            try{
-                commentRepository.delete(comment);
-                return true;
-            } catch (Exception e) {
-                System.out.println("Comment deletion failed, error " + e.getMessage());
-                return false;
-            }
+            commentRepository.delete(comment);
+            return;
         }
         System.out.println("Invalid credentials!");
-        return false;
+        throw new AccessDeniedException("Você não é autor deste comentário");
     }
 }

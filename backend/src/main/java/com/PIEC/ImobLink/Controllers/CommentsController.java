@@ -2,6 +2,8 @@ package com.PIEC.ImobLink.Controllers;
 
 import com.PIEC.ImobLink.DTOs.CommentRequest;
 import com.PIEC.ImobLink.DTOs.CommentResponse;
+import com.PIEC.ImobLink.Response.ApiResponse;
+import com.PIEC.ImobLink.Response.ResponseUtil;
 import com.PIEC.ImobLink.Services.CommentsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -26,8 +29,11 @@ public class CommentsController {
             description = "Permite realizar comentários no perfil de um usuário"
     )
     @PostMapping("/comment/{userId}")
-    public ResponseEntity<CommentResponse> addComment(@RequestBody CommentRequest commentRequest, @PathVariable Long userId, Authentication auth) {
-        return ResponseEntity.ok(commentsService.comment(commentRequest, userId, auth));
+    public ResponseEntity<ApiResponse<CommentResponse>> addComment(@RequestBody CommentRequest commentRequest, @PathVariable Long userId, Authentication auth) {
+        return ResponseUtil.created(
+                "Comentário publicado com sucesso",
+                commentsService.comment(commentRequest, userId, auth)
+        );
     }
 
     @Operation(
@@ -35,8 +41,11 @@ public class CommentsController {
             description = "Permite realizar comentários em um post"
     )
     @PostMapping("/comment/post/{postId}")
-    public ResponseEntity<CommentResponse> addCommentPost(@RequestBody CommentRequest commentRequest, @PathVariable Long postId, Authentication auth) {
-        return ResponseEntity.ok(commentsService.commentPost(commentRequest, postId, auth));
+    public ResponseEntity<ApiResponse<CommentResponse>> addCommentPost(@RequestBody CommentRequest commentRequest, @PathVariable Long postId, Authentication auth) {
+        return ResponseUtil.created(
+                "Comentário publicado com sucesso",
+                commentsService.commentPost(commentRequest, postId, auth)
+        );
     }
 
     @Operation(
@@ -44,8 +53,11 @@ public class CommentsController {
             description = "Permite buscar a lista de comentários por perfil do usuário"
     )
     @GetMapping("/getComments/{userId}")
-    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long userId, Authentication auth) {
-        return ResponseEntity.ok(commentsService.getCommentsByUserId(userId, auth));
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(@PathVariable Long userId, Authentication auth) {
+        return ResponseUtil.ok(
+                "Comentários buscados com sucesso",
+                commentsService.getCommentsByUserId(userId, auth)
+        );
     }
 
     @Operation(
@@ -53,8 +65,11 @@ public class CommentsController {
             description = "Permite buscar a lista de comentários por post"
     )
     @GetMapping("/getComments/post/{postId}")
-    public ResponseEntity<List<CommentResponse>> getCommentsByPost(@PathVariable Long postId, Authentication auth) {
-        return ResponseEntity.ok(commentsService.getCommentsByPostId(postId, auth));
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> getCommentsByPost(@PathVariable Long postId, Authentication auth) {
+        return ResponseUtil.ok(
+                "Comentários buscados com sucesso",
+                commentsService.getCommentsByPostId(postId, auth)
+        );
     }
 
     @Operation(
@@ -62,11 +77,10 @@ public class CommentsController {
             description = "Permite deletar seu comentário"
     )
     @DeleteMapping("/deleteComment/{id}")
-    public ResponseEntity<String> deleteComment(@PathVariable Long id, Authentication auth) {
-        boolean res = commentsService.deleteComment(id, auth);
-        if (res) {
-            return ResponseEntity.ok("Comment deleted");
-        }
-        return ResponseEntity.badRequest().body("Não foi possível deletar o comentário");
+    public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable Long id, Authentication auth) throws IOException {
+        commentsService.deleteComment(id, auth);
+        return ResponseUtil.noContent(
+                "Comentário deletado com sucesso"
+        );
     }
 }
