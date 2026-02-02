@@ -7,14 +7,11 @@ import com.PIEC.ImobLink.Repositorys.*;
 import com.PIEC.ImobLink.Util.FavsLimitedHeap;
 import com.PIEC.ImobLink.Util.LikesLimitedHeap;
 import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
-import io.jsonwebtoken.io.IOException;
-import jakarta.servlet.ServletException;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -81,10 +78,11 @@ public class PostService {
     }
 
     @Transactional
-    public String createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, String type, Authentication auth) throws IOException, java.io.IOException {
+    public PostResponse createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, String type, Authentication auth) throws java.io.IOException {
+        //Remover IO ao refatorar Image
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         if (images.size() > 10 || images.isEmpty()){
             throw new IllegalArgumentException("Quantidade de imagens inválida, deve ter no mínimo 1 imagem e no máximo 10!");
@@ -105,15 +103,11 @@ public class PostService {
             post.addImage(savedImage);
         }
 
-        try{
-            postRepository.save(post);
-            for(Images image: post.getImages()){
-                image.setPost(post);
-            }
-            return "post created!";
-        }catch (Exception e){
-            return "post creation failed!";
+        postRepository.save(post);
+        for(Images image: post.getImages()){
+            image.setPost(post);
         }
+        return new PostResponse(post);
     }
 
     public List<PostResponse> getFeed() {
@@ -123,145 +117,126 @@ public class PostService {
                 .toList();
     }
 
-    public List<PostResponse> getUserFavs(Authentication auth) throws ServletException {
+    public List<PostResponse> getUserFavs(Authentication auth) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         List<PostResponse> faveds = new ArrayList<>();
-        try {
-            for (Favs fav : user.getFavs()) {
-                Post post = fav.getPost();
-                faveds.add(new PostResponse(post));
-            }
-            return faveds;
-        } catch (Exception e) {
-            throw new ServletException("Erro ao obter os favoritos" + e.getMessage());
+        for (Favs fav : user.getFavs()) {
+            Post post = fav.getPost();
+            faveds.add(new PostResponse(post));
         }
+        return faveds;
     }
 
-    public ResponseEntity<List<PostResponse>> searchPostByAvenue(String avenue, Authentication auth) throws IOException {
+    public List<PostResponse> searchPostByAvenue(String avenue, Authentication auth) {
         String email = auth.getName();
         userRepository.findByEmail(email)
-                .orElseThrow(() -> new IOException("User not found"));
-        try {
-            List<Post> responses = postRepository.findTop10ByAvenueContainingIgnoreCase(avenue);
-            List<PostResponse> postResponses = new ArrayList<>();
-            for (Post post : responses) {
-                postResponses.add(new PostResponse(post));
-            }
-            return new ResponseEntity<>(postResponses, HttpStatus.OK);
-        } catch (Exception e) {
-            throw new IOException("Erro ao tentar realizar pesquisa: " + e.getMessage());
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        List<Post> responses = postRepository.findTop10ByAvenueContainingIgnoreCase(avenue);
+        List<PostResponse> postResponses = new ArrayList<>();
+        for (Post post : responses) {
+            postResponses.add(new PostResponse(post));
         }
+        return postResponses;
     }
 
-    public ResponseEntity<List<PostResponse>> searchPostByStreet(String street, Authentication auth) throws IOException {
+    public List<PostResponse> searchPostByStreet(String street, Authentication auth) {
         String email = auth.getName();
         userRepository.findByEmail(email)
-                .orElseThrow(() -> new IOException("User not found"));
-        try {
-            List<Post> responses = postRepository.findTop10ByStreetContainingIgnoreCase(street);
-            List<PostResponse> postResponses = new ArrayList<>();
-            for (Post post : responses) {
-                postResponses.add(new PostResponse(post));
-            }
-            return new ResponseEntity<>(postResponses, HttpStatus.OK);
-        } catch (Exception e) {
-            throw new IOException("Erro ao tentar realizar pesquisa: " + e.getMessage());
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        List<Post> responses = postRepository.findTop10ByStreetContainingIgnoreCase(street);
+        List<PostResponse> postResponses = new ArrayList<>();
+        for (Post post : responses) {
+            postResponses.add(new PostResponse(post));
         }
+        return postResponses;
     }
 
-    public Boolean editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
+    public PostResponse editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) {
         String email = auth.getName();
         userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        try {
-            Post post = postRepository.getPostById(id);
-            if (newInfoPost.getDescription() != null) {
-                post.setDescription(newInfoPost.getDescription());
-            }
-            if (newInfoPost.getPrice() != 0){
-                post.setPrice(newInfoPost.getPrice());
-            }
-            if (newInfoPost.getStreet() != null) {
-                post.setStreet(newInfoPost.getStreet());
-            }
-            if (newInfoPost.getAvenue() != null) {
-                post.setAvenue(newInfoPost.getAvenue());
-            }
-            if (newInfoPost.getNumber() != null) {
-                post.setNumber(newInfoPost.getNumber());
-            }
-            if (newInfoPost.getType() != null) {
-                post.setType(newInfoPost.getType());
-            }
-
-            post.setWasUpdated(true);
-            postRepository.save(post);
-            return true;
-        }catch (Exception e){
-            throw new ServletException("Erro ao tentar editar publicação: " + e);
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        Post post = postRepository.getPostById(id);
+        if (newInfoPost.getDescription() != null) {
+            post.setDescription(newInfoPost.getDescription());
         }
+        if (newInfoPost.getPrice() != 0){
+            post.setPrice(newInfoPost.getPrice());
+        }
+        if (newInfoPost.getStreet() != null) {
+            post.setStreet(newInfoPost.getStreet());
+        }
+        if (newInfoPost.getAvenue() != null) {
+            post.setAvenue(newInfoPost.getAvenue());
+        }
+        if (newInfoPost.getNumber() != null) {
+            post.setNumber(newInfoPost.getNumber());
+        }
+        if (newInfoPost.getType() != null) {
+            post.setType(newInfoPost.getType());
+        }
+
+        post.setWasUpdated(true);
+        postRepository.save(post);
+
+        return new PostResponse(post);
     }
 
-   public String deletePost(Long id, Authentication auth) throws IOException, ServletException {
+   public void deletePost(Long id, Authentication auth) {
         String email = auth.getName();
         userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        try{
-            postRepository.delete(get(id));
-            boolean viewsResp = viewsHeap.remove(id);
-            boolean favsResp = favsHeap.remove(id);
-            boolean likesResp = likesHeap.remove(id);
-            if (viewsResp){
-                initializedV = false;
-            }
-            if (favsResp){
-                initializedF = false;
-            }
-            if (likesResp){
-                initializedL = false;
-            }
-            return "post deleted!";
-        } catch (Exception e){
-            throw new ServletException("Erro ao excluir post: " + e);
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        postRepository.delete(get(id));
+        boolean viewsResp = viewsHeap.remove(id);
+        boolean favsResp = favsHeap.remove(id);
+        boolean likesResp = likesHeap.remove(id);
+        if (viewsResp){
+            initializedV = false;
+        }
+        if (favsResp){
+            initializedF = false;
+        }
+        if (likesResp){
+            initializedL = false;
         }
     }
 
-    public String removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) throws IOException {
+    public void removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) {
         String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new IOException("User not found"));
+        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found"));
         Post post = postRepository.getPostById(postId);
         if (post.getImages().size() > 1){
             post.removeImage(imageId);
             imageRepository.deleteById(imageId);
-            return "Image removed!";
+            new PostResponse(post);
+            return;
         }
-        return "Erro ao remover a imagem ou o post está com uma única imagem!";
+        throw new UnsupportedOperationException("Quantidade de imagens mínima atingida");
     }
 
-    public ResponseEntity<String> addImageToPost(Long postId, MultipartFile image, Authentication auth) throws IOException, java.io.IOException {
+    public PostResponse addImageToPost(Long postId, MultipartFile image, Authentication auth) throws java.io.IOException {
         String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new IOException("Erro ao buscar usuário"));
+        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar usuário"));
         Post post = postRepository.getPostById(postId);
         if (post.getImages().size() == 10){
-            throw new IOException("Esse Post já possui o máximo de imagens permitidas!");
+            throw new UnsupportedOperationException("Esse Post já possui o máximo de imagens permitidas!");
         }
         Images savedImage = imageService.saveImage(image,auth);
         post.addImage(savedImage);
-        try {
-            postRepository.save(post);
-            savedImage.setPost(post);
-            imageRepository.save(savedImage);
-        } catch (Exception e){
-            throw new IOException("Erro ao tentar adicionar imagem: " + e);
-        }
-        return new ResponseEntity<>("Imagem adicionada!", HttpStatus.OK);
+
+        postRepository.save(post);
+        savedImage.setPost(post);
+        imageRepository.save(savedImage);
+
+        return new PostResponse(post);
     }
 
-    public List<PostResponse> getPostsByUser(String email) {
+    public List<PostResponse> getPostsByUser(Authentication auth) {
+        String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
 
         List<PostResponse> posts = user.getPosts().stream()
                 .map(PostResponse::new)
@@ -286,174 +261,138 @@ public class PostService {
         return posts;
     }
 
-    public PostResponse getPostById(Long id, Authentication auth) throws ServletException {
+    public PostResponse getPostById(Long id, Authentication auth) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found " + email));
-        try {
-            Post post = postRepository.getPostById(id);
-            post.setViews(post.getViews() + 1);
-            viewsHeap.add(new PostResponse(post));
-            List<User> reacheds = post.getReacheds();
-            List<Post> vieweds = user.getPosts();
-            boolean reached = false;
-            for (User u : reacheds) {
-                if (u.getEmail().equals(email)) {
-                    reached = true;
-                    break;
-                }
-            }
+                .orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
 
-            if (!reached) {
-                reacheds.add(user);
-                vieweds.add(post);
-                post.setReacheds(reacheds);
+        Post post = postRepository.getPostById(id);
+        post.setViews(post.getViews() + 1);
+        viewsHeap.add(new PostResponse(post));
+        List<User> reacheds = post.getReacheds();
+        List<Post> vieweds = user.getPosts();
+        boolean reached = false;
+        for (User u : reacheds) {
+            if (u.getEmail().equals(email)) {
+                reached = true;
+                break;
             }
-
-            postRepository.save(post);
-            List<Favs> favs = post.getFavedTimes();
-            List<Likes> likes = post.getLikedTimes();
-            List<Comment> comments = post.getComments();
-            PostResponse postResponse = new PostResponse(post);
-            for (Favs fav : favs) {
-                if (fav.getUser().getEmail().equals(email)) {
-                    postResponse.setWasFaved(true);
-                    break;
-                }
-            }
-            for (Likes like : likes) {
-                if (like.getUser().getEmail().equals(email)) {
-                    postResponse.setWasLiked(true);
-                    break;
-                }
-            }
-            for (Comment comment : comments) {
-                postResponse.addComment(comment);
-            }
-            return postResponse;
-        } catch (Exception e){
-            throw new ServletException("Erro ao tentar buscar post: " + e);
         }
+
+        if (!reached) {
+            reacheds.add(user);
+            vieweds.add(post);
+            post.setReacheds(reacheds);
+        }
+
+        postRepository.save(post);
+        List<Favs> favs = post.getFavedTimes();
+        List<Likes> likes = post.getLikedTimes();
+        List<Comment> comments = post.getComments();
+        PostResponse postResponse = new PostResponse(post);
+        for (Favs fav : favs) {
+            if (fav.getUser().getEmail().equals(email)) {
+                postResponse.setWasFaved(true);
+                break;
+            }
+        }
+        for (Likes like : likes) {
+            if (like.getUser().getEmail().equals(email)) {
+                postResponse.setWasLiked(true);
+                break;
+            }
+        }
+        for (Comment comment : comments) {
+            postResponse.addComment(comment);
+        }
+        return postResponse;
     }
 
     public Post get(Long id) {
-        try{
-            return postRepository.getPostById(id);
-        }catch (Exception e){
-            return null;
-        }
+        return postRepository.getPostById(id);
     }
 
-    public Boolean favPost(Long id, Authentication auth) throws ServletException {
+    public Boolean favPost(Long id, Authentication auth) {
         String email = auth.getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
-        Post post;
-        try {
-            post = postRepository.getPostById(id);
-        } catch (Exception e) {
-            throw new ServletException("Erro ao tentar buscar post: " + e);
-        }
-        try {
-            for (Favs favPosts : user.getFavs()) {
-                if (favPosts.getPost().equals(post)) {
-                    return true;
-                }
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        Post post = postRepository.getPostById(id);
+
+        for (Favs favPosts : user.getFavs()) {
+            if (favPosts.getPost().equals(post)) {
+                return true;
             }
-            Favs favPost = new Favs();
-            favPost.setUser(user);
-            favPost.setAuthor(post.getUser());
-            favPost.setPost(post);
-            favsRepository.save(favPost);
-            user.addFav(favPost);
-            post.getFavedTimes().add(favPost);
-            favsHeap.add(new PostResponse(post));
-            return true;
-        } catch (Exception e){
-            throw new ServletException("Erro ao tentar favoritar post: " + e);
         }
+        Favs favPost = new Favs();
+        favPost.setUser(user);
+        favPost.setAuthor(post.getUser());
+        favPost.setPost(post);
+        favsRepository.save(favPost);
+        user.addFav(favPost);
+        post.getFavedTimes().add(favPost);
+        favsHeap.add(new PostResponse(post));
+        return true;
     }
 
-    public Boolean unfavPost(Long id, Authentication auth) throws ServletException {
+    public Boolean unfavPost(Long id, Authentication auth) {
         String email = auth.getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
         Post post;
-        try {
-            post = postRepository.getPostById(id);
-        } catch (Exception e) {
-            throw new ServletException("Erro ao tentar buscar post: " + e);
-        }
-        try {
-            for (Favs favPost : user.getFavs()) {
-                if (favPost.getPost().equals(post)) {
-                    post.getFavedTimes().remove(favPost);
-                    user.getFavs().remove(favPost);
-                    favsRepository.delete(favPost);
-                    boolean favsResp = favsHeap.remove(id);
-                    if (favsResp) {
-                        initializedF = false;
-                    }
-                    return true;
+
+        post = postRepository.getPostById(id);
+
+        for (Favs favPost : user.getFavs()) {
+            if (favPost.getPost().equals(post)) {
+                post.getFavedTimes().remove(favPost);
+                user.getFavs().remove(favPost);
+                favsRepository.delete(favPost);
+                boolean favsResp = favsHeap.remove(id);
+                if (favsResp) {
+                    initializedF = false;
                 }
+                return true;
             }
-        } catch (Exception e){
-            throw new ServletException("Erro ao tentar remover favoritos: " + e);
         }
+
         return false;
     }
 
-    public Boolean likePost(Long id, Authentication auth) throws ServletException {
+    public Boolean likePost(Long id, Authentication auth) {
         String email = auth.getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
-        Post post;
-        try {
-            post = postRepository.getPostById(id);
-        } catch (Exception e) {
-            throw new ServletException("Erro ao tentar buscar post: " + e);
-        }
-        try {
-            for (Likes likedPosts : user.getLikes()) {
-                if (likedPosts.getPost().equals(post)) {
-                    return true;
-                }
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        Post post = postRepository.getPostById(id);
+
+        for (Likes likedPosts : user.getLikes()) {
+            if (likedPosts.getPost().equals(post)) {
+                return true;
             }
-            Likes likedPost = new Likes();
-            likedPost.setUser(user);
-            likedPost.setAuthor(post.getUser());
-            likedPost.setPost(post);
-            likesRepository.save(likedPost);
-            user.addLikes(likedPost);
-            post.getLikedTimes().add(likedPost);
-            likesHeap.add(new PostResponse(post));
-            return true;
-        } catch (Exception e){
-            throw new ServletException("Erro ao tentar dar like no post: " + e);
         }
+        Likes likedPost = new Likes();
+        likedPost.setUser(user);
+        likedPost.setAuthor(post.getUser());
+        likedPost.setPost(post);
+        likesRepository.save(likedPost);
+        user.addLikes(likedPost);
+        post.getLikedTimes().add(likedPost);
+        likesHeap.add(new PostResponse(post));
+        return true;
     }
 
-    public Boolean unlikePost(Long id, Authentication auth) throws ServletException {
+    public Boolean unlikePost(Long id, Authentication auth) {
         String email = auth.getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
-        Post post;
-        try {
-            post = postRepository.getPostById(id);
-        } catch (Exception e) {
-            throw new ServletException("Erro ao tentar buscar post: " + e);
-        }
-        try {
-            for (Likes likedPost : user.getLikes()) {
-                if (likedPost.getPost().equals(post)) {
-                    post.getLikedTimes().remove(likedPost);
-                    user.getLikes().remove(likedPost);
-                    likesRepository.delete(likedPost);
-                    boolean likeResp = likesHeap.remove(id);
-                    if (likeResp) {
-                        initializedL = false;
-                    }
-                    return true;
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        Post post = postRepository.getPostById(id);
+
+        for (Likes likedPost : user.getLikes()) {
+            if (likedPost.getPost().equals(post)) {
+                post.getLikedTimes().remove(likedPost);
+                user.getLikes().remove(likedPost);
+                likesRepository.delete(likedPost);
+                boolean likeResp = likesHeap.remove(id);
+                if (likeResp) {
+                    initializedL = false;
                 }
+                return true;
             }
-        } catch (Exception e){
-            throw new ServletException("Erro ao tentar remover like: " + e);
         }
         return false;
     }
@@ -464,29 +403,26 @@ public class PostService {
         return post.getFavedTimes().size();
     }
 
-    public int getLikedTimesByPostId(Long postId, Authentication auth) throws ServletException {
-        userRepository.findByEmail(auth.getName()).orElseThrow(() -> new ServletException("User not found " + auth.getName()));
+    public int getLikedTimesByPostId(Long postId, Authentication auth) {
+        userRepository.findByEmail(auth.getName()).orElseThrow(() -> new UsernameNotFoundException("User not found " + auth.getName()));
         Post post = postRepository.getPostById(postId);
         return post.getLikedTimes().size();
     }
 
-    public List<PostResponse> getFavedPostsByUserId(Long userId) throws ServletException {
+    public List<PostResponse> getFavedPostsByUserId(Long userId) {
         User user = userRepository.getReferenceById(userId);
         List<PostResponse> faveds = new ArrayList<>();
-        try {
-            for (Favs fav : user.getFavs()) {
-                Post post = fav.getPost();
-                faveds.add(new PostResponse(post));
-            }
-            return faveds;
-        } catch (Exception e) {
-            throw new ServletException("Erro ao obter os favoritos" + e.getMessage());
+
+        for (Favs fav : user.getFavs()) {
+            Post post = fav.getPost();
+            faveds.add(new PostResponse(post));
         }
+        return faveds;
     }
 
     public List<String> topViewedPosts(Authentication auth) {
         String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
 
         initViewsHeap();
         List<String> response = new ArrayList<>();
@@ -501,7 +437,7 @@ public class PostService {
 
     public List<String> topFavedPosts(Authentication auth) {
         String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
 
         initFavsHeap();
         List<String> response = new ArrayList<>();
@@ -514,7 +450,7 @@ public class PostService {
 
     public List<String> topLikedPosts(Authentication auth) {
         String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found " + email));
+        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
 
         initLikesHeap();
         List<String> response = new ArrayList<>();

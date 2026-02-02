@@ -33,6 +33,7 @@ public class ImageService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
 
+    //Remover exceptions de PostController e PostService relacionados assim que refatorado
     public Images saveImage(MultipartFile file, Authentication auth) throws IOException, java.io.IOException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)

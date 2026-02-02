@@ -2,10 +2,11 @@ package com.PIEC.ImobLink.Controllers;
 
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
+import com.PIEC.ImobLink.Response.ApiResponse;
+import com.PIEC.ImobLink.Response.ResponseUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.ServletException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,10 +32,13 @@ public class PostController {
             description = "Permite criar uma nova publicação com múltiplas imagens, descrição, preço, etc"
     )
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("number") String number, @RequestParam("type") String type, @RequestParam("images")MultipartFile[] images, Authentication auth) throws IOException {
+    public ResponseEntity<ApiResponse<PostResponse>> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("number") String number, @RequestParam("type") String type, @RequestParam("images")MultipartFile[] images, Authentication auth) throws IOException {
+        //Remover IO ao refatorar Image
         List<MultipartFile> imagesList = Arrays.asList(images);
-        String response = postService.createPost(imagesList, description, price, street, avenue, number, type, auth);
-        return ResponseEntity.ok(response);
+        return ResponseUtil.created(
+                "Post criado com sucesso",
+                postService.createPost(imagesList, description, price, street, avenue, number, type, auth)
+        );
     }
 
     @Operation(
@@ -42,9 +46,11 @@ public class PostController {
             description = "Serve uma lista de posts realizados por você"
     )
     @GetMapping("/my-posts")
-    public ResponseEntity<List<PostResponse>> getMyPosts(Authentication auth) {
-        List<PostResponse> posts = postService.getPostsByUser(auth.getName());
-        return ResponseEntity.ok(posts);
+    public ResponseEntity<ApiResponse<List<PostResponse>>> getMyPosts(Authentication auth) {
+        return ResponseUtil.ok(
+                "Posts buscados com sucesso",
+                postService.getPostsByUser(auth)
+        );
     }
 
     @Operation(
@@ -52,9 +58,11 @@ public class PostController {
             description = "Serve uma lista de posts favoritados por você"
     )
     @GetMapping("/my-favs")
-    public ResponseEntity<List<PostResponse>> getMyFavs(Authentication auth) throws ServletException {
-        List<PostResponse> posts = postService.getUserFavs(auth);
-        return ResponseEntity.ok(posts);
+    public ResponseEntity<ApiResponse<List<PostResponse>>> getMyFavs(Authentication auth) {
+        return ResponseUtil.ok(
+                "Posts buscados com sucesso",
+                postService.getUserFavs(auth)
+        );
     }
 
     @Operation(
@@ -62,9 +70,11 @@ public class PostController {
             description = "Apresenta as informações de um post por completo"
     )
     @GetMapping("/getOne/{id}")
-    public ResponseEntity<PostResponse> getOnePost(@PathVariable Long id, Authentication auth) throws ServletException {
-        PostResponse post = postService.getPostById(id, auth);
-        return ResponseEntity.ok(post);
+    public ResponseEntity<ApiResponse<PostResponse>> getOnePost(@PathVariable Long id, Authentication auth) {
+        return ResponseUtil.ok(
+                "Post buscado com sucesso",
+                postService.getPostById(id, auth)
+        );
     }
 
     @Operation(
@@ -72,9 +82,11 @@ public class PostController {
             description = "Apresenta a contagem de likes de um post"
     )
     @GetMapping("/likedTimes/{id}")
-    public ResponseEntity<Integer> likedTimes(@PathVariable Long id, Authentication auth) throws ServletException {
-        int likedTimes = postService.getLikedTimesByPostId(id, auth);
-        return ResponseEntity.ok(likedTimes);
+    public ResponseEntity<ApiResponse<Integer>> likedTimes(@PathVariable Long id, Authentication auth) {
+        return ResponseUtil.ok(
+                "Likes buscados com sucesso",
+                postService.getLikedTimesByPostId(id, auth)
+        );
     }
 
     @Operation(
@@ -82,12 +94,11 @@ public class PostController {
             description = "Permite filtrar a busca de posts por bairro desejado"
     )
     @GetMapping("/search/avenue")
-    public ResponseEntity<List<PostResponse>> searchByAvenue(@RequestParam("avenue") String avenue, Authentication auth) throws IOException {
-        try {
-            return postService.searchPostByAvenue(avenue, auth);
-        } catch (Exception e) {
-            throw new IOException("Erro ao tentar executar search: " + e.getMessage());
-        }
+    public ResponseEntity<ApiResponse<List<PostResponse>>> searchByAvenue(@RequestParam("avenue") String avenue, Authentication auth) {
+        return ResponseUtil.ok(
+            "Posts buscados com sucesso",
+            postService.searchPostByAvenue(avenue, auth)
+        );
     }
 
     @Operation(
@@ -95,12 +106,11 @@ public class PostController {
             description = "Permite filtrar a busca de posts por rua desejada"
     )
     @GetMapping("/search/street")
-    public ResponseEntity<List<PostResponse>> searchByStreet(@RequestParam("street") String street, Authentication auth) throws IOException {
-        try{
-            return postService.searchPostByStreet(street, auth);
-        }  catch (Exception e) {
-            throw new IOException("Erro ao tentar executar search: " + e.getMessage());
-        }
+    public ResponseEntity<ApiResponse<List<PostResponse>>> searchByStreet(@RequestParam("street") String street, Authentication auth) {
+        return ResponseUtil.ok(
+                "Posts buscados com sucesso",
+                postService.searchPostByStreet(street, auth)
+        );
     }
 
     @Operation(
@@ -108,9 +118,11 @@ public class PostController {
             description = "Permite deletar uma publicação realizada por você"
     )
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> deletePost(@PathVariable Long id,  Authentication auth) throws ServletException {
-        String response = postService.deletePost(id, auth);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<Void>> deletePost(@PathVariable Long id,  Authentication auth) {
+        postService.deletePost(id, auth);
+        return ResponseUtil.noContent(
+            "Post deletado com sucesso"
+        );
     }
 
     @Operation(
@@ -118,9 +130,11 @@ public class PostController {
             description = "Permite remover uma imagem da sua publicação"
     )
     @DeleteMapping("/deleteImage/{id}/{imageId}")
-    public ResponseEntity<String> deleteImage(@PathVariable Long id, @PathVariable Long imageId, Authentication auth) {
-        String response = postService.removeImageByPostIdAndImageId(id, imageId, auth);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<Void>> deleteImage(@PathVariable Long id, @PathVariable Long imageId, Authentication auth) {
+        postService.removeImageByPostIdAndImageId(id, imageId, auth);
+        return ResponseUtil.noContent(
+                "Imagem removida com sucesso"
+        );
     }
 
     @Operation(
@@ -128,8 +142,12 @@ public class PostController {
             description = "Permite adicionar uma imagem à sua publicação"
     )
     @PostMapping("/addImage/{id}")
-    public ResponseEntity<String> addImage(@PathVariable Long id, @RequestParam MultipartFile image, Authentication auth) throws IOException {
-        return postService.addImageToPost(id, image, auth);
+    public ResponseEntity<ApiResponse<PostResponse>> addImage(@PathVariable Long id, @RequestParam MultipartFile image, Authentication auth) throws IOException {
+        //Remover IO com refatoração do Image
+        return ResponseUtil.ok(
+                "Imagem adicionada com sucesso",
+                postService.addImageToPost(id, image, auth)
+        );
     }
 
     @Operation(
@@ -137,12 +155,11 @@ public class PostController {
             description = "Permite editar as informações da sua publicação"
     )
     @PatchMapping("/edit/{id}")
-    public ResponseEntity<String> editPost(@PathVariable Long id, @RequestBody SetPostInfoRequest newInfoPost, Authentication auth) throws ServletException {
-        Boolean response = postService.editPost(id, newInfoPost, auth);
-        if (response) {
-            return ResponseEntity.ok("Editado com sucesso");
-        }
-        return ResponseEntity.badRequest().body("Erro ao tentar editar o post");
+    public ResponseEntity<ApiResponse<PostResponse>> editPost(@PathVariable Long id, @RequestBody SetPostInfoRequest newInfoPost, Authentication auth) {
+        return ResponseUtil.ok(
+                "Post editado com sucesso",
+                postService.editPost(id, newInfoPost, auth)
+        );
     }
 
     @Operation(
@@ -150,12 +167,11 @@ public class PostController {
             description = "Adiciona o post à sua lista de favoritos"
     )
     @PostMapping("/fav/{id}")
-    public ResponseEntity<String> favPost(@PathVariable Long id, Authentication auth) throws ServletException {
-        Boolean response = postService.favPost(id, auth);
-        if (response) {
-            return ResponseEntity.ok("Favorito com sucesso");
-        }
-        return ResponseEntity.badRequest().body("Erro ao tentar favoritar o post");
+    public ResponseEntity<ApiResponse<Boolean>> favPost(@PathVariable Long id, Authentication auth) {
+        return ResponseUtil.ok(
+                "Post favoritado com sucesso",
+                postService.favPost(id, auth)
+        );
     }
 
     @Operation(
@@ -163,12 +179,11 @@ public class PostController {
             description = "Remove o post da sua lista de favoritos"
     )
     @DeleteMapping("/unfav/{id}")
-    public ResponseEntity<String> unfavPost(@PathVariable Long id, Authentication auth) throws ServletException {
-        Boolean response = postService.unfavPost(id, auth);
-        if (response) {
-            return ResponseEntity.ok("Desfavorito com sucesso");
-        }
-        return ResponseEntity.badRequest().body("Erro ao tentar desfavoritar o post");
+    public ResponseEntity<ApiResponse<Boolean>> unfavPost(@PathVariable Long id, Authentication auth) {
+        return ResponseUtil.ok(
+                "Post desfavoritado com sucesso",
+                postService.unfavPost(id, auth)
+        );
     }
 
     @Operation(
@@ -176,12 +191,11 @@ public class PostController {
             description = "Adiciona seu like ao post"
     )
     @PostMapping("/like/{id}")
-    public ResponseEntity<String> likePost(@PathVariable Long id, Authentication auth) throws ServletException {
-        Boolean response = postService.likePost(id, auth);
-        if (response) {
-            return ResponseEntity.ok("Curtido com sucesso");
-        }
-        return ResponseEntity.badRequest().body("Erro ao tentar curtir o post");
+    public ResponseEntity<ApiResponse<Boolean>> likePost(@PathVariable Long id, Authentication auth) {
+        return ResponseUtil.ok(
+                "Post curtido com sucesso",
+                postService.likePost(id, auth)
+        );
     }
 
     @Operation(
@@ -189,12 +203,11 @@ public class PostController {
             description = "Remove seu like do post"
     )
     @DeleteMapping("/unlike/{id}")
-    public ResponseEntity<String> unlikePost(@PathVariable Long id, Authentication auth) throws ServletException {
-        Boolean response = postService.unlikePost(id, auth);
-        if (response) {
-            return ResponseEntity.ok("Like removido com sucesso");
-        }
-        return ResponseEntity.badRequest().body("Erro ao tentar remover seu like do post");
+    public ResponseEntity<ApiResponse<Boolean>> unlikePost(@PathVariable Long id, Authentication auth) {
+        return ResponseUtil.ok(
+                "Post descurtido com sucesso",
+                postService.unlikePost(id, auth)
+        );
     }
 
     //Endpoint para admin, mas pode servir para qualquer usuário visualizar
@@ -204,8 +217,11 @@ public class PostController {
             description = "Gera uma lista de posts mais visualizados da plataforma"
     )
     @GetMapping("/topPosts/views")
-    public ResponseEntity<List<String>> topVieweds(Authentication auth) {
-        return ResponseEntity.ok(postService.topViewedPosts(auth));
+    public ResponseEntity<ApiResponse<List<String>>> topVieweds(Authentication auth) {
+        return ResponseUtil.ok(
+                "Lista buscada com sucesso",
+                postService.topViewedPosts(auth)
+        );
     }
 
     @Operation(
@@ -213,8 +229,11 @@ public class PostController {
             description = "Gera uma lista de posts mais favoritados da plataforma"
     )
     @GetMapping("/topPosts/favs")
-    public ResponseEntity<List<String>> topFaveds(Authentication auth) {
-        return ResponseEntity.ok(postService.topFavedPosts(auth));
+    public ResponseEntity<ApiResponse<List<String>>> topFaveds(Authentication auth) {
+        return ResponseUtil.ok(
+                "Lista buscada com sucesso",
+                postService.topFavedPosts(auth)
+        );
     }
 
     @Operation(
@@ -222,7 +241,10 @@ public class PostController {
             description = "Gera uma lista de posts mais curtidos da plataforma"
     )
     @GetMapping("/topPosts/likes")
-    public ResponseEntity<List<String>> topLikeds(Authentication auth) {
-        return ResponseEntity.ok(postService.topLikedPosts(auth));
+    public ResponseEntity<ApiResponse<List<String>>> topLikeds(Authentication auth) {
+        return ResponseUtil.ok(
+                "Lista buscada com sucesso",
+                postService.topLikedPosts(auth)
+        );
     }
 }

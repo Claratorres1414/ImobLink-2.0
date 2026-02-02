@@ -1,6 +1,8 @@
 package com.PIEC.ImobLink.Controllers;
 
 import com.PIEC.ImobLink.DTOs.PostResponse;
+import com.PIEC.ImobLink.Response.ApiResponse;
+import com.PIEC.ImobLink.Response.ResponseUtil;
 import com.PIEC.ImobLink.Services.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,7 +26,10 @@ public class FeedController {
             description = "Apresenta a lista de posts no formato de um feed"
     )
     @GetMapping
-    public ResponseEntity<List<PostResponse>> getFeed() {
-        return ResponseEntity.ok(postService.getFeed());
+    public ResponseEntity<ApiResponse<List<PostResponse>>> getFeed() {
+        return ResponseUtil.ok(
+                "Feed buscado com sucesso",
+                postService.getFeed()
+        );
     }
 }
