@@ -1,6 +1,8 @@
 package com.PIEC.ImobLink.Controllers;
 
 import com.PIEC.ImobLink.DTOs.UserDetails;
+import com.PIEC.ImobLink.Response.ApiResponse;
+import com.PIEC.ImobLink.Response.ResponseUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,12 +28,11 @@ public class FollowController {
             description = "Permite seguir o perfil de outro usuário"
     )
     @PostMapping("/{followingId}")
-    public ResponseEntity<String> followUser(@PathVariable Long followingId, Authentication auth) {
-        Follow follow = followService.follow(auth, followingId);
-        if (follow == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok("Following " + followingId);
+    public ResponseEntity<ApiResponse<Follow>> followUser(@PathVariable Long followingId, Authentication auth) {
+        return ResponseUtil.ok(
+                "OK",
+                followService.follow(auth, followingId)
+        );
     }
 
     @Operation(
@@ -39,9 +40,11 @@ public class FollowController {
             description = "Permite deixar de seguir o perfil de outro usuário"
     )
     @DeleteMapping("/unfollow/{followingId}")
-    public ResponseEntity<String> unfollowUser(@PathVariable Long followingId, Authentication auth) {
+    public ResponseEntity<ApiResponse<Void>> unfollowUser(@PathVariable Long followingId, Authentication auth) {
         followService.unfollow(auth, followingId);
-        return ResponseEntity.ok("Unfollowing " + followingId);
+        return ResponseUtil.noContent(
+                "Unfollow OK"
+        );
     }
 
     @Operation(
@@ -49,8 +52,11 @@ public class FollowController {
             description = "Permite visualizar os usuários que te seguem"
     )
     @GetMapping("/getFollowers")
-    public ResponseEntity<List<UserDetails>> getFollowers(Authentication auth) {
-        return ResponseEntity.ok(followService.getFollowers(auth));
+    public ResponseEntity<ApiResponse<List<UserDetails>>> getFollowers(Authentication auth) {
+        return ResponseUtil.ok(
+                "Lista de seguidores buscada com sucesso",
+                followService.getFollowers(auth)
+        );
     }
 
     @Operation(
@@ -58,8 +64,11 @@ public class FollowController {
             description = "Permite visualizar os usuários que você segue"
     )
     @GetMapping("/getFollowings")
-    public ResponseEntity<List<UserDetails>> getFollowings(Authentication auth) {
-        return ResponseEntity.ok(followService.getFollowings(auth));
+    public ResponseEntity<ApiResponse<List<UserDetails>>> getFollowings(Authentication auth) {
+        return ResponseUtil.ok(
+                "Lista de usuários seguidos buscada com sucesso",
+                followService.getFollowings(auth)
+        );
     }
 
     @Operation(
@@ -67,8 +76,11 @@ public class FollowController {
             description = "Permite visualizar os usuários seguem alguém"
     )
     @GetMapping("/getFollowers/{userId}")
-    public ResponseEntity<List<UserDetails>> getFollowersById(@PathVariable Long userId) {
-        return ResponseEntity.ok(followService.getFollowersById(userId));
+    public ResponseEntity<ApiResponse<List<UserDetails>>> getFollowersById(@PathVariable Long userId) {
+        return ResponseUtil.ok(
+                "Lista de seguidores buscada com sucesso",
+                followService.getFollowersById(userId)
+        );
     }
 
     @Operation(
@@ -76,8 +88,10 @@ public class FollowController {
             description = "Permite visualizar os usuários que alguém segue"
     )
     @GetMapping("/getFollowings/{userId}")
-    public ResponseEntity<List<UserDetails>> getFollowingsById(@PathVariable Long userId) {
-        return ResponseEntity.ok(followService.getFollowingsById(userId));
+    public ResponseEntity<ApiResponse<List<UserDetails>>> getFollowingsById(@PathVariable Long userId) {
+        return ResponseUtil.ok(
+                "Lista de usuários seguidos buscada com sucesso",
+                followService.getFollowingsById(userId)
+        );
     }
-
 }
