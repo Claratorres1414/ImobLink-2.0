@@ -3,6 +3,7 @@ package com.PIEC.ImobLink.Services;
 import com.PIEC.ImobLink.DTOs.UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import com.PIEC.ImobLink.Entitys.Follow;
 import com.PIEC.ImobLink.Entitys.User;
@@ -18,62 +19,50 @@ public class FollowService {
     private final UserRepository userRepository;
     private final FollowRespository followRepository;
 
-    public Follow follow(Authentication auth, Long followingId){
+    public Follow follow(Authentication auth, Long followingId) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
         Long userId = user.getId();
         if (userId.equals(followingId)){
             throw new IllegalArgumentException("Você não pode seguir a si mesmo.");
         }
 
         User userFollowed = userRepository.findById(followingId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado."));
 
-        Follow alreadyFollows = followRepository.findByFollowerIdAndFollowingId(user.getId(), followingId)
-                .orElse(null);
-
-        if (alreadyFollows != null) {
-            throw new IllegalArgumentException("Você já segue esse usuário.");
-        }
+        followRepository.findByFollowerIdAndFollowingId(user.getId(), followingId)
+                .orElseThrow(() -> new IllegalArgumentException("Você já segue esse usuário"));
 
         Follow follow = new Follow();
         follow.setFollowing(userFollowed);
         follow.setFollower(user);
 
-        try {
-            user.getFollowings().add(follow);
-            userFollowed.getFollowers().add(follow);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Erro ao tentar dar follow: " + e.getMessage());
-        }
+        user.getFollowings().add(follow);
+        userFollowed.getFollowers().add(follow);
 
         return followRepository.save(follow);
     }
 
-    public void unfollow(Authentication auth, Long followingId){
+    public void unfollow(Authentication auth, Long followingId) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
 
         User following = userRepository.getReferenceById(followingId);
 
         Follow follow = followRepository.findByFollowerIdAndFollowingId(user.getId(), followingId)
                 .orElseThrow(() -> new IllegalArgumentException("Follow não encontrado"));
 
-        try {
-            user.getFollowings().remove(follow);
-            following.getFollowers().remove(follow);
-            followRepository.delete(follow);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Erro ao tentar dar unfollow: " + e.getMessage());
-        }
+        user.getFollowings().remove(follow);
+        following.getFollowers().remove(follow);
+        followRepository.delete(follow);
     }
 
-    public List<UserDetails> getFollowers(Authentication auth){
+    public List<UserDetails> getFollowers(Authentication auth) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
 
         List<Follow> followers = user.getFollowers();
         List<UserDetails> followerList = new ArrayList<>();
@@ -85,10 +74,10 @@ public class FollowService {
         return followerList;
     }
 
-    public List<UserDetails> getFollowings(Authentication auth){
+    public List<UserDetails> getFollowings(Authentication auth) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Erro ao buscar o usuario" + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
 
         List<Follow> followings = user.getFollowings();
         List<UserDetails> followingList = new ArrayList<>();
@@ -99,9 +88,10 @@ public class FollowService {
 
         return followingList;
     }
+
     public List<UserDetails> getFollowersById(Long userId) {
         var user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
         return followRepository.findFollowersByUser(user)
                 .stream()
                 .map(UserDetails::new)
@@ -110,12 +100,10 @@ public class FollowService {
 
     public List<UserDetails> getFollowingsById(Long userId) {
         var user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
         return followRepository.findFollowingsByUser(user)
                 .stream()
                 .map(UserDetails::new)
                 .toList();
     }
-
-    
 }
