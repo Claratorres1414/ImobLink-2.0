@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @Service
@@ -29,38 +30,34 @@ public class UserService {
     private final ImageService imageService;
     private final ImageRepository imageRepository;
 
-    public void promoteUser(String email) {
+    public Boolean promoteUser(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado como o email: " + email));
 
         if(user.getRole() == Role.ADMIN) {
-            System.out.println("Usuário já é ADMIN: " + email);
-            return;
+            return false;
         }
 
         user.setRole(Role.ADMIN);
         userRepository.save(user);
-        System.out.println("Usuário promovido com sucesso: " + email);
+        return true;
     }
 
-    public UserDetails loadUser(Authentication auth) throws UsernameNotFoundException {
+    public UserDetails loadUser(Authentication auth) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         return new UserDetails(user);
     }
 
-    public UserDetails loadUserById(Long id, Authentication auth) throws UsernameNotFoundException {
+    public UserDetails loadUserById(Long id, Authentication auth) {
         String email = auth.getName();
         userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
-        try {
-            User account = userRepository.getReferenceById(id);
-            return new UserDetails(account);
-        } catch (Exception e) {
-            System.out.println("Erro ao tentar pegar usuário com id: " + id + " Erro: " + e.getMessage());
-            return null;
-        }
+
+        User account = userRepository.getReferenceById(id);
+
+        return new UserDetails(account);
     }
 
     public List<UserDetails> loadAllUsers() {
@@ -80,7 +77,7 @@ public class UserService {
                 .toList();
     }
 
-    public void setInfo(SetInfoRequest newInfo, Authentication auth) throws UsernameNotFoundException {
+    public Boolean setInfo(SetInfoRequest newInfo, Authentication auth) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
@@ -93,54 +90,46 @@ public class UserService {
             user.setBio(newInfo.getBio());
         }
 
-        try {
-            userRepository.save(user);
-        } catch ( Exception e ) {
-            System.out.println("Erro ao salvar novas informações para user: " + user.getName() + " Log: " + e.getMessage());
-            return;
-        }
-        System.out.println("Informações setadas com sucesso para o user: " + user.getName());
+        userRepository.save(user);
+
+        return true;
     }
 
     public String setProfileImage(MultipartFile newProfileImage, Authentication auth) throws IOException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
+
         if(newProfileImage != null) {
             String imagePath = imageService.saveProfileImage(newProfileImage, auth).getFilepath();
             user.setImageProfilePath(imagePath);
-            return "Imagem de perfil atualizada com sucesso para: " + userRepository.save(user).getEmail();
+            userRepository.save(user);
+
+            return imagePath;
         }
-        return "Não foi possível atualizar a imagem de perfil.";
+
+        throw new IllegalArgumentException("Arquivos vazios não suportados");
     }
 
-    public Boolean setPassword(SetPasswordRequest setRequest, Authentication auth) throws UsernameNotFoundException {
+    public Boolean setPassword(SetPasswordRequest setRequest, Authentication auth) throws AccessDeniedException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
 
         if (setRequest.getNewPassword() != null && !setRequest.getNewPassword().equals(setRequest.getPassword()) && passwordEncoder.matches(setRequest.getPassword(), user.getPassword())) {
             user.setPassword(passwordEncoder.encode(setRequest.getNewPassword()));
-            try{
-                userRepository.save(user);
-                System.out.println("Senha atualizada com sucesso!");
-                return true;
-            }catch ( Exception e ) {
-                System.out.println("Erro ao tentar salvar nova senha: " + e.getMessage());
-                return false;
-            }
+            userRepository.save(user);
+            return true;
         }
-        else {
-            System.out.println("Erro ao atualizar senha!");
-            return false;
-        }
+        throw new AccessDeniedException("Alteração de senha negada");
     }
 
     @Transactional
-    public Boolean deleteProfile(DeleteProfileRequest delRequest, Authentication auth) {
+    public void deleteProfile(DeleteProfileRequest delRequest, Authentication auth) throws AccessDeniedException {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
+
         if(delRequest.getPassword() != null && passwordEncoder.matches(delRequest.getPassword(), user.getPassword())) {
             imageRepository.deleteByUserId(user.getId());
             for (Post post : user.getViewedPosts()) {
@@ -149,9 +138,10 @@ public class UserService {
 
             user.getViewedPosts().clear();
             userRepository.delete(user);
-            return true;
+            return;
         }
-        return false;
+
+        throw new AccessDeniedException("Credênciais inválidas para deleção do perfil");
     }
 
     public int calcFavedTimes(Authentication auth) {
@@ -159,42 +149,40 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         int favTimes = 0;
-        try{
-            List<Post> posts = user.getPosts();
+
+        List<Post> posts = user.getPosts();
+        if (posts != null) {
             for (Post post : posts) {
                 favTimes += post.getFavedTimes().size();
             }
-        } catch ( Exception e ) {
-            System.out.println("Erro ao tentar calcular favoritos: " + e.getMessage());
-            return 0;
         }
+
         return favTimes;
     }
 
     //Para ADMINS
     public int calcNumberOfFavedsByUserId(Long id) {
         User user = userRepository.getReferenceById(id);
-        try{
-            List<Favs> favs = user.getFavs();
+        List<Favs> favs = user.getFavs();
+        if (favs != null) {
             return favs.size();
-        } catch ( Exception e ) {
-            System.out.println("Erro ao tentar calcular favoritos: " + e.getMessage());
-            return 0;
         }
+        return 0;
     }
 
     public int calcAllPostsFavedTimesByUserId(Long id) {
         User user = userRepository.getReferenceById(id);
+
         int favTimes = 0;
-        try{
-            List<Post> posts = user.getPosts();
+
+        List<Post> posts = user.getPosts();
+
+        if (posts != null) {
             for (Post post : posts) {
                 favTimes += post.getFavedTimes().size();
             }
-        } catch ( Exception e ) {
-            System.out.println("Erro ao tentar calcular favoritos: " + e.getMessage());
-            return 0;
         }
+
         return favTimes;
     }
 }

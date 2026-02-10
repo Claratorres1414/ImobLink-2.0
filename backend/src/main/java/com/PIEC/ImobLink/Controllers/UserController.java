@@ -3,6 +3,8 @@ package com.PIEC.ImobLink.Controllers;
 import com.PIEC.ImobLink.DTOs.DeleteProfileRequest;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
+import com.PIEC.ImobLink.Response.ApiResponse;
+import com.PIEC.ImobLink.Response.ResponseUtil;
 import com.PIEC.ImobLink.Services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -16,6 +18,7 @@ import com.PIEC.ImobLink.DTOs.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
@@ -49,9 +52,11 @@ public class UserController {
             description = "Permite visualizar as informações gerais da sua conta"
     )
     @GetMapping("/account")
-    public ResponseEntity<UserDetails> loadAccountInfo(Authentication auth) {
-        UserDetails response = userService.loadUser(auth);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<UserDetails>> loadAccountInfo(Authentication auth) {
+        return ResponseUtil.ok(
+                "Inormações carregadas com sucesso",
+                userService.loadUser(auth)
+        );
     }
 
     @Operation(
@@ -59,9 +64,11 @@ public class UserController {
             description = "Permite visualizar as informações sobre outro usuário"
     )
     @GetMapping("/getAccount/{id}")
-    public ResponseEntity<UserDetails> loadUserById(@PathVariable Long id, Authentication auth) {
-        UserDetails response = userService.loadUserById(id, auth);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<UserDetails>> loadUserById(@PathVariable Long id, Authentication auth) {
+        return ResponseUtil.ok(
+                "Informações carregadas com sucesso",
+                userService.loadUserById(id, auth)
+        );
     }
 
     @Operation(
@@ -69,8 +76,11 @@ public class UserController {
             description = "Gera uma lista dos usuários da plataforma"
     )
     @GetMapping("/getAll")
-    public ResponseEntity<List<UserDetails>> getAll() {
-        return ResponseEntity.ok(userService.loadAllUsers());
+    public ResponseEntity<ApiResponse<List<UserDetails>>> getAll() {
+        return ResponseUtil.ok(
+                "Usuários buscados com sucesso",
+                userService.loadAllUsers()
+        );
     }
 
     @Operation(
@@ -78,8 +88,11 @@ public class UserController {
             description = "Permite pesquisar por um perfil de um usuário"
     )
     @GetMapping("/search")
-    public ResponseEntity<List<UserDetails>> searchUsers(@RequestParam String search, Authentication auth) {
-        return ResponseEntity.ok(userService.searchUsers(search, auth));
+    public ResponseEntity<ApiResponse<List<UserDetails>>> searchUsers(@RequestParam String search, Authentication auth) {
+        return ResponseUtil.ok(
+                "Usuários buscados com sucesso",
+                userService.searchUsers(search, auth)
+        );
     }
 
     @Operation(
@@ -87,9 +100,11 @@ public class UserController {
             description = "Permite editar as informações do seu perfil"
     )
     @PatchMapping("/setInfo")
-    public ResponseEntity<String> setInfo(@RequestBody SetInfoRequest setRequest, Authentication auth) {
-        userService.setInfo(setRequest, auth);
-        return ResponseEntity.ok("Informações atualizadas com sucesso!");
+    public ResponseEntity<ApiResponse<Boolean>> setInfo(@RequestBody SetInfoRequest setRequest, Authentication auth) {
+        return ResponseUtil.ok(
+                "Informações setadas com sucesso",
+                userService.setInfo(setRequest, auth)
+        );
     }
 
     @Operation(
@@ -97,9 +112,11 @@ public class UserController {
             description = "Permite alterar a sua foto de perfil"
     )
     @PatchMapping(value = "/setImageProfile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> setProfileImage(@RequestParam("image") MultipartFile profileImage, Authentication auth) throws IOException {
-        String response = userService.setProfileImage(profileImage, auth);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<String>> setProfileImage(@RequestParam("image") MultipartFile profileImage, Authentication auth) throws IOException {
+        return ResponseUtil.ok(
+                "Imagem alterada com sucesso",
+                userService.setProfileImage(profileImage, auth)
+        );
     }
 
     @Operation(
@@ -107,12 +124,11 @@ public class UserController {
             description = "Permite alterar a senha da sua conta"
     )
     @PatchMapping("/setPassword")
-    public ResponseEntity<String> setPassword(@RequestBody SetPasswordRequest setRequest, Authentication auth) {
-        Boolean response = userService.setPassword(setRequest, auth);
-        if (response) {
-            return ResponseEntity.ok("Senha atualizada com sucesso!");
-        }
-        return ResponseEntity.ok("Erro ao atualizar senha!");
+    public ResponseEntity<ApiResponse<Boolean>> setPassword(@RequestBody SetPasswordRequest setRequest, Authentication auth) throws AccessDeniedException {
+        return ResponseUtil.ok(
+                "Senha alterada com sucesso",
+                userService.setPassword(setRequest, auth)
+        );
     }
 
     @Operation(
@@ -120,12 +136,11 @@ public class UserController {
             description = "Permite deletar sua conta da plataforma"
     )
     @DeleteMapping("/deleteProfile")
-    public ResponseEntity<String> deleteProfile(@RequestBody DeleteProfileRequest delRequest, Authentication auth) {
-        Boolean response = userService.deleteProfile(delRequest, auth);
-        if (response) {
-            return ResponseEntity.ok("Usuário deletado com sucesso!");
-        }
-        return ResponseEntity.ok("Erro ao deletar usuario!");
+    public ResponseEntity<ApiResponse<Void>> deleteProfile(@RequestBody DeleteProfileRequest delRequest, Authentication auth) throws AccessDeniedException {
+        userService.deleteProfile(delRequest, auth);
+        return ResponseUtil.noContent(
+                "Perfil deletado com sucesso"
+        );
     }
 
     @Operation(
@@ -133,8 +148,10 @@ public class UserController {
             description = "Permite visualizar quantas vezes seus posts foram favoritados ao todo"
     )
     @GetMapping("/info/favedTimes")
-    public ResponseEntity<Integer> favedTimes(Authentication auth) {
-        int response = userService.calcFavedTimes(auth);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<Integer>> favedTimes(Authentication auth) {
+        return ResponseUtil.ok(
+                "Número de favs calculado com sucesso",
+                userService.calcFavedTimes(auth)
+        );
     }
 }
