@@ -81,11 +81,11 @@ public class CommentsService {
                 .toList();
     }
 
-    public void deleteComment(Long id, Authentication auth) throws IOException {
+    public void deleteComment(Long id, Authentication auth) throws AccessDeniedException {
         Comment comment;
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         comment = commentRepository.findById(id).get();
 
