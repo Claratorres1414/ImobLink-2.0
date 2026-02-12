@@ -3,6 +3,7 @@ package com.PIEC.ImobLink.ServicesTest;
 import Role.Role;
 import com.PIEC.ImobLink.DTOs.AuthResponse;
 import com.PIEC.ImobLink.DTOs.LoginRequest;
+import com.PIEC.ImobLink.DTOs.RegisterRequest;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Jwt.JwtUtil;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
@@ -106,6 +107,28 @@ public class AuthServiceTest {
 
         assertThrows(BadCredentialsException.class,
                 () -> authService.login(request));
+    }
+
+    @Test
+    void createUserSuccess() {
+        RegisterRequest request = new RegisterRequest();
+        request.setEmail("pessoa@email.com");
+        request.setPassword("123456");
+        request.setName("pessoa");
+        request.setCpf("0987654321");
+        request.setPhoneNumber("123456789");
+
+        when(passwordEncoder.encode(anyString()))
+                .thenReturn("senha");
+
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthResponse resposnse = authService.register(request);
+
+        assertEquals("Cadastrado com sucesso!", resposnse.getToken());
+
+        verify(userRepository, times(1)).save(any(User.class));
     }
 }
 
