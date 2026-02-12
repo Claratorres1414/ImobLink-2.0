@@ -14,13 +14,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.nio.file.AccessDeniedException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,7 +92,7 @@ public class AuthServiceTest {
         request.setEmail("inexistente@email.com");
         request.setPassword("123456");
 
-        assertThrows(RuntimeException.class,
+        assertThrows(UsernameNotFoundException.class,
                 () -> authService.login(request));
     }
 
@@ -133,7 +134,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    void admLoginAccessDenied() throws AccessDeniedException {
+    void admLoginAccessDenied() {
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenReturn(mock(Authentication.class));
 
@@ -144,7 +145,8 @@ public class AuthServiceTest {
         request.setEmail("email@email.com");
         request.setPassword("123456");
 
-        assertThrows(RuntimeException.class, () -> authService.loginAdm(request));
+        assertThrows(AccessDeniedException.class,
+                () -> authService.loginAdm(request));
     }
 
     @Test
