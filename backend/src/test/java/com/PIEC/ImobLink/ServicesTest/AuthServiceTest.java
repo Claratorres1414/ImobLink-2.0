@@ -1,0 +1,112 @@
+package com.PIEC.ImobLink.ServicesTest;
+
+import Role.Role;
+import com.PIEC.ImobLink.DTOs.AuthResponse;
+import com.PIEC.ImobLink.DTOs.LoginRequest;
+import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Jwt.JwtUtil;
+import com.PIEC.ImobLink.Repositorys.UserRepository;
+import com.PIEC.ImobLink.Services.AuthenticationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class AuthServiceTest {
+    @Mock
+    private  UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private JwtUtil jwtUtil;
+
+    @Mock
+    private AuthenticationManager authenticationManager;
+
+    @InjectMocks
+    private AuthenticationService authService;
+
+    private User user;
+
+    @BeforeEach
+    void setUp() {
+        user = new User();
+        user.setCpf("123456789");
+        user.setPhoneNumber("546244526");
+        user.setEmail("email092@email.com");
+        user.setPassword("password");
+        user.setName("name");
+        user.setRole(Role.USER);
+    }
+
+    @Test
+    void tokenIfCredentialsOk() {
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenReturn(mock(Authentication.class));
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(jwtUtil.generateToken(anyString(), anyString(), anyString()))
+                .thenReturn("token-fake");
+
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail("email092@email.com");
+        loginRequest.setPassword("123456");
+
+        AuthResponse token = authService.login(loginRequest);
+
+        assertEquals("token-fake", token.getToken());
+    }
+
+    @Test
+    void userNotFound() {
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenReturn(mock(Authentication.class));
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail("inexistente@email.com");
+        request.setPassword("123456");
+
+        assertThrows(RuntimeException.class,
+                () -> authService.login(request));
+    }
+
+    @Test
+    void authenticationFails() {
+
+        doThrow(new BadCredentialsException("Credenciais inválidas"))
+                .when(authenticationManager)
+                .authenticate(any(UsernamePasswordAuthenticationToken.class));
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail("email@email.com");
+        request.setPassword("errada");
+
+        assertThrows(BadCredentialsException.class,
+                () -> authService.login(request));
+    }
+}
+
+
