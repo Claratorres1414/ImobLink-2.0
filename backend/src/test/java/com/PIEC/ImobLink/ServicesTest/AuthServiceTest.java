@@ -60,10 +60,14 @@ public class AuthServiceTest {
         user.setRole(Role.USER);
     }
 
-    @Test
-    void tokenIfCredentialsOk() {
+    private void mockAuthentication() {
         when(authenticationManager.authenticate(any(Authentication.class)))
                 .thenReturn(mock(Authentication.class));
+    }
+
+    @Test
+    void tokenIfCredentialsOk() {
+        mockAuthentication();
 
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(user));
@@ -82,8 +86,7 @@ public class AuthServiceTest {
 
     @Test
     void userNotFound() {
-        when(authenticationManager.authenticate(any(Authentication.class)))
-                .thenReturn(mock(Authentication.class));
+        mockAuthentication();
 
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.empty());
@@ -98,7 +101,6 @@ public class AuthServiceTest {
 
     @Test
     void authenticationFails() {
-
         doThrow(new BadCredentialsException("Credenciais inválidas"))
                 .when(authenticationManager)
                 .authenticate(any(UsernamePasswordAuthenticationToken.class));
@@ -113,8 +115,7 @@ public class AuthServiceTest {
 
     @Test
     void admLoginSuccess() {
-        when(authenticationManager.authenticate(any(Authentication.class)))
-                .thenReturn(mock(Authentication.class));
+        mockAuthentication();
 
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(user));
@@ -135,8 +136,7 @@ public class AuthServiceTest {
 
     @Test
     void admLoginAccessDenied() {
-        when(authenticationManager.authenticate(any(Authentication.class)))
-                .thenReturn(mock(Authentication.class));
+        mockAuthentication();
 
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(user));
