@@ -20,6 +20,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.nio.file.AccessDeniedException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -110,6 +111,43 @@ public class AuthServiceTest {
     }
 
     @Test
+    void admLoginSuccess() {
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenReturn(mock(Authentication.class));
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(jwtUtil.generateToken(anyString(), anyString(), anyString()))
+                .thenReturn("adm-token-fake");
+
+        user.setRole(Role.ADMIN);
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail("email@email.com");
+        request.setPassword("123456");
+
+        AuthResponse token = authService.loginAdm(request);
+
+        assertEquals("adm-token-fake", token.getToken());
+    }
+
+    @Test
+    void admLoginAccessDenied() throws AccessDeniedException {
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenReturn(mock(Authentication.class));
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail("email@email.com");
+        request.setPassword("123456");
+
+        assertThrows(RuntimeException.class, () -> authService.loginAdm(request));
+    }
+
+    @Test
     void createUserSuccess() {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("pessoa@email.com");
@@ -131,5 +169,3 @@ public class AuthServiceTest {
         verify(userRepository, times(1)).save(any(User.class));
     }
 }
-
-
