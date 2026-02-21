@@ -138,4 +138,19 @@ public class CommentsServiceTest {
         assertEquals(1, comments.size());
         assertEquals(comment.getContent(), comments.getFirst().getContent());
     }
+
+    @Test
+    void getCommentsByPostId() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(commentRepository.findAllByPostIdOrderByCreatedAtDesc(anyLong()))
+                .thenReturn(List.of(comment));
+
+        comment.setPost(post);
+        List<CommentResponse> comments = commentsService.getCommentsByPostId(post.getId(), auth);
+
+        assertEquals(1, comments.size());
+        assertEquals(comment.getContent(), comments.getFirst().getContent());
+    }
 }
