@@ -231,4 +231,18 @@ public class CommentsServiceTest {
         assertThrows(UsernameNotFoundException.class,
                 () -> commentsService.commentPost(req, post.getId(), authFake));
     }
+
+    @Test
+    void accessDeniedDeleteComment() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(commentRepository.findById(anyLong()))
+                .thenReturn(Optional.of(comment));
+
+        Authentication authDenied = new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword());
+
+        assertThrows(AccessDeniedException.class,
+                () -> commentsService.deleteComment(comment.getId(), authDenied));
+    }
 }
