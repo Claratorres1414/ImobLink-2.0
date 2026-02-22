@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +61,7 @@ public class CommentsServiceTest {
         user.setRole(Role.USER);
 
         author = new User();
+        author.setId(80L);
         author.setCpf("123456780");
         author.setPhoneNumber("546244525");
         author.setEmail("email0@email.com");
@@ -68,6 +70,7 @@ public class CommentsServiceTest {
         author.setRole(Role.USER);
 
         comment = new Comment();
+        comment.setId(92L);
         comment.setContent("test");
         comment.setCreatedAt(LocalDateTime.now());
         comment.setUser(user);
@@ -152,5 +155,18 @@ public class CommentsServiceTest {
 
         assertEquals(1, comments.size());
         assertEquals(comment.getContent(), comments.getFirst().getContent());
+    }
+
+    @Test
+    void deleteComment() throws AccessDeniedException {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(author));
+
+        when(commentRepository.findById(anyLong()))
+                .thenReturn(Optional.of(comment));
+
+        commentsService.deleteComment(comment.getId(), auth);
+
+        verify(commentRepository, times(1)).delete(any(Comment.class));
     }
 }
