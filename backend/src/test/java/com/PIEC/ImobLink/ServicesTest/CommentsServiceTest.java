@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -110,6 +112,18 @@ public class CommentsServiceTest {
     }
 
     @Test
+    void userNotFoundComment() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        CommentRequest req = new CommentRequest(comment.getContent());
+        Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> commentsService.comment(req, user.getId(), authFake));
+    }
+
+    @Test
     void commentAtPost() {
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(author));
@@ -130,6 +144,18 @@ public class CommentsServiceTest {
     }
 
     @Test
+    void userNotFoundCommentPost() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        CommentRequest req = new CommentRequest(comment.getContent());
+        Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> commentsService.commentPost(req, post.getId(), authFake));
+    }
+
+    @Test
     void getCommentsByUserId() {
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(user));
@@ -140,6 +166,18 @@ public class CommentsServiceTest {
         List<CommentResponse> comments = commentsService.getCommentsByUserId(user.getId(), auth);
         assertEquals(1, comments.size());
         assertEquals(comment.getContent(), comments.getFirst().getContent());
+    }
+
+    @Test
+    void userNotFoundGetCommentsByUserId() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        CommentRequest req = new CommentRequest(comment.getContent());
+        Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> commentsService.commentPost(req, post.getId(), authFake));
     }
 
     @Test
@@ -158,6 +196,18 @@ public class CommentsServiceTest {
     }
 
     @Test
+    void userNotFoundGetCommentsByPostId() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        CommentRequest req = new CommentRequest(comment.getContent());
+        Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> commentsService.commentPost(req, post.getId(), authFake));
+    }
+
+    @Test
     void deleteComment() throws AccessDeniedException {
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(author));
@@ -168,5 +218,17 @@ public class CommentsServiceTest {
         commentsService.deleteComment(comment.getId(), auth);
 
         verify(commentRepository, times(1)).delete(any(Comment.class));
+    }
+
+    @Test
+    void userNotFoundDeleteComment() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        CommentRequest req = new CommentRequest(comment.getContent());
+        Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> commentsService.commentPost(req, post.getId(), authFake));
     }
 }
