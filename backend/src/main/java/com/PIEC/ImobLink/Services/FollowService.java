@@ -12,6 +12,7 @@ import com.PIEC.ImobLink.Repositorys.FollowRespository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -31,8 +32,10 @@ public class FollowService {
         User userFollowed = userRepository.findById(followingId)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado."));
 
-        followRepository.findByFollowerIdAndFollowingId(user.getId(), followingId)
-                .orElseThrow(() -> new IllegalArgumentException("Você já segue esse usuário"));
+        Optional<Follow> alreadyFollows = followRepository.findByFollowerIdAndFollowingId(user.getId(), followingId);
+        if (alreadyFollows.isPresent()){
+            throw new IllegalArgumentException("Você já segue esse usuário");
+        }
 
         Follow follow = new Follow();
         follow.setFollowing(userFollowed);
