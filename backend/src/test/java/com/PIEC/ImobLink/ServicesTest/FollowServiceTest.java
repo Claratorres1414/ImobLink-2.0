@@ -144,4 +144,26 @@ public class FollowServiceTest {
         assert followings.size() == 1;
         verify(userRepository, times(1)).findByEmail(anyString());
     }
+
+    @Test
+    void shoudListUserFollowersByUserId() {
+        Follow follow = new Follow();
+        follow.setId(70L);
+        follow.setFollower(user2);
+        follow.setFollowing(user1);
+        user2.getFollowings().add(follow);
+        user1.getFollowers().add(follow);
+
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.of(user1));
+
+        when(followRespository.findFollowersByUser(any(User.class)))
+                .thenReturn(List.of(user2));
+
+        List<UserDetails> followers = followService.getFollowersById(user1.getId());
+
+        assert followers.size() == 1;
+        verify(userRepository, times(1)).findById(anyLong());
+        verify(followRespository, times(1)).findFollowersByUser(any(User.class));
+    }
 }
