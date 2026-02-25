@@ -52,7 +52,8 @@ public class FollowService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
 
-        User following = userRepository.getReferenceById(followingId);
+        User following = userRepository.findById(followingId)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado."));
 
         Follow follow = followRepository.findByFollowerIdAndFollowingId(user.getId(), followingId)
                 .orElseThrow(() -> new IllegalArgumentException("Follow não encontrado"));
