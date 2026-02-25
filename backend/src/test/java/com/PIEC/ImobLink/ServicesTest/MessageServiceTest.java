@@ -121,4 +121,20 @@ public class MessageServiceTest {
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(messageRepository, times(1)).deleteById(anyLong());
     }
+
+    @Test
+    void shouldListAllUserContacts() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+        when(messageRepository.findContacts(anyLong()))
+                .thenReturn(List.of(user2.getId()));
+        when(userRepository.findAllById(anyList()))
+                .thenReturn(List.of(user2));
+
+        messageService.getContacts(auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(messageRepository, times(1)).findContacts(anyLong());
+        verify(userRepository, times(1)).findAllById(anyList());
+    }
 }
