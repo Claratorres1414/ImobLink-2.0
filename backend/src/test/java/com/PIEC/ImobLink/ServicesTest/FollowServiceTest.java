@@ -140,7 +140,7 @@ public class FollowServiceTest {
     }
 
     @Test
-    void shoudUnfollowAnFollowedUser() {
+    void shouldUnfollowAnFollowedUser() {
         Follow follow = new Follow();
         follow.setId(70L);
         follow.setFollower(user1);
@@ -204,7 +204,7 @@ public class FollowServiceTest {
     }
 
     @Test
-    void shoudListUserFollowers() {
+    void shouldListUserFollowers() {
         Follow follow = new Follow();
         follow.setId(70L);
         follow.setFollower(user2);
@@ -222,7 +222,18 @@ public class FollowServiceTest {
     }
 
     @Test
-    void shoudListUserFollowings() {
+    void shouldNotListUserFollowersBecauseOfUserNotFoundForOfferedAuth() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken("aaaa", user1.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> followService.getFollowers(authFake));
+    }
+
+    @Test
+    void shouldListUserFollowings() {
         Follow follow = new Follow();
         follow.setId(70L);
         follow.setFollower(user1);
@@ -240,7 +251,19 @@ public class FollowServiceTest {
     }
 
     @Test
-    void shoudListUserFollowersByUserId() {
+    void shouldNotListUserFollowingsBecauseOfUserNotFoundForOfferedAuth() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken("aaaa", user1.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> followService.getFollowings(authFake));
+    }
+
+
+    @Test
+    void shouldListUserFollowersByUserId() {
         Follow follow = new Follow();
         follow.setId(70L);
         follow.setFollower(user2);
@@ -262,7 +285,17 @@ public class FollowServiceTest {
     }
 
     @Test
-    void shoudListUserFollowingsByUserId() {
+    void shouldNotListUserFollowersBecauseOfUserNotFoundForThatId() {
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> followService.getFollowersById(5L));
+    }
+
+
+    @Test
+    void shouldListUserFollowingsByUserId() {
         Follow follow = new Follow();
         follow.setId(70L);
         follow.setFollower(user1);
@@ -281,5 +314,14 @@ public class FollowServiceTest {
         assert followers.size() == 1;
         verify(userRepository, times(1)).findById(anyLong());
         verify(followRespository, times(1)).findFollowingsByUser(any(User.class));
+    }
+
+    @Test
+    void shouldNotListUserFollowingsBecauseOfUserNotFoundForThatId() {
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> followService.getFollowingsById(5L));
     }
 }
