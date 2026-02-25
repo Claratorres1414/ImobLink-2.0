@@ -26,7 +26,8 @@ public class MessageService {
         String email = auth.getName();
         User sender = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        User receiver = userRepository.getReferenceById(userId);
+        User receiver = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         Message message = new Message();
         message.setContent(content);
