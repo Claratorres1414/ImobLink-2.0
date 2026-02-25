@@ -120,6 +120,17 @@ public class MessageServiceTest {
     }
 
     @Test
+    void shouldNotGetMessageFromUserToUserBecauseOfUserNotFoundForOfferedAuth() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> messageService.getMessages(user2.getId(), authFake));
+    }
+
+    @Test
     void shouldEditMessageFromUserToUser() {
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(user1));
