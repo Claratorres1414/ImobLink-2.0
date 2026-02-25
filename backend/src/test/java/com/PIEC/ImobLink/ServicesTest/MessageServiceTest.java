@@ -94,4 +94,20 @@ public class MessageServiceTest {
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(messageRepository, times(1)).findConversation(anyLong(), anyLong());
     }
+
+    @Test
+    void shouldEditMessageFromUserToUser() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+        when(messageRepository.findMessageById(anyLong()))
+                .thenReturn(message);
+        when(messageRepository.save(any(Message.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        messageService.editMessage(message.getId(), "aaaaa", auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(messageRepository, times(1)).findMessageById(anyLong());
+        verify(messageRepository, times(1)).save(any(Message.class));
+    }
 }
