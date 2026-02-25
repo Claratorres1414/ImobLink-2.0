@@ -15,10 +15,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -81,6 +83,60 @@ public class FollowServiceTest {
         verify(userRepository, times(1)).findById(anyLong());
         verify(followRespository, times(1)).findByFollowerIdAndFollowingId(anyLong(), anyLong());
         verify(followRespository, times(1)).save(any(Follow.class));
+    }
+
+    @Test
+    void shouldNotFollowAnUnfollowedUserBecauseOfUserNotFoundForOfferedAuth() {
+        when(userRepository.findByEmail(anyString()))
+            .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken("aaaa", user1.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> followService.follow(authFake, user2.getId()));
+    }
+
+    @Test
+    void shouldNotFollowAnUnfollowedUserBecauseYouAreTheFollowerAndTheFollowedUser() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> followService.follow(auth, user1.getId()));
+    }
+
+    @Test
+    void shouldNotFollowAnUnfollowedUserBecauseTheFollowedUserWasNotFound() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> followService.follow(auth, 5L));
+    }
+
+    @Test
+    void shouldNotFollowAnUnfollowedUserBecauseTheFollowedUserWasAlreadyFollowed() {
+        Follow follow = new Follow();
+        follow.setId(70L);
+        follow.setFollower(user1);
+        follow.setFollowing(user2);
+        user1.getFollowings().add(follow);
+        user2.getFollowers().add(follow);
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.of(user2));
+
+        when(followRespository.findByFollowerIdAndFollowingId(user1.getId(), user2.getId()))
+                .thenReturn(Optional.of(follow));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> followService.follow(auth, user2.getId()));
     }
 
     @Test
