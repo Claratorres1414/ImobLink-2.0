@@ -194,4 +194,15 @@ public class MessageServiceTest {
         verify(messageRepository, times(1)).findContacts(anyLong());
         verify(userRepository, times(1)).findAllById(anyList());
     }
+
+    @Test
+    void shouldNotListAllUserContactsBecauseOfUserNotFoundForOfferedAuth() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> messageService.getContacts(authFake));
+    }
 }
