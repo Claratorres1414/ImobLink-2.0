@@ -1,4 +1,83 @@
 package com.PIEC.ImobLink.ServicesTest;
 
+import Role.Role;
+import com.PIEC.ImobLink.Entitys.Follow;
+import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Repositorys.FollowRespository;
+import com.PIEC.ImobLink.Repositorys.UserRepository;
+import com.PIEC.ImobLink.Services.FollowService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class FollowServiceTest {
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private FollowRespository followRespository;
+
+    @InjectMocks
+    private FollowService followService;
+
+    private User user1;
+    private User user2;
+
+    private Authentication auth;
+
+    @BeforeEach
+    void setUp() {
+        user1 = new User();
+        user1.setId(70L);
+        user1.setCpf("123456789");
+        user1.setPhoneNumber("546244526");
+        user1.setEmail("email092@email.com");
+        user1.setPassword("password");
+        user1.setName("name");
+        user1.setRole(Role.USER);
+
+        user2 = new User();
+        user2.setId(80L);
+        user2.setCpf("123456700");
+        user2.setPhoneNumber("546244500");
+        user2.setEmail("email091@email.com");
+        user2.setPassword("password");
+        user2.setName("name");
+        user2.setRole(Role.USER);
+
+        auth = new UsernamePasswordAuthenticationToken(user1.getEmail(), user1.getPassword());
+    }
+
+    @Test
+    void shouldFollowAnUnfollowedUser() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.of(user2));
+
+        when(followRespository.findByFollowerIdAndFollowingId(user1.getId(), user2.getId()))
+                .thenReturn(Optional.empty());
+
+        when(followRespository.save(any(Follow.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        followService.follow(auth, user2.getId());
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(userRepository, times(1)).findById(anyLong());
+        verify(followRespository, times(1)).findByFollowerIdAndFollowingId(anyLong(), anyLong());
+        verify(followRespository, times(1)).save(any(Follow.class));
+    }
 }
