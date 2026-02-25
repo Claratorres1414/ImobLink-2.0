@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -79,5 +80,18 @@ public class MessageServiceTest {
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).findById(anyLong());
         verify(messageRepository, times(1)).save(any(Message.class));
+    }
+
+    @Test
+    void shouldGetMessageFromUserToUser() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+        when(messageRepository.findConversation(anyLong(), anyLong()))
+                .thenReturn(List.of(message));
+
+        messageService.getMessages(user2.getId(), auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(messageRepository, times(1)).findConversation(anyLong(), anyLong());
     }
 }
