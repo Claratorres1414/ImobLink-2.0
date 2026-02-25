@@ -80,4 +80,30 @@ public class FollowServiceTest {
         verify(followRespository, times(1)).findByFollowerIdAndFollowingId(anyLong(), anyLong());
         verify(followRespository, times(1)).save(any(Follow.class));
     }
+
+    @Test
+    void shoudUnfollowAnFollowedUser() {
+        Follow follow = new Follow();
+        follow.setId(70L);
+        follow.setFollower(user1);
+        follow.setFollowing(user2);
+        user1.getFollowings().add(follow);
+        user2.getFollowers().add(follow);
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.of(user2));
+
+        when(followRespository.findByFollowerIdAndFollowingId(user1.getId(), user2.getId()))
+                .thenReturn(Optional.of(follow));
+
+        followService.unfollow(auth, user2.getId());
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(userRepository, times(1)).findById(anyLong());
+        verify(followRespository, times(1)).findByFollowerIdAndFollowingId(anyLong(), anyLong());
+        verify(followRespository, times(1)).delete(any(Follow.class));
+    }
 }
