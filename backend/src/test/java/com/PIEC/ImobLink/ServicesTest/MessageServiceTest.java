@@ -14,10 +14,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -80,6 +82,28 @@ public class MessageServiceTest {
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).findById(anyLong());
         verify(messageRepository, times(1)).save(any(Message.class));
+    }
+
+    @Test
+    void shouldNotSendMessageToUserBecauseOfUserNotFoundForOfferedAuth() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> messageService.sendMessage("aaa", user2.getId(), authFake));
+    }
+
+    @Test
+    void shouldNotSendMessageToUserBecauseOfUserNotFoundForOfferedId() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> messageService.sendMessage("aaa", 5L, auth));
     }
 
     @Test
