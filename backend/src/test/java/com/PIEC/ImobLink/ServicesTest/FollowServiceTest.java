@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
+import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Entitys.Follow;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.FollowRespository;
@@ -15,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -105,5 +107,23 @@ public class FollowServiceTest {
         verify(userRepository, times(1)).findById(anyLong());
         verify(followRespository, times(1)).findByFollowerIdAndFollowingId(anyLong(), anyLong());
         verify(followRespository, times(1)).delete(any(Follow.class));
+    }
+
+    @Test
+    void shoudListUserFollowers() {
+        Follow follow = new Follow();
+        follow.setId(70L);
+        follow.setFollower(user2);
+        follow.setFollowing(user1);
+        user2.getFollowings().add(follow);
+        user1.getFollowers().add(follow);
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        List<UserDetails> followers = followService.getFollowers(auth);
+
+        assert followers.size() == 1;
+        verify(userRepository, times(1)).findByEmail(anyString());
     }
 }
