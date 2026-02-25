@@ -110,4 +110,15 @@ public class MessageServiceTest {
         verify(messageRepository, times(1)).findMessageById(anyLong());
         verify(messageRepository, times(1)).save(any(Message.class));
     }
+
+    @Test
+    void shouldDeleteMessageFromUserToUser() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        messageService.deleteMessage(message.getId(), auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(messageRepository, times(1)).deleteById(anyLong());
+    }
 }
