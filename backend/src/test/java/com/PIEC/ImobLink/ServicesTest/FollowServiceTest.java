@@ -166,6 +166,44 @@ public class FollowServiceTest {
     }
 
     @Test
+    void shouldNotUnfollowAnFollowedUserBecauseOfUserNotFoundForOfferedAuth() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken("aaaa", user1.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> followService.unfollow(authFake, user2.getId()));
+    }
+
+    @Test
+    void shouldNotUnfollowAnFollowedUserBecauseTheFollowedUserWasNotFound() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> followService.unfollow(auth, 5L));
+    }
+
+    @Test
+    void shouldNotUnfollowAnUnfollowedUser() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.of(user2));
+
+        when(followRespository.findByFollowerIdAndFollowingId(anyLong(), anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> followService.unfollow(auth, user2.getId()));
+    }
+
+    @Test
     void shoudListUserFollowers() {
         Follow follow = new Follow();
         follow.setId(70L);
