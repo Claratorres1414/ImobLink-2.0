@@ -169,6 +169,17 @@ public class MessageServiceTest {
     }
 
     @Test
+    void shouldNotDeleteMessageFromUserToUserBecauseOfUserNotFoundForOfferedAuth() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> messageService.deleteMessage(message.getId(), authFake));
+    }
+
+    @Test
     void shouldListAllUserContacts() {
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(user1));
