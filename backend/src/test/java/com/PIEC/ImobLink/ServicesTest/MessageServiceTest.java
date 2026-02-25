@@ -1,4 +1,83 @@
 package com.PIEC.ImobLink.ServicesTest;
 
+import Role.Role;
+import com.PIEC.ImobLink.Entitys.Message;
+import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Repositorys.MessageRepository;
+import com.PIEC.ImobLink.Repositorys.UserRepository;
+import com.PIEC.ImobLink.Services.MessageService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class MessageServiceTest {
+    @Mock
+    private MessageRepository messageRepository;
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
+    private MessageService messageService;
+
+    User user1;
+    User user2;
+    Authentication auth;
+    Message message;
+
+    @BeforeEach
+    void setUp() {
+        user1 = new User();
+        user1.setId(70L);
+        user1.setCpf("123456789");
+        user1.setPhoneNumber("546244526");
+        user1.setEmail("email092@email.com");
+        user1.setPassword("password");
+        user1.setName("name");
+        user1.setRole(Role.USER);
+
+        user2 = new User();
+        user2.setId(80L);
+        user2.setCpf("123456700");
+        user2.setPhoneNumber("546244500");
+        user2.setEmail("email091@email.com");
+        user2.setPassword("password");
+        user2.setName("name");
+        user2.setRole(Role.USER);
+
+        message = new Message();
+        message.setId(1L);
+        message.setContent("content");
+        message.setSender(user1);
+        message.setReceiver(user2);
+
+        auth = new UsernamePasswordAuthenticationToken(user1.getEmail(), user1.getPassword());
+    }
+
+    @Test
+    void shouldSendMessageToUser() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user1));
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.of(user2));
+
+        when(messageRepository.save(any(Message.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        messageService.sendMessage("aaa", user2.getId(), auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(userRepository, times(1)).findById(anyLong());
+        verify(messageRepository, times(1)).save(any(Message.class));
+    }
 }
