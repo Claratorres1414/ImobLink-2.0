@@ -59,4 +59,14 @@ public class UserServiceTest {
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).save(user);
     }
+
+    @Test
+    void shouldLoadCurrentUser() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        userService.loadUser(auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+    }
 }
