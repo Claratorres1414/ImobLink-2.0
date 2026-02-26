@@ -104,4 +104,17 @@ public class UserServiceTest {
         assert users.size() == 2;
         verify(userRepository, times(1)).findAll();
     }
+
+    @Test
+    void shouldSearchForUserByName() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+        when(userRepository.findTop10ByEmailContainingIgnoreCase(anyString()))
+                .thenReturn(List.of(user2));
+
+        userService.searchUsers("eMAIl091", auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(userRepository, times(1)).findTop10ByEmailContainingIgnoreCase(anyString());
+    }
 }
