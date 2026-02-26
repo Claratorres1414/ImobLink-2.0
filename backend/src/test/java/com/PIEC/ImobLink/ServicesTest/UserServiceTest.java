@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
+import com.PIEC.ImobLink.DTOs.DeleteProfileRequest;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
@@ -17,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
@@ -155,5 +155,19 @@ public class UserServiceTest {
         assert resp;
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    void shouldDeleteUserProfile() throws AccessDeniedException {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(anyString(), anyString()))
+                .thenReturn(true);
+
+        userService.deleteProfile(new DeleteProfileRequest(user.getPassword()), auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(imageRepository, times(1)).deleteByUserId(anyLong());
+        verify(userRepository, times(1)).delete(user);
     }
 }
