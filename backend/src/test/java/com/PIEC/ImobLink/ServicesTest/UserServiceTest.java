@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
+import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -90,5 +92,16 @@ public class UserServiceTest {
         userService.loadUserById(user2.getId(), auth);
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).getReferenceById(anyLong());
+    }
+
+    @Test
+    void shouldLoadAllUsers() {
+        when(userRepository.findAll())
+                .thenReturn(List.of(user, user2));
+
+        List<UserDetails> users = userService.loadAllUsers();
+
+        assert users.size() == 2;
+        verify(userRepository, times(1)).findAll();
     }
 }
