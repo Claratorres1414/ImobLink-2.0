@@ -30,6 +30,7 @@ public class UserServiceTest {
     private UserService userService;
 
     User user;
+    User user2;
     Authentication auth;
 
     @BeforeEach
@@ -42,6 +43,15 @@ public class UserServiceTest {
         user.setPassword("password");
         user.setName("name");
         user.setRole(Role.USER);
+
+        user2 = new User();
+        user2.setId(80L);
+        user2.setCpf("123456700");
+        user2.setPhoneNumber("546244500");
+        user2.setEmail("email091@email.com");
+        user2.setPassword("password");
+        user2.setName("name");
+        user2.setRole(Role.USER);
 
         auth = new UsernamePasswordAuthenticationToken(user.getEmail(), "password");
     }
@@ -68,5 +78,17 @@ public class UserServiceTest {
         userService.loadUser(auth);
 
         verify(userRepository, times(1)).findByEmail(anyString());
+    }
+
+    @Test
+    void shouldLoadUserById() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+        when(userRepository.getReferenceById(anyLong()))
+                .thenReturn(user2);
+
+        userService.loadUserById(user2.getId(), auth);
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(userRepository, times(1)).getReferenceById(anyLong());
     }
 }
