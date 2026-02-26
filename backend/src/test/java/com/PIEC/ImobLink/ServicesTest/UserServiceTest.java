@@ -2,6 +2,7 @@ package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
 import com.PIEC.ImobLink.DTOs.SetInfoRequest;
+import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
@@ -15,7 +16,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +32,8 @@ public class UserServiceTest {
     private UserRepository userRepository;
     @Mock
     private ImageRepository imageRepository;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService userService;
@@ -130,6 +136,23 @@ public class UserServiceTest {
         userService.setInfo(setInfo, auth);
 
         assert user.getBio().equals("aaaaa");
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    void shouldSetUserPassword() throws AccessDeniedException {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(anyString(), anyString()))
+                .thenReturn(true);
+        when(userRepository.save(user))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        SetPasswordRequest setPassword = new SetPasswordRequest(user.getPassword(), "abc");
+        Boolean resp = userService.setPassword(setPassword, auth);
+
+        assert resp;
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).save(user);
     }
