@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
+import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
@@ -116,5 +117,20 @@ public class UserServiceTest {
 
         verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).findTop10ByEmailContainingIgnoreCase(anyString());
+    }
+
+    @Test
+    void shouldSetUserInformation() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+        when(userRepository.save(user))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        SetInfoRequest setInfo = new SetInfoRequest("aaaaa", null, "00000");
+        userService.setInfo(setInfo, auth);
+
+        assert user.getBio().equals("aaaaa");
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(userRepository, times(1)).save(user);
     }
 }
