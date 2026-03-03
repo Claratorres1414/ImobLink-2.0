@@ -42,8 +42,11 @@ public class ImageController {
     )
     @SecurityRequirement(name = "BearerAuth")
     @GetMapping("/{postId}/post/thumb")
-    public ResponseEntity<byte[]> getFirstImage(@PathVariable Long postId, Authentication auth) throws IOException {
-        return imageService.getFirstImageByPostId(postId, auth);
+    public ResponseEntity<ApiResponse<byte[]>> getFirstImage(@PathVariable Long postId, Authentication auth) throws IOException {
+        return  ResponseUtil.ok(
+                "Imagem buscada com sucesso",
+                imageService.getFirstImageByPostId(postId, auth)
+                );
     }
 
     @Operation(
@@ -65,7 +68,9 @@ public class ImageController {
     )
     @SecurityRequirement(name = "BearerAuth")
     @GetMapping("/get/{imageId}")
-    public ResponseEntity<byte[]> getImageById(@PathVariable Long imageId, Authentication auth) throws java.io.IOException {
-        return imageService.getImageById(imageId, auth);
+    public ResponseEntity<ApiResponse<byte[]>> getImageById(@PathVariable Long imageId, Authentication auth) throws IOException {
+        return ResponseUtil.ok(
+                "Imagem buscada com sucesso",
+                imageService.getImageById(imageId, auth));
     }
 }
