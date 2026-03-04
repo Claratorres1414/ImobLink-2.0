@@ -72,4 +72,25 @@ public class ImageServiceTest {
 
         verify(imageRepository, times(1)).save(any(Images.class));
     }
+
+    @Test
+    void shouldSaveUserProfileImageSuccessfully() throws IOException {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+        when(fileStorageService.saveUserProfileImage(any(), anyLong()))
+                .thenReturn("fake/path/fake.jpeg");
+        when(file.getContentType())
+                .thenReturn("image/jpeg");
+        when(imageRepository.save(any(Images.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Images savedImage = imageService.saveProfileImage(file, auth);
+
+        assertNotNull(savedImage);
+        assertEquals("image/jpeg", savedImage.getContentType());
+        assertEquals(user, savedImage.getUser());
+        assertTrue(savedImage.getFilename().contains("fake.jpeg"));
+
+        verify(imageRepository, times(1)).save(any(Images.class));
+    }
 }
