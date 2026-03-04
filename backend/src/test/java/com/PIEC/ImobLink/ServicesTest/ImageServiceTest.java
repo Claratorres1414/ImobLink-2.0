@@ -2,6 +2,7 @@ package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
 import com.PIEC.ImobLink.Entitys.Images;
+import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
@@ -19,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -92,5 +94,35 @@ public class ImageServiceTest {
         assertTrue(savedImage.getFilename().contains("fake.jpeg"));
 
         verify(imageRepository, times(1)).save(any(Images.class));
+    }
+
+    @Test
+    void shouldReturnFirstImageBytesByPostId() throws IOException {
+
+        // Arrange
+        Images image = new Images();
+        image.setFilepath("fake/path/image.jpeg");
+
+        Post post = new Post();
+        post.setId(1L);
+        post.setImages(List.of(image));
+
+        byte[] fakeBytes = "fake-image-content".getBytes();
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postRepository.getPostById(anyLong()))
+                .thenReturn(post);
+
+        when(fileStorageService.readFile("fake/path/image.jpeg"))
+                .thenReturn(fakeBytes);
+
+        byte[] result = imageService.getFirstImageByPostId(1L, auth);
+
+        assertNotNull(result);
+        assertArrayEquals(fakeBytes, result);
+
+        verify(fileStorageService).readFile("fake/path/image.jpeg");
     }
 }
