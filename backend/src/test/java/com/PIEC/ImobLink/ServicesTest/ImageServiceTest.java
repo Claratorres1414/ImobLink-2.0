@@ -18,10 +18,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -128,6 +130,22 @@ public class ImageServiceTest {
     }
 
     @Test
+    void shouldThrowWhenPostHasNoImages() {
+
+        Post post = new Post();
+        post.setImages(List.of());
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postRepository.getPostById(anyLong()))
+                .thenReturn(post);
+
+        assertThrows(NoSuchElementException.class,
+                () -> imageService.getFirstImageByPostId(1L, auth));
+    }
+
+    @Test
     void shouldReturnAllImagesByPostId() {
         Images img1 = new Images();
         img1.setId(1L);
@@ -159,6 +177,19 @@ public class ImageServiceTest {
     }
 
     @Test
+    void shouldThrowWhenPostNotFound() {
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postRepository.findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> imageService.getAllImagesByPostId(1L, auth));
+    }
+
+    @Test
     void shouldReturnImageBytesByImageId() throws IOException {
 
         Images image = new Images();
@@ -181,5 +212,28 @@ public class ImageServiceTest {
         assertArrayEquals(fakeBytes, result);
 
         verify(fileStorageService).readFile("fake/path/image.jpeg");
+    }
+
+    @Test
+    void shouldThrowWhenImageNotFound() {
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(imageRepository.findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class,
+                () -> imageService.getImageById(1L, auth));
+    }
+
+    @Test
+    void shouldThrowWhenAuthenticatedUserNotFound() {
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> imageService.getImageById(1L, auth));
     }
 }
