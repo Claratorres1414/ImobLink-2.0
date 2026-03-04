@@ -157,4 +157,29 @@ public class ImageServiceTest {
         assertEquals("img1.jpeg", response.get(0).getFilename());
         assertEquals("img2.jpeg", response.get(1).getFilename());
     }
+
+    @Test
+    void shouldReturnImageBytesByImageId() throws IOException {
+
+        Images image = new Images();
+        image.setId(1L);
+        image.setFilepath("fake/path/image.jpeg");
+
+        byte[] fakeBytes = "fake-image".getBytes();
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(imageRepository.findById(anyLong()))
+                .thenReturn(Optional.of(image));
+
+        when(fileStorageService.readFile("fake/path/image.jpeg"))
+                .thenReturn(fakeBytes);
+
+        byte[] result = imageService.getImageById(1L, auth);
+
+        assertArrayEquals(fakeBytes, result);
+
+        verify(fileStorageService).readFile("fake/path/image.jpeg");
+    }
 }
