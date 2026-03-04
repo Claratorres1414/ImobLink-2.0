@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
+import com.PIEC.ImobLink.DTOs.ImageResponse;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
@@ -124,5 +125,36 @@ public class ImageServiceTest {
         assertArrayEquals(fakeBytes, result);
 
         verify(fileStorageService).readFile("fake/path/image.jpeg");
+    }
+
+    @Test
+    void shouldReturnAllImagesByPostId() {
+        Images img1 = new Images();
+        img1.setId(1L);
+        img1.setFilename("img1.jpeg");
+        img1.setFilepath("path/1");
+        img1.setContentType("image/jpeg");
+
+        Images img2 = new Images();
+        img2.setId(2L);
+        img2.setFilename("img2.jpeg");
+        img2.setFilepath("path/2");
+        img2.setContentType("image/jpeg");
+
+        Post post = new Post();
+        post.setImages(List.of(img1, img2));
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postRepository.findById(anyLong()))
+                .thenReturn(Optional.of(post));
+
+        List<ImageResponse> response =
+                imageService.getAllImagesByPostId(1L, auth);
+
+        assertEquals(2, response.size());
+        assertEquals("img1.jpeg", response.get(0).getFilename());
+        assertEquals("img2.jpeg", response.get(1).getFilename());
     }
 }
