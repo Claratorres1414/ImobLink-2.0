@@ -100,6 +100,32 @@ public class ImageServiceTest {
     }
 
     @Test
+    void shouldUpdateUserProfileImageId() throws IOException {
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(fileStorageService.saveUserProfileImage(any(), anyLong()))
+                .thenReturn("fake/path/fake.jpeg");
+
+        when(file.getContentType())
+                .thenReturn("image/jpeg");
+
+        when(imageRepository.save(any(Images.class)))
+                .thenAnswer(invocation -> {
+                    Images img = invocation.getArgument(0);
+                    img.setId(99L);
+                    return img;
+                });
+
+        imageService.saveProfileImage(file, auth);
+
+        assertEquals(99L, user.getImageProfileId());
+
+        verify(userRepository).save(user);
+    }
+
+    @Test
     void shouldReturnFirstImageBytesByPostId() throws IOException {
 
         // Arrange
