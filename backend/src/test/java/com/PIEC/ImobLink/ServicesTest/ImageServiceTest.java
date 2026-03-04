@@ -79,6 +79,29 @@ public class ImageServiceTest {
     }
 
     @Test
+    void shouldThrowWhenUserNotFoundOnSaveImage() {
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> imageService.saveImage(file, auth));
+    }
+
+    @Test
+    void shouldPropagateIOExceptionOnSaveImage() throws IOException {
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(fileStorageService.saveImage(any(), anyLong()))
+                .thenThrow(new IOException("Disk error"));
+
+        assertThrows(IOException.class,
+                () -> imageService.saveImage(file, auth));
+    }
+
+    @Test
     void shouldSaveUserProfileImageSuccessfully() throws IOException {
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(user));
@@ -123,6 +146,16 @@ public class ImageServiceTest {
         assertEquals(99L, user.getImageProfileId());
 
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldThrowWhenUserNotFoundOnSaveProfileImage() {
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> imageService.saveProfileImage(file, auth));
     }
 
     @Test
@@ -260,6 +293,25 @@ public class ImageServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(UsernameNotFoundException.class,
+                () -> imageService.getImageById(1L, auth));
+    }
+
+    @Test
+    void shouldPropagateIOExceptionOnReadFile() throws IOException {
+
+        Images image = new Images();
+        image.setFilepath("fake/path/image.jpeg");
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(imageRepository.findById(anyLong()))
+                .thenReturn(Optional.of(image));
+
+        when(fileStorageService.readFile(anyString()))
+                .thenThrow(new IOException("Read error"));
+
+        assertThrows(IOException.class,
                 () -> imageService.getImageById(1L, auth));
     }
 }
