@@ -2,6 +2,8 @@ package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
 import com.PIEC.ImobLink.DTOs.PostResponse;
+import com.PIEC.ImobLink.DTOs.SetInfoRequest;
+import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
@@ -126,5 +128,40 @@ public class PostServiceTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> postService.createPost(imagesFake, post.getDescription(), post.getPrice(), post.getStreet(), post.getAvenue(), post.getNumber(), post.getType(), auth));
+    }
+
+    @Test
+    void shouldEditAPost() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postRepository.getPostById(anyLong()))
+                .thenReturn(post);
+
+        when(postRepository.save(any(Post.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        SetPostInfoRequest info = new SetPostInfoRequest();
+        info.setAvenue("avenida");
+
+        PostResponse response = postService.editPost(post.getId(), info, auth);
+
+        assertNotNull(response);
+        assertEquals(response.getAvenue(), info.getAvenue());
+        assertEquals(response.getDescription(), post.getDescription());
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(postRepository, times(1)).getPostById(anyLong());
+        verify(postRepository, times(1)).save(any(Post.class));
+    }
+
+    @Test
+    void shouldNotEditAPostWhenUserNotFound() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
+        assertThrows(UsernameNotFoundException.class,
+                () -> postService.editPost(post.getId(), new SetPostInfoRequest(), authFake));
     }
 }
