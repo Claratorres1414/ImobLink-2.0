@@ -2,7 +2,6 @@ package com.PIEC.ImobLink.ServicesTest;
 
 import Role.Role;
 import com.PIEC.ImobLink.DTOs.PostResponse;
-import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
@@ -188,5 +187,53 @@ public class PostServiceTest {
 
         assertThrows(UsernameNotFoundException.class,
                 () -> postService.deletePost(post.getId(), authFake));
+    }
+
+    @Test
+    void shouldAddAnImageToPost() throws IOException {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postRepository.getPostById(anyLong()))
+                .thenReturn(post);
+
+        when(imageService.saveImage(any(), any()))
+                .thenReturn(image);
+
+        when(postRepository.save(any(Post.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(imageRepository.save(any(Images.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        PostResponse response = postService.addImageToPost(post.getId(), mFile, auth);
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void shouldNotAddAnImageToPostWhenUserNotFound() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> postService.addImageToPost(post.getId(), mFile, authFake));
+    }
+
+    @Test
+    void shouldNotAddAnImageWhenPostHasAlready10Images() {
+        for(int i = 0; i < 10; i++) {
+            post.addImage(image);
+        }
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+        when(postRepository.getPostById(anyLong()))
+                .thenReturn(post);
+
+        assertThrows(UnsupportedOperationException.class,
+                () -> postService.addImageToPost(post.getId(), mFile, auth));
     }
 }
