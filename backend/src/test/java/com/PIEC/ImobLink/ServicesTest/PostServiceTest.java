@@ -164,4 +164,29 @@ public class PostServiceTest {
         assertThrows(UsernameNotFoundException.class,
                 () -> postService.editPost(post.getId(), new SetPostInfoRequest(), authFake));
     }
+
+    @Test
+    void shouldDeleteAPost() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postService.get(anyLong()))
+                .thenReturn(post);
+
+        postService.deletePost(post.getId(), auth);
+
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(postRepository, times(1)).delete(any(Post.class));
+    }
+
+    @Test
+    void shouldNotDeleteAPostWhenUserNotFound() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+
+        Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> postService.deletePost(post.getId(), authFake));
+    }
 }
