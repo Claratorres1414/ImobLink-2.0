@@ -236,4 +236,46 @@ public class PostServiceTest {
         assertThrows(UnsupportedOperationException.class,
                 () -> postService.addImageToPost(post.getId(), mFile, auth));
     }
+
+    @Test
+    void shouldRemoveAnImageFromPost() throws IOException {
+        for(int i = 0; i < 10; i++) {
+            image.setId(image.getId() + 10);
+            post.addImage(image);
+        }
+
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postRepository.getPostById(anyLong()))
+                .thenReturn(post);
+
+        postService.removeImageByPostIdAndImageId(post.getId(), image.getId(), auth);
+        assertNotNull(post.getImages());
+        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(postRepository, times(1)).getPostById(anyLong());
+        verify(imageRepository, times(1)).deleteById(anyLong());
+    }
+
+    @Test
+    void shouldNotRemoveAnImageFromPostWhenUserNotFound() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.empty());
+        Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> postService.removeImageByPostIdAndImageId(post.getId(), image.getId(), authFake));
+    }
+
+    @Test
+    void shouldNotRemoveAnImageWhenPostHasJustOneImage() {
+        when(userRepository.findByEmail(anyString()))
+                .thenReturn(Optional.of(user));
+
+        when(postRepository.getPostById(anyLong()))
+                .thenReturn(post);
+
+        assertThrows(UnsupportedOperationException.class,
+                () -> postService.removeImageByPostIdAndImageId(post.getId(), image.getId(), auth));
+    }
 }
