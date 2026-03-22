@@ -169,7 +169,7 @@ public class PostServiceTest {
         when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(user));
 
-        when(postService.get(anyLong()))
+        when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
 
         postService.deletePost(post.getId(), auth);

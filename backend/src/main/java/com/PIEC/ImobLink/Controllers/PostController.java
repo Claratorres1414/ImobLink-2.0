@@ -1,5 +1,6 @@
 package com.PIEC.ImobLink.Controllers;
 
+import com.PIEC.ImobLink.DTOs.PostRequest;
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Response.ApiResponse;
@@ -32,12 +33,11 @@ public class PostController {
             description = "Permite criar uma nova publicação com múltiplas imagens, descrição, preço, etc"
     )
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<PostResponse>> createPost(@RequestParam("description") String description, @RequestParam("price") double price, @RequestParam("street") String street, @RequestParam("avenue") String avenue, @RequestParam("number") String number, @RequestParam("type") String type, @RequestParam("images")MultipartFile[] images, Authentication auth) throws IOException {
-        //Remover IO ao refatorar Image
+    public ResponseEntity<ApiResponse<PostResponse>> createPost(@RequestPart PostRequest data, @RequestPart("images")MultipartFile[] images, Authentication auth) throws IOException {
         List<MultipartFile> imagesList = Arrays.asList(images);
         return ResponseUtil.created(
                 "Post criado com sucesso",
-                postService.createPost(imagesList, description, price, street, avenue, number, type, auth)
+                postService.createPost(imagesList, data.getDescription(), data.getPrice(), data.getStreet(), data.getAvenue(), data.getNumber(), data.getType(), auth)
         );
     }
 

@@ -7,20 +7,22 @@ import com.PIEC.ImobLink.Repositorys.*;
 import com.PIEC.ImobLink.Util.FavsLimitedHeap;
 import com.PIEC.ImobLink.Util.LikesLimitedHeap;
 import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
-import jakarta.transaction.Transactional;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Getter
 public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
@@ -36,55 +38,59 @@ public class PostService {
     private boolean initializedL = false;
 
     public void initViewsHeap() {
-        if (initializedV) return;
-
-        List<Post> posts = postRepository.findAll();
-        if (!posts.isEmpty()) {
+        if (initializedV) {
+            return;
+        }
+        if (tryPopulateRankingHeap(posts -> {
             viewsHeap.clear();
-            for (Post post : posts) {
-                viewsHeap.add(new PostResponse(post));
-            }
+            posts.forEach(p -> viewsHeap.add(new PostResponse(p)));
+        })) {
             initializedV = true;
         }
-        System.out.println("Heap de Views inicializado com sucesso");
     }
 
     public void initFavsHeap() {
-        if (initializedF) return;
-
-        List<Post> posts = postRepository.findAll();
-        if (!posts.isEmpty()) {
+        if (initializedF) {
+            return;
+        }
+        if (tryPopulateRankingHeap(posts -> {
             favsHeap.clear();
-            for (Post post : posts) {
-                favsHeap.add(new PostResponse(post));
-            }
+            posts.forEach(p -> favsHeap.add(new PostResponse(p)));
+        })) {
             initializedF = true;
         }
-        System.out.println("Heap de Favs inicializado com sucesso");
     }
 
     public void initLikesHeap() {
-        if (initializedL) return;
-
-        List<Post> posts = postRepository.findAll();
-        if (!posts.isEmpty()) {
+        if (initializedL) {
+            return;
+        }
+        if (tryPopulateRankingHeap(posts -> {
             likesHeap.clear();
-            for (Post post : posts) {
-                likesHeap.add(new PostResponse(post));
-            }
+            posts.forEach(p -> likesHeap.add(new PostResponse(p)));
+        })) {
             initializedL = true;
         }
-        System.out.println("Heap de Likes inicializado com sucesso");
+    }
+
+    /**
+     * Carrega todos os posts no heap informado. Retorna false se não houver posts (heap não marcado como inicializado).
+     */
+    private boolean tryPopulateRankingHeap(Consumer<List<Post>> fillHeap) {
+        List<Post> posts = postRepository.findAll();
+        if (posts.isEmpty()) {
+            return false;
+        }
+        fillHeap.accept(posts);
+        return true;
     }
 
     @Transactional
-    public PostResponse createPost(List<MultipartFile> images, String description, double price, String street, String avenue, String number, String type, Authentication auth) throws java.io.IOException {
-        //Remover IO ao refatorar Image
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    public PostResponse createPost(List<MultipartFile> images, String description, double price, String street,
+                                   String avenue, String number, String type, Authentication auth) throws IOException {
+        User user = requireUser(auth);
 
-        if (images.size() > 10 || images.isEmpty()){
+        if (images.size() > 10 || images.isEmpty()) {
             throw new IllegalArgumentException("Quantidade de imagens inválida, deve ter no mínimo 1 imagem e no máximo 10!");
         }
 
@@ -99,12 +105,12 @@ public class PostService {
         post.setWasUpdated(false);
 
         for (MultipartFile image : images) {
-            Images savedImage = imageService.saveImage(image,auth);
+            Images savedImage = imageService.saveImage(image, auth);
             post.addImage(savedImage);
         }
 
         postRepository.save(post);
-        for(Images image: post.getImages()){
+        for (Images image : post.getImages()) {
             image.setPost(post);
         }
         return new PostResponse(post);
@@ -118,9 +124,7 @@ public class PostService {
     }
 
     public List<PostResponse> getUserFavs(Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = requireUser(auth);
         List<PostResponse> faveds = new ArrayList<>();
         for (Favs fav : user.getFavs()) {
             Post post = fav.getPost();
@@ -130,38 +134,28 @@ public class PostService {
     }
 
     public List<PostResponse> searchPostByAvenue(String avenue, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        requireUser(auth);
         List<Post> responses = postRepository.findTop10ByAvenueContainingIgnoreCase(avenue);
-        List<PostResponse> postResponses = new ArrayList<>();
-        for (Post post : responses) {
-            postResponses.add(new PostResponse(post));
-        }
-        return postResponses;
+        return responses.stream()
+                .map(PostResponse::new)
+                .toList();
     }
 
     public List<PostResponse> searchPostByStreet(String street, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        requireUser(auth);
         List<Post> responses = postRepository.findTop10ByStreetContainingIgnoreCase(street);
-        List<PostResponse> postResponses = new ArrayList<>();
-        for (Post post : responses) {
-            postResponses.add(new PostResponse(post));
-        }
-        return postResponses;
+        return responses.stream()
+                .map(PostResponse::new)
+                .toList();
     }
 
     public PostResponse editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        requireUser(auth);
         Post post = postRepository.getPostById(id);
         if (newInfoPost.getDescription() != null) {
             post.setDescription(newInfoPost.getDescription());
         }
-        if (newInfoPost.getPrice() != 0){
+        if (newInfoPost.getPrice() != 0) {
             post.setPrice(newInfoPost.getPrice());
         }
         if (newInfoPost.getStreet() != null) {
@@ -183,47 +177,39 @@ public class PostService {
         return new PostResponse(post);
     }
 
-   public void deletePost(Long id, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    public void deletePost(Long id, Authentication auth) {
+        requireUser(auth);
 
         postRepository.delete(get(id));
-        boolean viewsResp = viewsHeap.remove(id);
-        boolean favsResp = favsHeap.remove(id);
-        boolean likesResp = likesHeap.remove(id);
-        if (viewsResp){
+        if (viewsHeap.remove(id)) {
             initializedV = false;
         }
-        if (favsResp){
+        if (favsHeap.remove(id)) {
             initializedF = false;
         }
-        if (likesResp){
+        if (likesHeap.remove(id)) {
             initializedL = false;
         }
     }
 
     public void removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        requireUser(auth);
         Post post = postRepository.getPostById(postId);
-        if (post.getImages().size() > 1){
+        if (post.getImages().size() > 1) {
             post.removeImage(imageId);
             imageRepository.deleteById(imageId);
-            new PostResponse(post);
             return;
         }
         throw new UnsupportedOperationException("Quantidade de imagens mínima atingida");
     }
 
-    public PostResponse addImageToPost(Long postId, MultipartFile image, Authentication auth) throws java.io.IOException {
-        String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar usuário"));
+    public PostResponse addImageToPost(Long postId, MultipartFile image, Authentication auth) throws IOException {
+        requireUser(auth);
         Post post = postRepository.getPostById(postId);
-        if (post.getImages().size() == 10){
+        if (post.getImages().size() == 10) {
             throw new UnsupportedOperationException("Esse Post já possui o máximo de imagens permitidas!");
         }
-        Images savedImage = imageService.saveImage(image,auth);
+        Images savedImage = imageService.saveImage(image, auth);
         post.addImage(savedImage);
 
         postRepository.save(post);
@@ -234,27 +220,25 @@ public class PostService {
     }
 
     public List<PostResponse> getPostsByUser(Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        User user = requireUser(auth);
 
         List<PostResponse> posts = user.getPosts().stream()
                 .map(PostResponse::new)
                 .toList();
 
-        List<Favs> favs = user.getFavs();
-        List<Likes> likes = user.getLikes();
+        Set<Long> favPostIds = user.getFavs().stream()
+                .map(f -> f.getPost().getId())
+                .collect(Collectors.toSet());
+        Set<Long> likedPostIds = user.getLikes().stream()
+                .map(l -> l.getPost().getId())
+                .collect(Collectors.toSet());
 
         for (PostResponse post : posts) {
-            for (Favs fav : favs) {
-                if (fav.getPost().getId().equals(post.getId())) {
-                    post.setWasFaved(true);
-                }
+            if (favPostIds.contains(post.getId())) {
+                post.setWasFaved(true);
             }
-            for (Likes like : likes) {
-                if (like.getPost().getId().equals(post.getId())) {
-                    post.setWasLiked(true);
-                }
+            if (likedPostIds.contains(post.getId())) {
+                post.setWasLiked(true);
             }
         }
 
@@ -262,22 +246,14 @@ public class PostService {
     }
 
     public PostResponse getPostById(Long id, Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        User user = requireUser(auth);
 
         Post post = postRepository.getPostById(id);
         post.setViews(post.getViews() + 1);
         viewsHeap.add(new PostResponse(post));
         List<User> reacheds = post.getReacheds();
         List<Post> vieweds = user.getPosts();
-        boolean reached = false;
-        for (User u : reacheds) {
-            if (u.getEmail().equals(email)) {
-                reached = true;
-                break;
-            }
-        }
+        boolean reached = reacheds.stream().anyMatch(u -> u.getEmail().equals(user.getEmail()));
 
         if (!reached) {
             reacheds.add(user);
@@ -286,26 +262,27 @@ public class PostService {
         }
 
         postRepository.save(post);
-        List<Favs> favs = post.getFavedTimes();
-        List<Likes> likes = post.getLikedTimes();
-        List<Comment> comments = post.getComments();
         PostResponse postResponse = new PostResponse(post);
-        for (Favs fav : favs) {
+        applyEngagementFlags(post, postResponse, user.getEmail());
+        for (Comment comment : post.getComments()) {
+            postResponse.addComment(comment);
+        }
+        return postResponse;
+    }
+
+    private void applyEngagementFlags(Post post, PostResponse postResponse, String email) {
+        for (Favs fav : post.getFavedTimes()) {
             if (fav.getUser().getEmail().equals(email)) {
                 postResponse.setWasFaved(true);
                 break;
             }
         }
-        for (Likes like : likes) {
+        for (Likes like : post.getLikedTimes()) {
             if (like.getUser().getEmail().equals(email)) {
                 postResponse.setWasLiked(true);
                 break;
             }
         }
-        for (Comment comment : comments) {
-            postResponse.addComment(comment);
-        }
-        return postResponse;
     }
 
     public Post get(Long id) {
@@ -313,8 +290,7 @@ public class PostService {
     }
 
     public Boolean favPost(Long id, Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        User user = requireUser(auth);
         Post post = postRepository.getPostById(id);
 
         for (Favs favPosts : user.getFavs()) {
@@ -334,19 +310,15 @@ public class PostService {
     }
 
     public Boolean unfavPost(Long id, Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
-        Post post;
-
-        post = postRepository.getPostById(id);
+        User user = requireUser(auth);
+        Post post = postRepository.getPostById(id);
 
         for (Favs favPost : user.getFavs()) {
             if (favPost.getPost().equals(post)) {
                 post.getFavedTimes().remove(favPost);
                 user.getFavs().remove(favPost);
                 favsRepository.delete(favPost);
-                boolean favsResp = favsHeap.remove(id);
-                if (favsResp) {
+                if (favsHeap.remove(id)) {
                     initializedF = false;
                 }
                 return true;
@@ -357,8 +329,7 @@ public class PostService {
     }
 
     public Boolean likePost(Long id, Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        User user = requireUser(auth);
         Post post = postRepository.getPostById(id);
 
         for (Likes likedPosts : user.getLikes()) {
@@ -378,8 +349,7 @@ public class PostService {
     }
 
     public Boolean unlikePost(Long id, Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        User user = requireUser(auth);
         Post post = postRepository.getPostById(id);
 
         for (Likes likedPost : user.getLikes()) {
@@ -387,8 +357,7 @@ public class PostService {
                 post.getLikedTimes().remove(likedPost);
                 user.getLikes().remove(likedPost);
                 likesRepository.delete(likedPost);
-                boolean likeResp = likesHeap.remove(id);
-                if (likeResp) {
+                if (likesHeap.remove(id)) {
                     initializedL = false;
                 }
                 return true;
@@ -397,14 +366,13 @@ public class PostService {
         return false;
     }
 
-    //Funcionalidades ADM
     public int getFavedTimesByPostId(Long postId) {
         Post post = postRepository.getPostById(postId);
         return post.getFavedTimes().size();
     }
 
     public int getLikedTimesByPostId(Long postId, Authentication auth) {
-        userRepository.findByEmail(auth.getName()).orElseThrow(() -> new UsernameNotFoundException("User not found " + auth.getName()));
+        requireUser(auth);
         Post post = postRepository.getPostById(postId);
         return post.getLikedTimes().size();
     }
@@ -421,43 +389,45 @@ public class PostService {
     }
 
     public List<String> topViewedPosts(Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        requireUser(auth);
 
         initViewsHeap();
         List<String> response = new ArrayList<>();
 
         viewsHeap.getHeap().forEach(post -> response.add(
-                    "Post: " + post.getId() +
-                    " | Views: " + post.getViews() +
-                    " | Author: " + post.getUserId()));
+                "Post: " + post.getId()
+                        + " | Views: " + post.getViews()
+                        + " | Author: " + post.getUserId()));
 
         return response;
     }
 
     public List<String> topFavedPosts(Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        requireUser(auth);
 
         initFavsHeap();
         List<String> response = new ArrayList<>();
         favsHeap.getHeap().forEach(post -> response.add(
-                "Post " + post.getId() +
-                        " | Faved Times: " + post.getFavedTimes() +
-                        " | Author: " + post.getUserId()));
+                "Post " + post.getId()
+                        + " | Faved Times: " + post.getFavedTimes()
+                        + " | Author: " + post.getUserId()));
         return response;
     }
 
     public List<String> topLikedPosts(Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found " + email));
+        requireUser(auth);
 
         initLikesHeap();
         List<String> response = new ArrayList<>();
         likesHeap.getHeap().forEach(post -> response.add(
-                "Post" + post.getId() +
-                        " | Liked Times: " + post.getLikedTimes() +
-                        " | Author: " + post.getUserId()));
+                "Post" + post.getId()
+                        + " | Liked Times: " + post.getLikedTimes()
+                        + " | Author: " + post.getUserId()));
         return response;
+    }
+
+    private User requireUser(Authentication auth) {
+        return userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }
