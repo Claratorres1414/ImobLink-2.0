@@ -19,11 +19,10 @@ import java.util.Optional;
 public class FollowService {
     private final UserRepository userRepository;
     private final FollowRespository followRepository;
+    private final RequireUserService requireUserService;
 
     public Follow follow(Authentication auth, Long followingId) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
+        User user = requireUserService.requireUser(auth);
         Long userId = user.getId();
         if (userId.equals(followingId)){
             throw new IllegalArgumentException("Você não pode seguir a si mesmo.");
@@ -48,9 +47,7 @@ public class FollowService {
     }
 
     public void unfollow(Authentication auth, Long followingId) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
+        User user = requireUserService.requireUser(auth);
 
         User following = userRepository.findById(followingId)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado."));
@@ -64,9 +61,7 @@ public class FollowService {
     }
 
     public List<UserDetails> getFollowers(Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
+        User user = requireUserService.requireUser(auth);
 
         List<Follow> followers = user.getFollowers();
         List<UserDetails> followerList = new ArrayList<>();
@@ -79,9 +74,7 @@ public class FollowService {
     }
 
     public List<UserDetails> getFollowings(Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Erro ao buscar o usuario" + email));
+        User user = requireUserService.requireUser(auth);
 
         List<Follow> followings = user.getFollowings();
         List<UserDetails> followingList = new ArrayList<>();

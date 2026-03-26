@@ -9,6 +9,7 @@ import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.*;
 import com.PIEC.ImobLink.Services.ImageService;
 import com.PIEC.ImobLink.Services.PostService;
+import com.PIEC.ImobLink.Services.RequireUserService;
 import com.PIEC.ImobLink.Util.FavsLimitedHeap;
 import com.PIEC.ImobLink.Util.LikesLimitedHeap;
 import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
@@ -27,17 +28,15 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PostServiceTest {
     @Mock private PostRepository postRepository;
-    @Mock private UserRepository userRepository;
+    @Mock private RequireUserService requireUserService;
     @Mock private ImageService imageService;
     @Mock private FavsRepository favsRepository;
     @Mock private LikesRepository likesRepository;
@@ -89,8 +88,8 @@ public class PostServiceTest {
 
     @Test
     void shouldCreateANewPost() throws IOException {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(imageService.saveImage(any(), any()))
                 .thenReturn(image);
@@ -103,14 +102,14 @@ public class PostServiceTest {
         assertNotNull(response);
         assertEquals(response.getUserId(), user.getId());
 
-        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(requireUserService, times(1)).requireUser(any());
         verify(postRepository, times(1)).save(any(Post.class));
     }
 
     @Test
     void shouldNotCreateANewPostWhenUserNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
 
@@ -120,8 +119,8 @@ public class PostServiceTest {
 
     @Test
     void shouldNotCreateANewPostWhenPostHasNoImages() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         List<MultipartFile> imagesFake = new ArrayList<>();
 
@@ -131,8 +130,8 @@ public class PostServiceTest {
 
     @Test
     void shouldEditAPost() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
@@ -149,15 +148,15 @@ public class PostServiceTest {
         assertEquals(response.getAvenue(), info.getAvenue());
         assertEquals(response.getDescription(), post.getDescription());
 
-        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(requireUserService, times(1)).requireUser(any());
         verify(postRepository, times(1)).getPostById(anyLong());
         verify(postRepository, times(1)).save(any(Post.class));
     }
 
     @Test
     void shouldNotEditAPostWhenUserNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
         assertThrows(UsernameNotFoundException.class,
@@ -166,22 +165,22 @@ public class PostServiceTest {
 
     @Test
     void shouldDeleteAPost() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
 
         postService.deletePost(post.getId(), auth);
 
-        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(requireUserService, times(1)).requireUser(any());
         verify(postRepository, times(1)).delete(any(Post.class));
     }
 
     @Test
     void shouldNotDeleteAPostWhenUserNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
 
@@ -191,8 +190,8 @@ public class PostServiceTest {
 
     @Test
     void shouldAddAnImageToPost() throws IOException {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
@@ -213,8 +212,8 @@ public class PostServiceTest {
 
     @Test
     void shouldNotAddAnImageToPostWhenUserNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
 
@@ -228,8 +227,8 @@ public class PostServiceTest {
             post.addImage(image);
         }
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
 
@@ -244,23 +243,23 @@ public class PostServiceTest {
             post.addImage(image);
         }
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
 
         postService.removeImageByPostIdAndImageId(post.getId(), image.getId(), auth);
         assertNotNull(post.getImages());
-        verify(userRepository, times(1)).findByEmail(anyString());
+        verify(requireUserService, times(1)).requireUser(any());
         verify(postRepository, times(1)).getPostById(anyLong());
         verify(imageRepository, times(1)).deleteById(anyLong());
     }
 
     @Test
     void shouldNotRemoveAnImageFromPostWhenUserNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
         Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
 
         assertThrows(UsernameNotFoundException.class,
@@ -269,8 +268,8 @@ public class PostServiceTest {
 
     @Test
     void shouldNotRemoveAnImageWhenPostHasJustOneImage() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
