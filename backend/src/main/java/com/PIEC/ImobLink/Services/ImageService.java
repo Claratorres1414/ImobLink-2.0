@@ -26,9 +26,10 @@ public class ImageService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final FileStorageService fileStorageService;
+    private final RequireUserService requireUserService;
 
     public Images saveImage(MultipartFile file, Authentication auth) throws IOException {
-        User user = getAuthenticatedUser(auth);
+        User user = requireUserService.requireUser(auth);
         String filePath = fileStorageService.saveImage(file, user.getId());
         Images image = buildImageEntity(file, filePath, user);
 
@@ -36,7 +37,7 @@ public class ImageService {
     }
 
     public Images saveProfileImage(MultipartFile file, Authentication auth) throws IOException {
-        User user = getAuthenticatedUser(auth);
+        User user = requireUserService.requireUser(auth);
         String filePath = fileStorageService.saveUserProfileImage(file, user.getId());
         Images image = buildImageEntity(file, filePath, user);
         imageRepository.save(image);
@@ -48,7 +49,7 @@ public class ImageService {
     }
 
     public byte[] getFirstImageByPostId(@PathVariable Long postId, Authentication auth) throws IOException {
-        getAuthenticatedUser(auth);
+        requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(postId);
         List<Images> images = post.getImages();
 
@@ -58,7 +59,7 @@ public class ImageService {
     }
 
     public List<ImageResponse> getAllImagesByPostId(@PathVariable Long postId, Authentication auth) {
-        getAuthenticatedUser(auth);
+        requireUserService.requireUser(auth);
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new UsernameNotFoundException(auth.getName()));
@@ -70,17 +71,12 @@ public class ImageService {
     }
 
     public byte[] getImageById(@PathVariable Long imageId, Authentication auth) throws IOException {
-        getAuthenticatedUser(auth);
+        requireUserService.requireUser(auth);
 
         Images image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new NoSuchElementException(String.valueOf(imageId)));
 
         return fileStorageService.readFile(image.getFilepath());
-    }
-
-    private User getAuthenticatedUser(Authentication auth) {
-        return userRepository.findByEmail(auth.getName())
-                .orElseThrow(() -> new UsernameNotFoundException(auth.getName()));
     }
 
     private Images buildImageEntity(MultipartFile file, String filepath, User user) {

@@ -2,14 +2,22 @@ package com.PIEC.ImobLink.Services;
 
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
-import com.PIEC.ImobLink.Entitys.*;
-import com.PIEC.ImobLink.Repositorys.*;
+import com.PIEC.ImobLink.Entitys.Comment;
+import com.PIEC.ImobLink.Entitys.Favs;
+import com.PIEC.ImobLink.Entitys.Images;
+import com.PIEC.ImobLink.Entitys.Likes;
+import com.PIEC.ImobLink.Entitys.Post;
+import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Repositorys.FavsRepository;
+import com.PIEC.ImobLink.Repositorys.ImageRepository;
+import com.PIEC.ImobLink.Repositorys.LikesRepository;
+import com.PIEC.ImobLink.Repositorys.PostRepository;
+import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Util.FavsLimitedHeap;
 import com.PIEC.ImobLink.Util.LikesLimitedHeap;
 import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,7 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PostService {
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
+    private final RequireUserService requireUserService;
     private final ImageService imageService;
     private final FavsRepository favsRepository;
     private final LikesRepository likesRepository;
@@ -33,6 +41,7 @@ public class PostService {
     private final FavsLimitedHeap favsHeap;
     private final LikesLimitedHeap likesHeap;
     private final ImageRepository imageRepository;
+    private final UserRepository userRepository;
     private boolean initializedV = false;
     private boolean initializedF = false;
     private boolean initializedL = false;
@@ -88,7 +97,7 @@ public class PostService {
     @Transactional
     public PostResponse createPost(List<MultipartFile> images, String description, double price, String street,
                                    String avenue, String number, String type, Authentication auth) throws IOException {
-        User user = requireUser(auth);
+        User user = requireUserService.requireUser(auth);
 
         if (images.size() > 10 || images.isEmpty()) {
             throw new IllegalArgumentException("Quantidade de imagens inválida, deve ter no mínimo 1 imagem e no máximo 10!");
@@ -124,7 +133,7 @@ public class PostService {
     }
 
     public List<PostResponse> getUserFavs(Authentication auth) {
-        User user = requireUser(auth);
+        User user = requireUserService.requireUser(auth);
         List<PostResponse> faveds = new ArrayList<>();
         for (Favs fav : user.getFavs()) {
             Post post = fav.getPost();
@@ -134,7 +143,7 @@ public class PostService {
     }
 
     public List<PostResponse> searchPostByAvenue(String avenue, Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
         List<Post> responses = postRepository.findTop10ByAvenueContainingIgnoreCase(avenue);
         return responses.stream()
                 .map(PostResponse::new)
@@ -142,7 +151,7 @@ public class PostService {
     }
 
     public List<PostResponse> searchPostByStreet(String street, Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
         List<Post> responses = postRepository.findTop10ByStreetContainingIgnoreCase(street);
         return responses.stream()
                 .map(PostResponse::new)
@@ -150,7 +159,7 @@ public class PostService {
     }
 
     public PostResponse editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(id);
         if (newInfoPost.getDescription() != null) {
             post.setDescription(newInfoPost.getDescription());
@@ -178,7 +187,7 @@ public class PostService {
     }
 
     public void deletePost(Long id, Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
 
         postRepository.delete(get(id));
         if (viewsHeap.remove(id)) {
@@ -193,7 +202,7 @@ public class PostService {
     }
 
     public void removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(postId);
         if (post.getImages().size() > 1) {
             post.removeImage(imageId);
@@ -204,7 +213,7 @@ public class PostService {
     }
 
     public PostResponse addImageToPost(Long postId, MultipartFile image, Authentication auth) throws IOException {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(postId);
         if (post.getImages().size() == 10) {
             throw new UnsupportedOperationException("Esse Post já possui o máximo de imagens permitidas!");
@@ -220,7 +229,7 @@ public class PostService {
     }
 
     public List<PostResponse> getPostsByUser(Authentication auth) {
-        User user = requireUser(auth);
+        User user = requireUserService.requireUser(auth);
 
         List<PostResponse> posts = user.getPosts().stream()
                 .map(PostResponse::new)
@@ -246,7 +255,7 @@ public class PostService {
     }
 
     public PostResponse getPostById(Long id, Authentication auth) {
-        User user = requireUser(auth);
+        User user = requireUserService.requireUser(auth);
 
         Post post = postRepository.getPostById(id);
         post.setViews(post.getViews() + 1);
@@ -290,7 +299,7 @@ public class PostService {
     }
 
     public Boolean favPost(Long id, Authentication auth) {
-        User user = requireUser(auth);
+        User user = requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(id);
 
         for (Favs favPosts : user.getFavs()) {
@@ -310,7 +319,7 @@ public class PostService {
     }
 
     public Boolean unfavPost(Long id, Authentication auth) {
-        User user = requireUser(auth);
+        User user = requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(id);
 
         for (Favs favPost : user.getFavs()) {
@@ -329,7 +338,7 @@ public class PostService {
     }
 
     public Boolean likePost(Long id, Authentication auth) {
-        User user = requireUser(auth);
+        User user = requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(id);
 
         for (Likes likedPosts : user.getLikes()) {
@@ -349,7 +358,7 @@ public class PostService {
     }
 
     public Boolean unlikePost(Long id, Authentication auth) {
-        User user = requireUser(auth);
+        User user = requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(id);
 
         for (Likes likedPost : user.getLikes()) {
@@ -372,7 +381,7 @@ public class PostService {
     }
 
     public int getLikedTimesByPostId(Long postId, Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(postId);
         return post.getLikedTimes().size();
     }
@@ -389,7 +398,7 @@ public class PostService {
     }
 
     public List<String> topViewedPosts(Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
 
         initViewsHeap();
         List<String> response = new ArrayList<>();
@@ -403,7 +412,7 @@ public class PostService {
     }
 
     public List<String> topFavedPosts(Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
 
         initFavsHeap();
         List<String> response = new ArrayList<>();
@@ -415,7 +424,7 @@ public class PostService {
     }
 
     public List<String> topLikedPosts(Authentication auth) {
-        requireUser(auth);
+        requireUserService.requireUser(auth);
 
         initLikesHeap();
         List<String> response = new ArrayList<>();
@@ -424,10 +433,5 @@ public class PostService {
                         + " | Liked Times: " + post.getLikedTimes()
                         + " | Author: " + post.getUserId()));
         return response;
-    }
-
-    private User requireUser(Authentication auth) {
-        return userRepository.findByEmail(auth.getName())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }

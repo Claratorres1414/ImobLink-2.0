@@ -9,10 +9,8 @@ import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,11 +21,10 @@ public class CommentsService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
+    private final RequireUserService requireUserService;
 
     public CommentResponse comment(CommentRequest req, Long userId, Authentication auth){
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = requireUserService.requireUser(auth);
 
         LocalDateTime createdAt = LocalDateTime.now();
 
@@ -42,9 +39,7 @@ public class CommentsService {
     }
 
     public CommentResponse commentPost(CommentRequest req, Long postId, Authentication auth){
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = requireUserService.requireUser(auth);
 
         LocalDateTime createdAt = LocalDateTime.now();
 
@@ -60,9 +55,7 @@ public class CommentsService {
     }
 
     public List<CommentResponse> getCommentsByUserId(Long userId, Authentication auth){
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        requireUserService.requireUser(auth);
 
         return commentRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
@@ -71,9 +64,7 @@ public class CommentsService {
     }
 
     public List<CommentResponse> getCommentsByPostId(Long postId, Authentication auth){
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        requireUserService.requireUser(auth);
 
         return commentRepository.findAllByPostIdOrderByCreatedAtDesc(postId)
                 .stream()
@@ -83,9 +74,7 @@ public class CommentsService {
 
     public void deleteComment(Long id, Authentication auth) throws AccessDeniedException {
         Comment comment;
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = requireUserService.requireUser(auth);
 
         comment = commentRepository.findById(id).get();
 

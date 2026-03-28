@@ -21,11 +21,10 @@ import java.util.List;
 public class MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final RequireUserService requireUserService;
 
     public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(String content, Long userId, Authentication auth) {
-        String email = auth.getName();
-        User sender = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User sender = requireUserService.requireUser(auth);
         User receiver = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
@@ -42,9 +41,7 @@ public class MessageService {
     }
 
     public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessages(Long userId, Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = requireUserService.requireUser(auth);
 
         List<Message> messages = messageRepository.findConversation(user.getId(), userId);
 
@@ -58,9 +55,7 @@ public class MessageService {
     }
 
     public ResponseEntity<ApiResponse<MessageResponse>> editMessage(Long messageId, String content, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        requireUserService.requireUser(auth);
 
         Message message = messageRepository.findMessageById(messageId);
         message.setContent(content);
@@ -71,9 +66,7 @@ public class MessageService {
     }
 
     public ResponseEntity<ApiResponse<Void>> deleteMessage(Long messageId, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        requireUserService.requireUser(auth);
 
         messageRepository.deleteById(messageId);
         return ResponseUtil.noContent(
@@ -82,9 +75,7 @@ public class MessageService {
     }
 
     public ResponseEntity<ApiResponse<List<UserDetails>>> getContacts(Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = requireUserService.requireUser(auth);
 
         List<Long> resp = messageRepository.findContacts(user.getId());
         List<User> contacts = userRepository.findAllById(resp);

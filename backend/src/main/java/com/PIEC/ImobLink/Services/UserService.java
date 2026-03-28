@@ -29,6 +29,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ImageService imageService;
     private final ImageRepository imageRepository;
+    private final RequireUserService requireUserService;
 
     public Boolean promoteUser(String email) {
         User user = userRepository.findByEmail(email)
@@ -44,16 +45,12 @@ public class UserService {
     }
 
     public UserDetails loadUser(Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
+        User user = requireUserService.requireUser(auth);
         return new UserDetails(user);
     }
 
     public UserDetails loadUserById(Long id, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
+        requireUserService.requireUser(auth);
 
         User account = userRepository.getReferenceById(id);
 
@@ -68,8 +65,7 @@ public class UserService {
     }
 
     public List<UserDetails> searchUsers(String search, Authentication auth) {
-        String email = auth.getName();
-        userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+        requireUserService.requireUser(auth);
         List<User> users = userRepository.findTop10ByEmailContainingIgnoreCase(search);
 
         return users.stream()
@@ -78,9 +74,7 @@ public class UserService {
     }
 
     public Boolean setInfo(SetInfoRequest newInfo, Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
+        User user = requireUserService.requireUser(auth);
 
         if(newInfo.getName() != null) {
             user.setName(newInfo.getName());
@@ -96,9 +90,7 @@ public class UserService {
     }
 
     public String setProfileImage(MultipartFile newProfileImage, Authentication auth) throws IOException {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
+        User user = requireUserService.requireUser(auth);
 
         if(newProfileImage != null) {
             String imagePath = imageService.saveProfileImage(newProfileImage, auth).getFilepath();
@@ -112,9 +104,7 @@ public class UserService {
     }
 
     public Boolean setPassword(SetPasswordRequest setRequest, Authentication auth) throws AccessDeniedException {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
+        User user = requireUserService.requireUser(auth);
 
         if (setRequest.getNewPassword() != null && !setRequest.getNewPassword().equals(setRequest.getPassword()) && passwordEncoder.matches(setRequest.getPassword(), user.getPassword())) {
             user.setPassword(passwordEncoder.encode(setRequest.getNewPassword()));
@@ -126,9 +116,7 @@ public class UserService {
 
     @Transactional
     public void deleteProfile(DeleteProfileRequest delRequest, Authentication auth) throws AccessDeniedException {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
+        User user = requireUserService.requireUser(auth);
 
         if(delRequest.getPassword() != null && passwordEncoder.matches(delRequest.getPassword(), user.getPassword())) {
             imageRepository.deleteByUserId(user.getId());
@@ -145,9 +133,7 @@ public class UserService {
     }
 
     public int calcFavedTimes(Authentication auth) {
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
+        User user = requireUserService.requireUser(auth);
         int favTimes = 0;
 
         List<Post> posts = user.getPosts();
