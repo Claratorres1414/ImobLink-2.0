@@ -5,10 +5,10 @@ import torch
 from torchvision import models, transforms
 from dotenv import load_dotenv
 from transformers import BlipProcessor, BlipForConditionalGeneration
-from googletrans import Translator
+from deep_translator import GoogleTranslator  # ✅ TROCA AQUI
 
 load_dotenv()
-
+print("🔥 BLIP_CAPTION NOVO CARREGADO")
 # ----------------------------
 # 2. Inicializa modelo BLIP
 # ----------------------------
@@ -73,7 +73,7 @@ def is_house(image_path: str) -> bool:
     return False
 
 # ----------------------------
-# 4. Funções de legenda e tradução com prompts ricos
+# 4. Funções de legenda e tradução
 # ----------------------------
 def gerar_legenda_blip(caminho_imagem: str, prompt_base: str = "", max_length=300) -> str:
     imagem = Image.open(caminho_imagem).convert("RGB")
@@ -91,27 +91,25 @@ def gerar_legenda_blip(caminho_imagem: str, prompt_base: str = "", max_length=30
     legenda_ingles = processor.decode(output[0], skip_special_tokens=True)
     return legenda_ingles.strip()
 
-translator = Translator()
-
+# ✅ NOVA FUNÇÃO DE TRADUÇÃO (SEM BUG)
 def traduzir_para_portugues(texto_ingles: str) -> str:
     try:
-        traducao = translator.translate(texto_ingles, src='en', dest='pt')
-        return traducao.text
+        traducao = GoogleTranslator(source='en', target='pt').translate(texto_ingles)
+        return traducao.capitalize()
     except Exception as e:
         return f"[Erro na tradução: {e}]"
+
 # ----------------------------
-# 5. Pipeline completo com prompts variados
+# 5. Pipeline completo
 # ----------------------------
 def gerar_legendas_completas(caminho_imagem: str) -> dict:
     if not is_house(caminho_imagem):
         return {"erro": "Imagem rejeitada: não parece ser uma casa."}
 
-    # Lista de prompts base para enriquecer a legenda
     prompts_base = [
         "This is a beautiful house made of ",
         "A luxurious home with ",
         "A charming residence featuring ",
-        #"An interior design showcasing ",
         "A cozy house with ",
         "A stunning mansion built with "
     ]
@@ -121,16 +119,15 @@ def gerar_legendas_completas(caminho_imagem: str) -> dict:
         legenda = gerar_legenda_blip(caminho_imagem, prompt_base=prompt)
         legendas_en.append(legenda)
 
-    # Seleciona a legenda mais longa (ou mais rica) como principal
     legenda_en = max(legendas_en, key=len)
     legenda_pt = traduzir_para_portugues(legenda_en)
 
     return {"legenda_en": legenda_en, "legenda_pt": legenda_pt}
 
 # ----------------------------
-# 6. Teste local opcional
+# 6. Teste local
 # ----------------------------
 if __name__ == "__main__":
-    teste_imagem = "exemplo.jpg"  # substitua pelo caminho da sua imagem de teste
+    teste_imagem = "exemplo.jpg"
     resultado = gerar_legendas_completas(teste_imagem)
     print(resultado)
