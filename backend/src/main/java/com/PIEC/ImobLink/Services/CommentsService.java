@@ -8,6 +8,7 @@ import com.PIEC.ImobLink.Repositorys.CommentRepository;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CommentsService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
@@ -82,7 +84,7 @@ public class CommentsService {
             commentRepository.delete(comment);
             return;
         }
-        System.out.println("Invalid credentials!");
+        log.warn("User {} attempted to delete comment {} without permission", user.getEmail(), id);
         throw new AccessDeniedException("Você não é autor deste comentário");
     }
 }

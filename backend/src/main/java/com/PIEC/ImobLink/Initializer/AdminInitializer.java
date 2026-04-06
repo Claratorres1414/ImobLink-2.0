@@ -4,12 +4,14 @@ import Role.Role;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AdminInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -26,8 +28,9 @@ public class AdminInitializer implements CommandLineRunner {
             superAdmin.setRole(Role.SUPER_ADMIN);
 
             userRepository.save(superAdmin);
-            System.out.println("SuperAdmin added");
+            log.info("Super admin bootstrap account created");
+        } else {
+            log.info("Super admin bootstrap account already exists");
         }
-        System.out.println("SupremeAdmin presente");
     }
 }

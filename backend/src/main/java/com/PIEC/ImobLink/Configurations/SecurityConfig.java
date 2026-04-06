@@ -4,6 +4,7 @@ import com.PIEC.ImobLink.SecurityFilter.JwtAuthFilter;
 import com.PIEC.ImobLink.SecurityFilter.JwtAuthenticationEntryPoint;
 import com.PIEC.ImobLink.SecurityFilter.CustomAccessDeniedHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,13 +30,14 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 @RequiredArgsConstructor
 @EnableMethodSecurity
+@Slf4j
 public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) throws Exception {
-        System.out.println("SecurityFilterChain carregada com sucesso");
+        log.info("Initializing SecurityFilterChain");
         return http
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
