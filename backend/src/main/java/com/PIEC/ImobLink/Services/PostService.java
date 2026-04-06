@@ -1,5 +1,6 @@
 package com.PIEC.ImobLink.Services;
 
+import Role.Role;
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.Comment;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -158,9 +160,10 @@ public class PostService {
                 .toList();
     }
 
-    public PostResponse editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) {
-        requireUserService.requireUser(auth);
+    public PostResponse editPost(Long id, SetPostInfoRequest newInfoPost, Authentication auth) throws AccessDeniedException {
+        User user = requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(id);
+        assertCanManagePost(post, user);
         if (newInfoPost.getDescription() != null) {
             post.setDescription(newInfoPost.getDescription());
         }
@@ -186,10 +189,12 @@ public class PostService {
         return new PostResponse(post);
     }
 
-    public void deletePost(Long id, Authentication auth) {
-        requireUserService.requireUser(auth);
+    public void deletePost(Long id, Authentication auth) throws AccessDeniedException {
+        User user = requireUserService.requireUser(auth);
+        Post post = get(id);
+        assertCanManagePost(post, user);
 
-        postRepository.delete(get(id));
+        postRepository.delete(post);
         if (viewsHeap.remove(id)) {
             initializedV = false;
         }
@@ -201,9 +206,10 @@ public class PostService {
         }
     }
 
-    public void removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) {
-        requireUserService.requireUser(auth);
+    public void removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) throws AccessDeniedException {
+        User user = requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(postId);
+        assertCanManagePost(post, user);
         if (post.getImages().size() > 1) {
             post.removeImage(imageId);
             imageRepository.deleteById(imageId);
@@ -212,9 +218,10 @@ public class PostService {
         throw new UnsupportedOperationException("Quantidade de imagens mínima atingida");
     }
 
-    public PostResponse addImageToPost(Long postId, MultipartFile image, Authentication auth) throws IOException {
-        requireUserService.requireUser(auth);
+    public PostResponse addImageToPost(Long postId, MultipartFile image, Authentication auth) throws IOException, AccessDeniedException {
+        User user = requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(postId);
+        assertCanManagePost(post, user);
         if (post.getImages().size() == 10) {
             throw new UnsupportedOperationException("Esse Post já possui o máximo de imagens permitidas!");
         }
@@ -433,5 +440,16 @@ public class PostService {
                         + " | Liked Times: " + post.getLikedTimes()
                         + " | Author: " + post.getUserId()));
         return response;
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN;
+    }
+
+    private void assertCanManagePost(Post post, User user) throws AccessDeniedException {
+        boolean isOwner = post.getUser() != null && post.getUser().getId().equals(user.getId());
+        if (!isOwner && !isAdmin(user)) {
+            throw new AccessDeniedException("Você não tem permissão para alterar este post");
+        }
     }
 }
