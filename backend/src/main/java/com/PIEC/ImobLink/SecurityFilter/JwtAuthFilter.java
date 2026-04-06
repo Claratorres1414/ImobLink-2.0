@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +20,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
@@ -29,10 +31,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String requestPath = request.getServletPath();
 
-        System.out.println("Entrou no filtro JWT");
-        System.out.println("Auth header: " + request.getHeader("Authorization"));
-
-
         if (requestPath.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
@@ -41,7 +39,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("Auth header: null ou inválido");
             filterChain.doFilter(request, response);
             return;
         }
@@ -52,7 +49,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             userEmail = jwtUtil.extractEmail(jwt);
         } catch (ExpiredJwtException e) {
-            System.out.println("Token expirado!");
+            log.warn("Expired JWT token for request path {}", requestPath);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
             response.getWriter().write("Token expirado. Faça login novamente.");
             return; // Interrompe a requisição
@@ -69,6 +66,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                log.warn("Invalid JWT token received for user {}", userEmail);
             }
         }
 
