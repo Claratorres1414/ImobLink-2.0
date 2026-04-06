@@ -17,6 +17,7 @@ import com.PIEC.ImobLink.Services.PostService;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -118,7 +119,7 @@ public class PostController {
             description = "Permite deletar uma publicação realizada por você"
     )
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<ApiResponse<Void>> deletePost(@PathVariable Long id,  Authentication auth) {
+    public ResponseEntity<ApiResponse<Void>> deletePost(@PathVariable Long id,  Authentication auth) throws AccessDeniedException {
         postService.deletePost(id, auth);
         return ResponseUtil.noContent(
             "Post deletado com sucesso"
@@ -130,7 +131,7 @@ public class PostController {
             description = "Permite remover uma imagem da sua publicação"
     )
     @DeleteMapping("/deleteImage/{id}/{imageId}")
-    public ResponseEntity<ApiResponse<Void>> deleteImage(@PathVariable Long id, @PathVariable Long imageId, Authentication auth) {
+    public ResponseEntity<ApiResponse<Void>> deleteImage(@PathVariable Long id, @PathVariable Long imageId, Authentication auth) throws AccessDeniedException {
         postService.removeImageByPostIdAndImageId(id, imageId, auth);
         return ResponseUtil.noContent(
                 "Imagem removida com sucesso"
@@ -142,7 +143,7 @@ public class PostController {
             description = "Permite adicionar uma imagem à sua publicação"
     )
     @PostMapping("/addImage/{id}")
-    public ResponseEntity<ApiResponse<PostResponse>> addImage(@PathVariable Long id, @RequestParam MultipartFile image, Authentication auth) throws IOException {
+    public ResponseEntity<ApiResponse<PostResponse>> addImage(@PathVariable Long id, @RequestParam MultipartFile image, Authentication auth) throws IOException, AccessDeniedException {
         //Remover IO com refatoração do Image
         return ResponseUtil.ok(
                 "Imagem adicionada com sucesso",
@@ -155,7 +156,7 @@ public class PostController {
             description = "Permite editar as informações da sua publicação"
     )
     @PatchMapping("/edit/{id}")
-    public ResponseEntity<ApiResponse<PostResponse>> editPost(@PathVariable Long id, @RequestBody SetPostInfoRequest newInfoPost, Authentication auth) {
+    public ResponseEntity<ApiResponse<PostResponse>> editPost(@PathVariable Long id, @RequestBody SetPostInfoRequest newInfoPost, Authentication auth) throws AccessDeniedException {
         return ResponseUtil.ok(
                 "Post editado com sucesso",
                 postService.editPost(id, newInfoPost, auth)
