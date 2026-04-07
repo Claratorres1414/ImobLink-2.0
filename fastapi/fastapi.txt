@@ -1,0 +1,200 @@
+# 🚀 ImobLink API (FastAPI)
+
+API desenvolvida com **FastAPI** para processamento de imagens, OCR e previsão de popularidade de imóveis.
+
+---
+
+## 📌 Funcionalidades
+
+### 🖼️ 1. Geração de legenda (`/gerar-legenda`)
+
+* Recebe uma imagem de imóvel
+* Gera descrição automática usando IA (BLIP)
+* Traduz para português
+
+**Entrada:** arquivo de imagem
+**Saída:**
+
+```json
+{
+  "legenda_en": "a beautiful house",
+  "legenda_pt": "uma casa bonita"
+}
+```
+
+---
+
+### 📄 2. Processamento de documento (`/processar-documento`)
+
+* Recebe frente e verso de documento
+* Extrai informações via OCR
+
+**Entrada:** duas imagens (`frente`, `verso`)
+**Saída:**
+
+```json
+{
+  "nome": "João",
+  "cpf": "12345678900"
+}
+```
+
+---
+
+### 📊 3. Treinamento do modelo (`/treinar-popularidade`)
+
+* Treina modelo de machine learning com base em posts históricos
+
+**Entrada:**
+
+```json
+[
+  {
+    "price": 500000,
+    "description": "Casa grande",
+    "street": "Rua A",
+    "avenue": "Av B",
+    "type": "casa",
+    "views": 100,
+    "likedTimes": 10,
+    "favedTimes": 5,
+    "reachedTimes": 50,
+    "comments": ["bom", "legal"]
+  }
+]
+```
+
+**Saída:**
+
+```json
+{
+  "status": "modelo treinado com sucesso"
+}
+```
+
+---
+
+### 🔮 4. Prever popularidade (`/prever-popularidade`)
+
+* Prevê popularidade de um post
+
+**Entrada:**
+
+```json
+{
+  "id": 1,
+  "price": 100000,
+  "description": "Casa teste",
+  "street": "Rua A",
+  "avenue": "Av B",
+  "type": "casa"
+}
+```
+
+**Saída:**
+
+```json
+{
+  "predicted_popularity": 123.45,
+  "postId": 1
+}
+```
+
+---
+
+### 🧠 5. Prever feed (`/prever-feed`)
+
+* Prevê popularidade de vários posts
+
+**Entrada:** lista de posts
+**Saída:** lista de previsões
+
+---
+
+## ⚙️ Como rodar o projeto
+
+### 🔹 1. Clonar o repositório
+
+```bash
+git clone <https://github.com/Claratorres1414/ImobLink-2.0.git>
+
+```
+
+---
+
+### 🔹 2. Criar ambiente virtual
+
+```bash
+python -m venv .venv
+```
+
+---
+
+### 🔹 3. Ativar ambiente
+
+#### Windows:
+
+```bash
+.venv\Scripts\Activate.ps1
+```
+
+#### Linux/Mac:
+
+```bash
+source .venv/bin/activate
+```
+
+---
+
+### 🔹 4. Instalar dependências
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 🔹 5. Rodar a API
+
+```bash
+python uvicorn main:app --reload ou python -m uvicorn main:app
+```
+
+---
+
+### 🔹 6. Acessar documentação interativa
+
+```
+http://127.0.0.1:8000/docs
+```
+
+---
+
+## 🧪 Testes
+
+Rodar testes:
+
+```bash
+python -m pytest -v
+```
+
+---
+
+## 🧠 Tecnologias utilizadas
+
+* FastAPI
+* PyTorch
+* Transformers (BLIP)
+* OpenCV / OCR
+* Scikit-learn
+* Pytest
+
+---
+
+## ⚠️ Observações
+
+* O modelo de popularidade precisa ser treinado antes de prever
+* Testes utilizam mocks para evitar execução de modelos pesados
+* Arquivos enviados são armazenados temporariamente e removidos após uso
+
+---
