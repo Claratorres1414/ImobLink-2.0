@@ -5,6 +5,8 @@ import io
 
 client = TestClient(app)
 
+
+# ✅ SUCESSO
 @patch("main.processar_documento")
 def test_processar_documento_sucesso(mock_processar):
     mock_processar.return_value = {
@@ -28,3 +30,29 @@ def test_processar_documento_sucesso(mock_processar):
 
     assert "nome" in data
     assert "cpf" in data
+
+
+# ❌ SEM ARQUIVOS
+def test_processar_documento_sem_arquivos():
+    response = client.post("/processar-documento")
+    assert response.status_code == 422
+
+
+# 💥 ERRO INTERNO
+@patch("main.processar_documento")
+def test_processar_documento_erro(mock_processar):
+    mock_processar.side_effect = Exception("Erro OCR")
+
+    fake_frente = io.BytesIO(b"fake")
+    fake_verso = io.BytesIO(b"fake")
+
+    response = client.post(
+        "/processar-documento",
+        files={
+            "frente": ("f.jpg", fake_frente, "image/jpeg"),
+            "verso": ("v.jpg", fake_verso, "image/jpeg")
+        }
+    )
+
+    assert response.status_code == 500
+    assert "erro" in response.json()
