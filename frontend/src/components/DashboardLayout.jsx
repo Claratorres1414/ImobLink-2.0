@@ -41,7 +41,8 @@ function DashboardLayout({ children }) {
     })
       .then(async (res) => {
         if (!res.ok) throw new Error("Erro ao carregar dados");
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = resposta.data || resposta;
 
         if (data.imageProfileId) {
           try {

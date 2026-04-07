@@ -15,7 +15,7 @@ import Busca from "./pages/Busca";
 import ChatPage from "./pages/ChatPage";
 import ConversasPage from "./pages/ConversasPage";
 
-// 🔒 Proteção de rotas
+// Proteção de rotas
 function RotaProtegida({ children }) {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;

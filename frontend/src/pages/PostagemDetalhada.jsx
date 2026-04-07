@@ -22,133 +22,189 @@ function PostagemDetalhada() {
 
   const intervalRef = useRef(null);
 
-  async function buscarFotoPerfil(imageId) {
-    if (!imageId) return "/imagemperfil.jpg";
 
-    const tentativas = [
+
+
+async function buscarFotoPerfil(imageId) {
+  if (!imageId) return "/imagemperfil.jpg";
+
+  try {
+    const res = await fetch(
       `http://localhost:8080/api/images/get/${imageId}`,
-      `http://localhost:8080/api/images/${imageId}/profile`,
-      `http://localhost:8080/api/images/profile/${imageId}`,
-    ];
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-    for (let url of tentativas) {
-      try {
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const blob = await res.blob();
-          return URL.createObjectURL(blob);
-        }
-      } catch {}
+    if (!res.ok) return "/imagemperfil.jpg";
+
+    const contentType = res.headers.get("content-type");
+
+    if (contentType && contentType.includes("application/json")) {
+      const resposta = await res.json();
+      if (resposta.data) {
+        return `data:image/jpeg;base64,${resposta.data}`;
+      }
+    } else {
+      const blob = await res.blob();
+      return URL.createObjectURL(blob);
     }
-    return "/imagemperfil.jpg";
+  } catch {}
+
+  return "/imagemperfil.jpg";
+}
+
+
+
+
+async function carregarAutor(userId) {
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/user/getAccount/${userId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (!res.ok) return;
+
+    const resposta = await res.json();
+    const dados = resposta.data || resposta;
+    const foto = await buscarFotoPerfil(dados.imageProfileId);
+
+    setAutorPost({
+      id: userId,
+      nome: dados.name,
+      email: dados.email,
+      telefone: dados.phoneNumber,
+      imagem: foto,
+    });
+  } catch (err) {
+    console.error("Erro ao carregar dados do autor:", err);
   }
+}
 
-  async function carregarAutor(userId) {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/user/getAccount/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
 
-      if (!res.ok) return;
 
-      const dados = await res.json();
-      const foto = await buscarFotoPerfil(dados.imageProfileId);
 
-      setAutorPost({
-        id: userId,
-        nome: dados.name,
-        email: dados.email,
-        telefone: dados.phoneNumber,
-        imagem: foto,
-      });
-    } catch (err) {
-      console.error("Erro ao carregar dados do autor:", err);
-    }
-  }
 
-  async function carregarImagens(postId) {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/images/${postId}/post/all`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+async function carregarImagens(postId) {
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/images/${postId}/post/all`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      if (res.ok) {
-        const lista = await res.json();
-        const urls = [];
+    if (res.ok) {
+      const resposta = await res.json();
+      const lista = Array.isArray(resposta?.data)
+        ? resposta.data
+        : Array.isArray(resposta)
+        ? resposta
+        : [];
 
-        for (const img of lista) {
-          try {
-            const f = await fetch(
-              `http://localhost:8080/api/images/get/${img.id}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (!f.ok) continue;
+      const urls = [];
+
+      for (const img of lista) {
+        try {
+          const f = await fetch(
+            `http://localhost:8080/api/images/get/${img.id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (!f.ok) continue;
+
+          const contentType = f.headers.get("content-type");
+
+          if (contentType && contentType.includes("application/json")) {
+            const respostaImg = await f.json();
+            if (respostaImg.data) {
+              urls.push(`data:image/jpeg;base64,${respostaImg.data}`);
+            }
+          } else {
             const blob = await f.blob();
             urls.push(URL.createObjectURL(blob));
-          } catch {}
-        }
-
-        if (urls.length > 0) {
-          setImagens(urls);
-          return;
-        }
+          }
+        } catch {}
       }
-    } catch {}
 
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/images/${postId}/post/thumb`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (res.ok) {
-        const blob = await res.blob();
-        setImagens([URL.createObjectURL(blob)]);
+      if (urls.length > 0) {
+        setImagens(urls);
         return;
       }
-    } catch {}
-
-    setImagens(["/placeholder.jpg"]);
-  }
-
-  async function carregarComentarios(postId) {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/comments/getComments/post/${postId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!res.ok) return;
-
-      let lista = await res.json();
-
-      const completos = await Promise.all(
-        lista.map(async (c) => {
-          let autor = { name: "Usuário" };
-          try {
-            const r = await fetch(
-              `http://localhost:8080/api/user/getAccount/${c.authorId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (r.ok) autor = await r.json();
-          } catch {}
-
-          return {
-            ...c,
-            autorNome: autor.name,
-            autorImagem: await buscarFotoPerfil(autor.imageProfileId),
-          };
-        })
-      );
-
-      setComentarios(completos);
-    } catch (err) {
-      console.error("Erro ao carregar comentários:", err);
     }
+  } catch {}
+
+  // fallback thumb
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/images/${postId}/post/thumb`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (res.ok) {
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const respostaThumb = await res.json();
+        if (respostaThumb.data) {
+          setImagens([`data:image/jpeg;base64,${respostaThumb.data}`]);
+        } else {
+          setImagens(["/placeholder.jpg"]);
+        }
+      } else {
+        const blob = await res.blob();
+        setImagens([URL.createObjectURL(blob)]);
+      }
+
+      return;
+    }
+  } catch {}
+
+  setImagens(["/placeholder.jpg"]);
+}
+
+async function carregarComentarios(postId) {
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/comments/getComments/post/${postId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (!res.ok) return;
+
+    const resposta = await res.json();
+
+    const lista = Array.isArray(resposta?.data)
+      ? resposta.data
+      : Array.isArray(resposta)
+      ? resposta
+      : [];
+
+    const completos = await Promise.all(
+      lista.map(async (c) => {
+        let autor = { name: "Usuário" };
+
+        try {
+          const r = await fetch(
+            `http://localhost:8080/api/user/getAccount/${c.authorId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (r.ok) {
+            const respostaAutor = await r.json();
+            autor = respostaAutor.data || respostaAutor;
+          }
+        } catch {}
+
+        return {
+          ...c,
+          autorNome: autor.name,
+          autorImagem: await buscarFotoPerfil(autor.imageProfileId),
+        };
+      })
+    );
+
+    setComentarios(completos);
+  } catch (err) {
+    console.error("Erro ao carregar comentários:", err);
   }
+}
 
   async function toggleFavorito() {
     const endpoint = favoritado
@@ -191,37 +247,51 @@ function PostagemDetalhada() {
   }
 
   useEffect(() => {
-    async function carregar() {
-      try {
-        const res = await fetch(
-          `http://localhost:8080/api/posts/getOne/${id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
 
-        if (!res.ok) throw new Error("Postagem não encontrada");
 
-        const data = await res.json();
-        setPost(data);
-        setLiked(data.wasLiked);
-        setLikesCount(data.likedTimes);
 
-        carregarAutor(data.userId);
-        carregarImagens(data.id);
-        carregarComentarios(data.id);
 
-        const favRes = await fetch(
-          "http://localhost:8080/api/posts/my-favs",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (favRes.ok) {
-          const favs = await favRes.json();
-          const isFav = favs.some((f) => f.id === data.id);
-          setFavoritado(isFav);
-        }
-      } catch (err) {
-        console.error(err);
-      }
+async function carregar() {
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/posts/getOne/${id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (!res.ok) throw new Error("Postagem não encontrada");
+
+    const data = await res.json();
+    const postData = data.data || data;
+
+    setPost(postData);
+    setLiked(Boolean(postData.wasLiked));
+    setLikesCount(Number(postData.likedTimes) || 0);
+
+    if (postData.userId) {
+      carregarAutor(postData.userId);
     }
+
+    if (postData.id) {
+      carregarImagens(postData.id);
+      carregarComentarios(postData.id);
+    }
+
+    const favRes = await fetch(
+      "http://localhost:8080/api/posts/my-favs",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (favRes.ok) {
+      const respostaFavs = await favRes.json();
+      const favs = Array.isArray(respostaFavs?.data) ? respostaFavs.data : [];
+      const isFav = favs.some((f) => f.id === postData.id);
+      setFavoritado(isFav);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 
     carregar();
   }, [id]);

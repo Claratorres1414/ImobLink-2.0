@@ -70,31 +70,44 @@ function PublicarPostagem() {
     setErro("");
 
     const formData = new FormData();
-    formData.append("description", descricao);
-    formData.append("price", preco);
-    formData.append("street", rua);
-    formData.append("number", numero);
-    formData.append("avenue", bairro);
-    formData.append("type", tipo);
 
-    // ✅ Corrigido: backend espera 'images'
+    const dadosPost = {
+      description: descricao,
+      price: Number(preco),
+      street: rua,
+      number: numero,
+      avenue: bairro,
+      type: tipo,
+    };
+
+    formData.append(
+      "data",
+      new Blob([JSON.stringify(dadosPost)], { type: "application/json" })
+    );
+
     imagens.forEach((img) => formData.append("images", img));
 
     try {
-      const resposta = await fetch("http://localhost:8080/api/posts/create", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
+      
+    const resposta = await fetch("http://localhost:8080/api/posts/create", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
 
-      if (resposta.ok) {
-        alert("Publicação criada com sucesso!");
-        navigate("/meus-anuncios");
-      } else {
-        const txt = await resposta.text();
-        console.error("Erro backend:", txt);
-        setErro("Erro ao criar a publicação. Verifique os campos e tente novamente.");
-      }
+    if (resposta.ok) {
+      alert("Publicação criada com sucesso!");
+      navigate("/meus-anuncios");
+    } else {
+      const txt = await resposta.text();
+      console.error("Erro backend ao criar post:", txt);
+      setErro("Erro ao criar a publicação. Verifique os campos e tente novamente.");
+    }
+
+
+
     } catch (err) {
       console.error(err);
       setErro("Erro ao conectar ao servidor.");

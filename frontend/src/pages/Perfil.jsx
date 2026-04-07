@@ -28,7 +28,8 @@ function Perfil() {
     })
       .then(async (res) => {
         if (!res.ok) throw new Error("Erro ao carregar dados");
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = resposta.data || resposta;
         setDadosUsuario(data);
 
         if (data.imageProfileId) {
@@ -57,8 +58,15 @@ function Perfil() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (followersRes.ok) setFollowers(await followersRes.json());
-        if (followingsRes.ok) setFollowings(await followingsRes.json());
+        if (followersRes.ok) {
+          const respostaFollowers = await followersRes.json();
+          setFollowers(Array.isArray(respostaFollowers.data) ? respostaFollowers.data : []);
+        }
+
+        if (followingsRes.ok) {
+          const respostaFollowings = await followingsRes.json();
+          setFollowings(Array.isArray(respostaFollowings.data) ? respostaFollowings.data : []);
+        }
       } catch (err) {
         console.error("Erro ao carregar seguidores:", err);
       }
@@ -75,7 +83,8 @@ function Perfil() {
         });
         if (!res.ok) throw new Error("Erro ao buscar favoritos");
 
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = Array.isArray(resposta.data) ? resposta.data : [];
         setFavoritos(data);
 
         for (const post of data) {
