@@ -20,15 +20,16 @@ function MeusAnuncios() {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
-  async function fetchAllImagesForPost(postId) {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/images/${postId}/post/all`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+async function fetchAllImagesForPost(postId) {
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/images/${postId}/post/all`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      if (!res.ok) return null;
-      const images = await res.json();
+    if (res.ok) {
+      const resposta = await res.json();
+      const images = Array.isArray(resposta.data) ? resposta.data : [];
       const urls = [];
 
       for (const img of images) {
@@ -37,18 +38,52 @@ function MeusAnuncios() {
             `http://localhost:8080/api/images/get/${img.id}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
+
           if (!fetchImg.ok) continue;
 
-          const blob = await fetchImg.blob();
-          urls.push(URL.createObjectURL(blob));
+          const contentType = fetchImg.headers.get("content-type");
+
+          if (contentType && contentType.includes("application/json")) {
+            const respostaImg = await fetchImg.json();
+
+            if (respostaImg.data) {
+              urls.push(`data:image/jpeg;base64,${respostaImg.data}`);
+            }
+          } else {
+            const blob = await fetchImg.blob();
+            urls.push(URL.createObjectURL(blob));
+          }
         } catch {}
       }
 
-      return urls.length ? urls : null;
-    } catch {
-      return null;
+      if (urls.length) return urls;
     }
-  }
+  } catch {}
+
+  // fallback para thumb
+  try {
+    const thumbRes = await fetch(
+      `http://localhost:8080/api/images/${postId}/post/thumb`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (thumbRes.ok) {
+      const contentType = thumbRes.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const resposta = await thumbRes.json();
+        if (resposta.data) {
+          return [`data:image/jpeg;base64,${resposta.data}`];
+        }
+      } else {
+        const blob = await thumbRes.blob();
+        return [URL.createObjectURL(blob)];
+      }
+    }
+  } catch {}
+
+  return null;
+}
 
   async function fetchUserAvatar(userId) {
     if (!userId) return "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -79,7 +114,8 @@ function MeusAnuncios() {
 
         if (!res.ok) throw new Error("Erro ao carregar posts");
 
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = Array.isArray(resposta.data) ? resposta.data : [];
         setPosts(data);
 
         for (const post of data) {
@@ -102,7 +138,8 @@ function MeusAnuncios() {
             );
 
             if (cRes.ok) {
-              const arr = await cRes.json();
+              const respostaComentarios = await cRes.json();
+              const arr = Array.isArray(respostaComentarios.data) ? respostaComentarios.data : [];
               setCommentsCount((prev) => ({ ...prev, [post.id]: arr.length }));
             } else {
               setCommentsCount((prev) => ({ ...prev, [post.id]: 0 }));
@@ -171,7 +208,9 @@ function MeusAnuncios() {
     }
   }
 
-  async function abrirComentarios(postId) {
+
+
+async function abrirComentarios(postId) {
   try {
     const res = await fetch(
       `http://localhost:8080/api/comments/getComments/post/${postId}`,
@@ -180,7 +219,8 @@ function MeusAnuncios() {
 
     if (!res.ok) throw new Error("Erro ao carregar comentários");
 
-    const arr = await res.json();
+    const respostaComentarios = await res.json();
+    const arr = Array.isArray(respostaComentarios.data) ? respostaComentarios.data : [];
 
     const comentariosComAvatar = [];
 
@@ -195,7 +235,8 @@ function MeusAnuncios() {
         );
 
         if (resUser.ok) {
-          const userJson = await resUser.json();
+          const respostaUser = await resUser.json();
+          const userJson = respostaUser.data || respostaUser;
           const imgProfileId = userJson.imageProfileId;
 
           if (imgProfileId) {
@@ -205,8 +246,17 @@ function MeusAnuncios() {
             );
 
             if (resImg.ok) {
-              const blob = await resImg.blob();
-              avatarFinal = URL.createObjectURL(blob);
+              const contentType = resImg.headers.get("content-type");
+
+              if (contentType && contentType.includes("application/json")) {
+                const respostaImg = await resImg.json();
+                if (respostaImg.data) {
+                  avatarFinal = `data:image/jpeg;base64,${respostaImg.data}`;
+                }
+              } else {
+                const blob = await resImg.blob();
+                avatarFinal = URL.createObjectURL(blob);
+              }
             }
           }
         }
@@ -229,9 +279,6 @@ function MeusAnuncios() {
     alert("Erro ao carregar comentários.");
   }
 }
-
-
-
   if (carregando) {
     return (
       <DashboardLayout>
@@ -347,7 +394,8 @@ function MeusAnuncios() {
                       <img
                         src={c.avatar}
                         alt={c.userName}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-blue-600"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-blue-600 cursor-pointer"
+                        onClick={() => navigate(`/user/${c.userId}`)}
                       />
                       <div>
                         <p

@@ -15,7 +15,8 @@ export default function ConversasPage() {
         const res = await fetch("http://localhost:8080/api/user/account", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = resposta.data || resposta;
         setMeuId(data.id);
       } catch (err) {
         console.error("Erro ao buscar usuário logado:", err);
@@ -32,7 +33,8 @@ export default function ConversasPage() {
 
       if (!res.ok) return;
 
-      let listaUsers = await res.json();
+      const resposta = await res.json();
+      let listaUsers = Array.isArray(resposta.data) ? resposta.data : [];
 
       // Remove o próprio usuário
       listaUsers = listaUsers.filter((u) => u.id !== meuId);
@@ -49,9 +51,19 @@ export default function ConversasPage() {
               const resImg = await fetch(`http://localhost:8080/api/images/get/${user.imageProfileId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
+
               if (resImg.ok) {
-                const blob = await resImg.blob();
-                foto = URL.createObjectURL(blob);
+                const contentType = resImg.headers.get("content-type");
+
+                if (contentType && contentType.includes("application/json")) {
+                  const respostaImg = await resImg.json();
+                  if (respostaImg.data) {
+                    foto = `data:image/jpeg;base64,${respostaImg.data}`;
+                  }
+                } else {
+                  const blob = await resImg.blob();
+                  foto = URL.createObjectURL(blob);
+                }
               }
             }
           } catch (err) {}
@@ -63,9 +75,11 @@ export default function ConversasPage() {
             });
 
             if (resMsg.ok) {
-              const msgs = await resMsg.json();
-              if (msgs.length > 0) {
-                const ultima = msgs[msgs.length - 1];
+            const respostaMsgs = await resMsg.json();
+            const msgs = Array.isArray(respostaMsgs.data) ? respostaMsgs.data : [];
+
+            if (msgs.length > 0) {
+              const ultima = msgs[msgs.length - 1];
                 ultimaMensagem = ultima.content;
                 remetente = ultima.senderId === meuId ? "Você" : user.name;
               }

@@ -18,20 +18,31 @@ function UserCard({ u, token }) {
       `http://localhost:8080/api/images/profile/${u.imageProfileId}`,
     ];
 
-    async function fetchImage() {
-      for (const url of tentativas) {
-        try {
-          const res = await fetch(url, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            const blob = await res.blob();
-            if (mounted) setUserImg(URL.createObjectURL(blob));
-            return;
-          }
-        } catch {}
+async function fetchImage() {
+  for (const url of tentativas) {
+    try {
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) continue;
+
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const resposta = await res.json();
+        if (resposta.data) {
+          if (mounted) setUserImg(`data:image/jpeg;base64,${resposta.data}`);
+          return;
+        }
+      } else {
+        const blob = await res.blob();
+        if (mounted) setUserImg(URL.createObjectURL(blob));
+        return;
       }
-    }
+    } catch {}
+  }
+}
 
     fetchImage();
     return () => {
@@ -76,22 +87,22 @@ function Busca() {
   const location = useLocation();
   const query = new URLSearchParams(location.search).get("query") || "";
 
-  // ------------------------------
+  
   // Buscar usuário logado
-  // ------------------------------
+  
   useEffect(() => {
     if (!token) return;
     fetch("http://localhost:8080/api/user/account", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setUser(data))
+      .then((resposta) => setUser(resposta.data || resposta))
       .catch((err) => console.error("Erro ao buscar usuário:", err));
   }, [token]);
 
-  // ------------------------------
+  
   // Buscar usuários
-  // ------------------------------
+  
   useEffect(() => {
     if (!token || !query) return;
 
@@ -101,7 +112,9 @@ function Busca() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Erro ao buscar usuários");
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = Array.isArray(resposta.data) ? resposta.data : [];
+
         setUsuarios(
           data.filter((u) =>
             u.name.toLowerCase().includes(query.toLowerCase())
@@ -115,9 +128,9 @@ function Busca() {
     fetchUsuarios();
   }, [query, token]);
 
-  // ------------------------------
+  
   // Buscar posts
-  // ------------------------------
+  
   useEffect(() => {
     if (!query) return;
     let mounted = true;
@@ -129,7 +142,8 @@ function Busca() {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!resPosts.ok) throw new Error("Erro ao buscar posts");
-        const dataPosts = await resPosts.json();
+        const respostaPosts = await resPosts.json();
+        const dataPosts = Array.isArray(respostaPosts.data) ? respostaPosts.data : [];
 
         if (!mounted) return;
 
@@ -147,26 +161,90 @@ function Busca() {
               `http://localhost:8080/api/images/${id}/post/all`,
               { headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
-            if (resImages.ok) {
-              const images = await resImages.json();
-              const urls = [];
-              for (const img of images) {
-                try {
-                  const b = await fetch(
-                    `http://localhost:8080/api/images/get/${img.id}`,
-                    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-                  );
-                  if (!b.ok) continue;
+
+          if (resImages.ok) {
+            const respostaImages = await resImages.json();
+            const images = Array.isArray(respostaImages.data) ? respostaImages.data : [];
+            const urls = [];
+
+            for (const img of images) {
+              try {
+                const b = await fetch(
+                  `http://localhost:8080/api/images/get/${img.id}`,
+                  { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+                );
+                if (!b.ok) continue;
+
+                const contentType = b.headers.get("content-type");
+
+                if (contentType && contentType.includes("application/json")) {
+                  const respostaImg = await b.json();
+                  if (respostaImg.data) {
+                    urls.push(`data:image/jpeg;base64,${respostaImg.data}`);
+                  }
+                } else {
                   const blob = await b.blob();
                   urls.push(URL.createObjectURL(blob));
-                } catch {}
-              }
+                }
+              } catch {}
+            }
+
+            if (urls.length > 0) {
               setImageMap((prev) => ({
                 ...prev,
-                [id]: urls.length ? urls : ["/placeholder.jpg"],
+                [id]: urls,
               }));
               setCarouselIndex((prev) => ({ ...prev, [id]: 0 }));
+            } else {
+              try {
+                const thumbRes = await fetch(
+                  `http://localhost:8080/api/images/${id}/post/thumb`,
+                  { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+                );
+
+                if (thumbRes.ok) {
+                  const contentType = thumbRes.headers.get("content-type");
+
+                  if (contentType && contentType.includes("application/json")) {
+                    const respostaThumb = await thumbRes.json();
+                    if (respostaThumb.data) {
+                      setImageMap((prev) => ({
+                        ...prev,
+                        [id]: [`data:image/jpeg;base64,${respostaThumb.data}`],
+                      }));
+                    } else {
+                      setImageMap((prev) => ({
+                        ...prev,
+                        [id]: ["/placeholder.jpg"],
+                      }));
+                    }
+                  } else {
+                    const blob = await thumbRes.blob();
+                    setImageMap((prev) => ({
+                      ...prev,
+                      [id]: [URL.createObjectURL(blob)],
+                    }));
+                  }
+
+                  setCarouselIndex((prev) => ({ ...prev, [id]: 0 }));
+                } else {
+                  setImageMap((prev) => ({
+                    ...prev,
+                    [id]: ["/placeholder.jpg"],
+                  }));
+                }
+              } catch {
+                setImageMap((prev) => ({
+                  ...prev,
+                  [id]: ["/placeholder.jpg"],
+                }));
+              }
             }
+          }
+
+
+            
+            
           } catch {}
 
           // Likes
@@ -182,7 +260,8 @@ function Busca() {
               { headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
             if (cRes.ok) {
-              const arr = await cRes.json();
+              const respostaComentarios = await cRes.json();
+              const arr = Array.isArray(respostaComentarios.data) ? respostaComentarios.data : [];
               setCommentsCount((prev) => ({ ...prev, [id]: arr.length }));
             } else {
               setCommentsCount((prev) => ({ ...prev, [id]: 0 }));
@@ -198,7 +277,9 @@ function Busca() {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (favsRes.ok) {
-            const favs = await favsRes.json();
+            const respostaFavs = await favsRes.json();
+            const favs = Array.isArray(respostaFavs.data) ? respostaFavs.data : [];
+
             setLikedMap((prev) => {
               const novo = { ...prev };
               favs.forEach((f) => {
@@ -222,9 +303,9 @@ function Busca() {
     };
   }, [query, token]);
 
-  // ------------------------------
+  
   // Slider autoplay
-  // ------------------------------
+  
   useEffect(() => {
     Object.values(slideIntervals.current).forEach(clearInterval);
     slideIntervals.current = {};
@@ -243,9 +324,9 @@ function Busca() {
     return () => Object.values(slideIntervals.current).forEach(clearInterval);
   }, [imageMap]);
 
-  // ------------------------------
+  
   // Filtro de posts por tipo e preço
-  // ------------------------------
+  
   const postsFiltrados = posts
     .filter((p) => filtroVenda === "todos" || p.type.toLowerCase() === filtroVenda)
     .filter((p) => (precoMin ? p.price >= parseFloat(precoMin) : true))

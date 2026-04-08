@@ -24,7 +24,8 @@ export default function ChatPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Erro ao buscar usuário logado");
-      const data = await res.json();
+      const resposta = await res.json();
+      const data = resposta.data || resposta;
       setMeuId(data.id);
     } catch (err) {
       console.error(err);
@@ -38,7 +39,8 @@ export default function ChatPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Erro ao buscar usuário alvo");
-      const data = await res.json();
+      const resposta = await res.json();
+      const data = resposta.data || resposta;
       setUsuarioAlvo(data);
     } catch (err) {
       console.error(err);
@@ -52,7 +54,8 @@ export default function ChatPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Erro ao carregar mensagens");
-      const data = await res.json();
+      const resposta = await res.json();
+      const data = Array.isArray(resposta.data) ? resposta.data : [];
       setMensagens(data);
     } catch (err) {
       console.error(err);
@@ -102,7 +105,7 @@ export default function ChatPage() {
           {mensagens.length === 0 && (
             <p className="text-gray-500 text-center mt-10">Nenhuma mensagem ainda. Inicie a conversa!</p>
           )}
-          {mensagens.map((msg) => {
+          {Array.isArray(mensagens) && mensagens.map((msg) => {
             const isMe = msg.senderId === meuId;
             return (
               <div

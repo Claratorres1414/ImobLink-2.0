@@ -27,7 +27,23 @@ function Login() {
 
       if (resposta.ok) {
         const dados = await resposta.json();
-        localStorage.setItem("token", dados.token);
+        console.log("Resposta do login:", dados);
+
+        const tokenRecebido =
+          dados.data?.token ||
+          dados.token ||
+          dados.jwt ||
+          dados.accessToken ||
+          dados.access_token ||
+          dados.authenticationToken ||
+          (typeof dados === "string" ? dados : null);
+
+        if (!tokenRecebido || typeof tokenRecebido !== "string") {
+          setErro("Login realizado, mas o token não foi retornado no formato esperado.");
+          return;
+        }
+
+        localStorage.setItem("token", tokenRecebido);
         navigate("/home");
       } else {
         setErro("Email ou senha inválidos.");
@@ -38,13 +54,18 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-cover bg-center relative" style={{ backgroundImage: "url('/fundo.jpg')" }}>
+    <div
+      className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-cover bg-center relative"
+      style={{ backgroundImage: "url('/fundo.jpg')" }}
+    >
       <div className="absolute inset-0 bg-black bg-opacity-60 z-0"></div>
 
       <div className="hidden md:flex flex-col justify-center items-center text-white z-10 p-10">
         <FaUserShield className="text-6xl mb-4" />
         <h1 className="text-4xl font-bold mb-4">Bem-vindo ao ImobLink</h1>
-        <p className="text-lg text-center">O jeito moderno de alugar e vender imóveis</p>
+        <p className="text-lg text-center">
+          O jeito moderno de alugar e vender imóveis
+        </p>
       </div>
 
       <div className="flex items-center justify-center z-10 p-6">

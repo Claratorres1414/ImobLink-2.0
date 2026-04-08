@@ -28,33 +28,44 @@ export default function UserProfile() {
 
   const API = "http://localhost:8080";
 
-  // -------------------------
-  // buscar foto de perfil (reutilizável)
-  // -------------------------
-  async function buscarFotoPerfil(imageId) {
-    if (!imageId) return "/imagemperfil.jpg";
-    const tentativas = [
-      `${API}/api/images/get/${imageId}`,
-      `${API}/api/images/${imageId}/profile`,
-      `${API}/api/images/profile/${imageId}`,
-    ];
-    for (let url of tentativas) {
-      try {
-        const res = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (res.ok) {
-          const blob = await res.blob();
-          return URL.createObjectURL(blob);
+  
+  // buscar foto de perfil
+  
+async function buscarFotoPerfil(imageId) {
+  if (!imageId) return "/imagemperfil.jpg";
+
+  const tentativas = [
+    `${API}/api/images/get/${imageId}`,
+    `${API}/api/images/${imageId}/profile`,
+    `${API}/api/images/profile/${imageId}`,
+  ];
+
+  for (let url of tentativas) {
+    try {
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok) continue;
+
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const resposta = await res.json();
+        if (resposta.data) {
+          return `data:image/jpeg;base64,${resposta.data}`;
         }
-      } catch {}
-    }
-    return "/imagemperfil.jpg";
+      } else {
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+      }
+    } catch {}
   }
 
-  // -------------------------
+  return "/imagemperfil.jpg";
+}
+
   // carregar dados do usuário logado
-  // -------------------------
   useEffect(() => {
     if (!token) return;
     (async () => {
@@ -63,7 +74,9 @@ export default function UserProfile() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
-        const me = await res.json();
+        const resposta = await res.json();
+        const me = resposta.data || resposta;
+        setCurrentUser(me);
         setCurrentUser(me);
       } catch (err) {
         console.error("Erro ao buscar usuário logado:", err);
@@ -84,9 +97,9 @@ export default function UserProfile() {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!res.ok) throw new Error("Erro ao buscar usuário");
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = resposta.data || resposta;
         if (!mounted) return;
-
         setUser(data);
 
         // imagem de perfil
@@ -101,21 +114,20 @@ export default function UserProfile() {
     return () => (mounted = false);
   }, [id, token]);
 
-  // -------------------------
-  // carregar followers / followings counts & lists
-  // -------------------------
+  // carregar seguidores e seguidos
+
   async function carregarFollowersAndFollowings() {
     try {
       const fRes = await fetch(`${API}/api/follow/getFollowers/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      const followersArr = fRes && fRes.ok ? await fRes.json() : [];
-
+      const respostaFollowers = fRes && fRes.ok ? await fRes.json() : { data: [] };
+      const followersArr = Array.isArray(respostaFollowers.data) ? respostaFollowers.data : [];
       const gRes = await fetch(`${API}/api/follow/getFollowings/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      const followingsArr = gRes && gRes.ok ? await gRes.json() : [];
-
+      const respostaFollowings = gRes && gRes.ok ? await gRes.json() : { data: [] };
+      const followingsArr = Array.isArray(respostaFollowings.data) ? respostaFollowings.data : [];
       const followersWithImgs = await Promise.all(
         (followersArr || []).map(async (u) => {
           const img = u.imageProfileId ? await buscarFotoPerfil(u.imageProfileId) : "/imagemperfil.jpg";
@@ -138,8 +150,9 @@ export default function UserProfile() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (myFollowingsRes.ok) {
-          const myFollowings = await myFollowingsRes.json();
-          const already = (myFollowings || []).some((u) => String(u.id ?? u.userId ?? u.idUser ?? u) === String(id));
+        const respostaMyFollowings = await myFollowingsRes.json();
+        const myFollowings = Array.isArray(respostaMyFollowings.data) ? respostaMyFollowings.data : [];
+        const already = myFollowings.some((u) => String(u.id ?? u.userId ?? u.idUser ?? u) === String(id));
           setIsFollowing(already);
         }
       }
@@ -152,9 +165,9 @@ export default function UserProfile() {
     carregarFollowersAndFollowings();
   }, [id, token]);
 
-  // -------------------------
+
   // buscar posts do usuário
-  // -------------------------
+
   useEffect(() => {
     let mounted = true;
     const created = [];
@@ -163,10 +176,11 @@ export default function UserProfile() {
       try {
         const res = await fetch(`${API}/api/feed`);
         if (!res.ok) throw new Error("Erro ao buscar feed");
-        const all = await res.json();
+        const resposta = await res.json();
+        const all = Array.isArray(resposta.data) ? resposta.data : [];
         if (!mounted) return;
 
-        const meus = (all || []).filter((p) => String(p.userId) === String(id));
+        const meus = all.filter((p) => String(p.userId) === String(id));
         setPosts(meus);
 
         for (const p of meus) {
@@ -174,15 +188,26 @@ export default function UserProfile() {
             const t = await fetch(`${API}/api/images/${p.id}/post/thumb`, {
               headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
-            if (t.ok) {
+          if (t.ok) {
+            const contentType = t.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const respostaThumb = await t.json();
+              const url = respostaThumb.data
+                ? `data:image/jpeg;base64,${respostaThumb.data}`
+                : "/placeholder.jpg";
+              setImageMap((prev) => ({ ...prev, [p.id]: url }));
+              setCarouselIndex((prev) => ({ ...prev, [p.id]: 0 }));
+            } else {
               const blob = await t.blob();
               const url = URL.createObjectURL(blob);
               created.push(url);
               setImageMap((prev) => ({ ...prev, [p.id]: url }));
               setCarouselIndex((prev) => ({ ...prev, [p.id]: 0 }));
-            } else {
-              setImageMap((prev) => ({ ...prev, [p.id]: "/placeholder.jpg" }));
             }
+          } else {
+            setImageMap((prev) => ({ ...prev, [p.id]: "/placeholder.jpg" }));
+          }
+
           } catch {
             setImageMap((prev) => ({ ...prev, [p.id]: "/placeholder.jpg" }));
           }
@@ -200,9 +225,9 @@ export default function UserProfile() {
     };
   }, [id, token]);
 
-  // -------------------------
+
   // Funções de follow/unfollow
-  // -------------------------
+
   async function handleFollow() {
     if (!token) return navigate("/login");
     try {
@@ -229,32 +254,36 @@ export default function UserProfile() {
     }
   }
 
-  // -------------------------
+
   // Funções para comentários
-  // -------------------------
+
 async function carregarComentarios(userId) {
   try {
     const res = await fetch(`${API}/api/comments/getComments/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return;
-    const lista = await res.json();
 
-    console.log("Todos comentários do backend:", lista);
+    const resposta = await res.json();
+    const lista = Array.isArray(resposta.data) ? resposta.data : [];
 
-    // Filtra apenas os comentários que não são de post (postId === null)
-    const comentariosPerfil = lista.filter(c => !c.postId);
-    console.log("Comentários de perfil filtrados:", comentariosPerfil);
+    const comentariosPerfil = lista.filter((c) => !c.postId);
 
     const completos = await Promise.all(
       comentariosPerfil.map(async (c) => {
         let autor = { name: "Usuário" };
+
         try {
           const r = await fetch(`${API}/api/user/getAccount/${c.authorId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          if (r.ok) autor = await r.json();
+
+          if (r.ok) {
+            const respostaAutor = await r.json();
+            autor = respostaAutor.data || respostaAutor;
+          }
         } catch {}
+
         return {
           ...c,
           autorNome: autor.name,
@@ -293,17 +322,17 @@ async function carregarComentarios(userId) {
     carregarComentarios(id);
   }, [id]);
 
-  // -------------------------
+
   // Função adicionada: openModal (apenas esta função foi inserida)
-  // -------------------------
+
   function openModal(which) {
     setShowModal({ open: true, which });
   }
-  // ---------------------------------------------------------------
 
-  // -------------------------
+
+
   // render
-  // -------------------------
+
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto p-6 space-y-6">

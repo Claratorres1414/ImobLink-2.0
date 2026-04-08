@@ -15,22 +15,22 @@ function Home() {
 
   const slideIntervals = useRef({});
 
-  // ------------------------------
+  
   // BUSCAR USUÁRIO
-  // ------------------------------
+  
   useEffect(() => {
     if (!token) return;
     fetch("http://localhost:8080/api/user/account", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setUser(data))
+      .then((data) => setUser(data.data || data))
       .catch((err) => console.error("Erro ao buscar usuário:", err));
   }, [token]);
 
-  // ------------------------------
+  
   // BUSCAR TODAS AS IMAGENS DE UM POST
-  // ------------------------------
+  
   async function fetchAllImagesForPost(postId) {
     try {
       const res = await fetch(
@@ -39,7 +39,14 @@ function Home() {
       );
 
       if (!res.ok) return null;
-      const images = await res.json();
+
+      const resposta = await res.json();
+      const images = Array.isArray(resposta?.data)
+        ? resposta.data
+        : Array.isArray(resposta)
+        ? resposta
+        : [];
+
       const urls = [];
 
       for (const img of images) {
@@ -50,8 +57,17 @@ function Home() {
           );
           if (!b.ok) continue;
 
-          const blob = await b.blob();
-          urls.push(URL.createObjectURL(blob));
+          const contentType = b.headers.get("content-type");
+
+          if (contentType && contentType.includes("application/json")) {
+            const respostaImg = await b.json();
+            if (respostaImg.data) {
+              urls.push(`data:image/jpeg;base64,${respostaImg.data}`);
+            }
+          } else {
+            const blob = await b.blob();
+            urls.push(URL.createObjectURL(blob));
+          }
         } catch {}
       }
 
@@ -61,9 +77,9 @@ function Home() {
     }
   }
 
-  // ------------------------------
+  
   // CARREGAR FEED
-  // ------------------------------
+
   useEffect(() => {
     let mounted = true;
     const createdObjectURLs = [];
@@ -74,16 +90,21 @@ function Home() {
         if (!res.ok) throw new Error("Erro ao buscar publicações");
 
         const data = await res.json();
+        console.log("Resposta do /api/feed:", data);
         if (!mounted) return;
 
-        setPosts(data || []);
+        const listaPosts = Array.isArray(data?.data) ? data.data : [];
 
-        for (const post of data || []) {
+        setPosts(listaPosts);
+
+        for (const post of listaPosts) {
           const id = post.id;
           const urls = (await fetchAllImagesForPost(id)) || [];
 
           if (urls.length > 0) {
-            urls.forEach((u) => createdObjectURLs.push(u));
+            urls.forEach((u) => {
+              if (u.startsWith("blob:")) createdObjectURLs.push(u);
+            });
             setImageMap((prev) => ({ ...prev, [id]: urls }));
             setCarouselIndex((prev) => ({ ...prev, [id]: 0 }));
           } else {
@@ -92,11 +113,30 @@ function Home() {
                 `http://localhost:8080/api/images/${id}/post/thumb`,
                 { headers: token ? { Authorization: `Bearer ${token}` } : {} }
               );
+
               if (t.ok) {
-                const blob = await t.blob();
-                const u = URL.createObjectURL(blob);
-                createdObjectURLs.push(u);
-                setImageMap((prev) => ({ ...prev, [id]: [u] }));
+                const contentType = t.headers.get("content-type");
+
+                if (contentType && contentType.includes("application/json")) {
+                  const respostaThumb = await t.json();
+                  if (respostaThumb.data) {
+                    setImageMap((prev) => ({
+                      ...prev,
+                      [id]: [`data:image/jpeg;base64,${respostaThumb.data}`],
+                    }));
+                  } else {
+                    setImageMap((prev) => ({
+                      ...prev,
+                      [id]: ["/placeholder.jpg"],
+                    }));
+                  }
+                } else {
+                  const blob = await t.blob();
+                  const u = URL.createObjectURL(blob);
+                  createdObjectURLs.push(u);
+                  setImageMap((prev) => ({ ...prev, [id]: [u] }));
+                }
+
                 setCarouselIndex((prev) => ({ ...prev, [id]: 0 }));
               } else {
                 setImageMap((prev) => ({
@@ -118,9 +158,7 @@ function Home() {
             [id]: { count: post.likedTimes ?? 0, liked: false },
           }));
 
-          // ---------------------------------------------------
-          // Comentários — CORRIGIDO AQUI
-          // ---------------------------------------------------
+          // Comentários
           try {
             const cRes = await fetch(
               `http://localhost:8080/api/comments/getComments/post/${post.id}`,
@@ -128,7 +166,13 @@ function Home() {
             );
 
             if (cRes.ok) {
-              const arr = await cRes.json();
+              const respostaComentarios = await cRes.json();
+              const arr = Array.isArray(respostaComentarios?.data)
+                ? respostaComentarios.data
+                : Array.isArray(respostaComentarios)
+                ? respostaComentarios
+                : [];
+
               setCommentsCount((prev) => ({ ...prev, [id]: arr.length }));
             } else {
               setCommentsCount((prev) => ({ ...prev, [id]: 0 }));
@@ -144,8 +188,15 @@ function Home() {
             "http://localhost:8080/api/posts/my-favs",
             { headers: { Authorization: `Bearer ${token}` } }
           );
+
           if (favsRes.ok) {
-            const favs = await favsRes.json();
+            const respostaFavs = await favsRes.json();
+            const favs = Array.isArray(respostaFavs?.data)
+              ? respostaFavs.data
+              : Array.isArray(respostaFavs)
+              ? respostaFavs
+              : [];
+
             setLikedMap((prev) => {
               const novo = { ...prev };
               favs.forEach((f) => {
@@ -169,9 +220,9 @@ function Home() {
     };
   }, [token]);
 
-  // ------------------------------
+  
   // AUTOPLAY DO SLIDER
-  // ------------------------------
+  
   useEffect(() => {
     Object.values(slideIntervals.current).forEach(clearInterval);
     slideIntervals.current = {};
@@ -192,12 +243,15 @@ function Home() {
     };
   }, [imageMap]);
 
-  const postsFiltrados =
-    user && user.name ? posts.filter((p) => p.createdBy !== user.name) : posts;
+  const postsSeguros = Array.isArray(posts) ? posts : [];
 
-  // ------------------------------
+  const postsFiltrados =
+    user && user.id
+      ? postsSeguros.filter((p) => (p.createdById ?? p.userId) !== user.id)
+      : postsSeguros;
+
+
   // RENDERIZAÇÃO
-  // ------------------------------
   return (
     <DashboardLayout>
       <h2 className="text-2xl font-bold mb-6">Imóveis disponíveis</h2>
@@ -207,11 +261,6 @@ function Home() {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {postsFiltrados.map((post) => {
-
-            console.log("Post ID:", post.id);
-            console.log("createdAt:", post.createdAt);
-            console.log("updatedAt:", post.updatedAt);
-
             const id = post.id;
             const urls = imageMap[id] || ["/placeholder.jpg"];
             const idx = carouselIndex[id] ?? 0;
@@ -223,7 +272,6 @@ function Home() {
                 key={id}
                 className="relative bg-white shadow rounded overflow-hidden hover:shadow-lg transition"
               >
-                {/* Slider suave */}
                 <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
                   <div className="relative w-full h-full">
                     {urls.map((u, i) => (
@@ -237,7 +285,6 @@ function Home() {
                     ))}
                   </div>
 
-                  {/* Setas e bolinhas */}
                   {urls.length > 1 && (
                     <>
                       <button
@@ -284,14 +331,12 @@ function Home() {
                     </>
                   )}
 
-                  {/* ⭐ Indicador de favorito */}
                   {likeInfo.liked && (
                     <div className="absolute top-2 right-2 text-yellow-400 text-xl drop-shadow">
                       ⭐
                     </div>
                   )}
 
-                  {/* 🏷️ Tipo da postagem */}
                   {post.type && (
                     <div
                       className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xx font-semibold ${
@@ -305,7 +350,6 @@ function Home() {
                   )}
                 </div>
 
-                {/* Conteúdo abaixo da imagem */}
                 <div
                   onClick={() => navigate(`/post/${id}`)}
                   className="p-4 cursor-pointer space-y-1"
@@ -318,7 +362,6 @@ function Home() {
                     {post.street}, {post.number}
                   </p>
 
-                  {/* Indicadores fora da imagem */}
                   <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
                     <span>👍 {likeInfo.count}</span>
                     <span>💬 {commentQty}</span>
@@ -332,12 +375,16 @@ function Home() {
                         )}`
                       : ""}
                   </p>
+
                   {post.updatedAt &&
-                    new Date(post.updatedAt).getTime() > new Date(post.createdAt).getTime() + 10000000 && (
-                    <p className="text-gray-400 text-xs mt-1">
-                      Editado em {format(new Date(post.updatedAt), "dd/MM/yyyy")}
-                    </p>
-                  )}
+                    post.createdAt &&
+                    new Date(post.updatedAt).getTime() >
+                      new Date(post.createdAt).getTime() + 10000000 && (
+                      <p className="text-gray-400 text-xs mt-1">
+                        Editado em{" "}
+                        {format(new Date(post.updatedAt), "dd/MM/yyyy")}
+                      </p>
+                    )}
                 </div>
               </div>
             );

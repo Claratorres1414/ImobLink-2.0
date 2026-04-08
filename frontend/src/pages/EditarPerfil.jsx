@@ -26,21 +26,43 @@ function EditarPerfil() {
     })
       .then(async (res) => {
         if (!res.ok) throw new Error("Erro ao carregar dados");
-        const data = await res.json();
-        setDadosUsuario(data);
-        setNovaBio(data.bio || "");
-        setNovoNome(data.name || "");
-        setNovoTelefone(data.phoneNumber || "");
 
-        // Busca imagem se existir
-        if (data.imageProfileId) {
-          fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-            .then((res) => res.blob())
-            .then((blob) => setFotoPerfil(URL.createObjectURL(blob)))
-            .catch(() => setFotoPerfil("/imagemperfil.jpg"));
+
+const resposta = await res.json();
+const data = resposta.data || resposta;
+
+setDadosUsuario(data);
+setNovaBio(data.bio || "");
+setNovoNome(data.name || "");
+setNovoTelefone(data.phoneNumber || "");
+
+// Busca imagem se existir
+if (data.imageProfileId) {
+  fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then(async (res) => {
+      if (!res.ok) throw new Error("Erro ao carregar imagem");
+
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const respostaImg = await res.json();
+        if (respostaImg.data) {
+          setFotoPerfil(`data:image/jpeg;base64,${respostaImg.data}`);
+        } else {
+          setFotoPerfil("/imagemperfil.jpg");
         }
+      } else {
+        const blob = await res.blob();
+        setFotoPerfil(URL.createObjectURL(blob));
+      }
+    })
+    .catch(() => setFotoPerfil("/imagemperfil.jpg"));
+}
+
+
+        
       })
       .catch((err) => {
         console.error(err);
