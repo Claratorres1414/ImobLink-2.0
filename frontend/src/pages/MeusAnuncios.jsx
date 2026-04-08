@@ -208,7 +208,9 @@ async function fetchAllImagesForPost(postId) {
     }
   }
 
-  async function abrirComentarios(postId) {
+
+
+async function abrirComentarios(postId) {
   try {
     const res = await fetch(
       `http://localhost:8080/api/comments/getComments/post/${postId}`,
@@ -244,8 +246,17 @@ async function fetchAllImagesForPost(postId) {
             );
 
             if (resImg.ok) {
-              const blob = await resImg.blob();
-              avatarFinal = URL.createObjectURL(blob);
+              const contentType = resImg.headers.get("content-type");
+
+              if (contentType && contentType.includes("application/json")) {
+                const respostaImg = await resImg.json();
+                if (respostaImg.data) {
+                  avatarFinal = `data:image/jpeg;base64,${respostaImg.data}`;
+                }
+              } else {
+                const blob = await resImg.blob();
+                avatarFinal = URL.createObjectURL(blob);
+              }
             }
           }
         }
@@ -268,9 +279,6 @@ async function fetchAllImagesForPost(postId) {
     alert("Erro ao carregar comentários.");
   }
 }
-
-
-
   if (carregando) {
     return (
       <DashboardLayout>
@@ -386,7 +394,8 @@ async function fetchAllImagesForPost(postId) {
                       <img
                         src={c.avatar}
                         alt={c.userName}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-blue-600"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-blue-600 cursor-pointer"
+                        onClick={() => navigate(`/user/${c.userId}`)}
                       />
                       <div>
                         <p

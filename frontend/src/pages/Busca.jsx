@@ -87,9 +87,9 @@ function Busca() {
   const location = useLocation();
   const query = new URLSearchParams(location.search).get("query") || "";
 
-  // ------------------------------
+  
   // Buscar usuário logado
-  // ------------------------------
+  
   useEffect(() => {
     if (!token) return;
     fetch("http://localhost:8080/api/user/account", {
@@ -100,9 +100,9 @@ function Busca() {
       .catch((err) => console.error("Erro ao buscar usuário:", err));
   }, [token]);
 
-  // ------------------------------
+  
   // Buscar usuários
-  // ------------------------------
+  
   useEffect(() => {
     if (!token || !query) return;
 
@@ -128,9 +128,9 @@ function Busca() {
     fetchUsuarios();
   }, [query, token]);
 
-  // ------------------------------
+  
   // Buscar posts
-  // ------------------------------
+  
   useEffect(() => {
     if (!query) return;
     let mounted = true;
@@ -303,9 +303,9 @@ function Busca() {
     };
   }, [query, token]);
 
-  // ------------------------------
+  
   // Slider autoplay
-  // ------------------------------
+  
   useEffect(() => {
     Object.values(slideIntervals.current).forEach(clearInterval);
     slideIntervals.current = {};
@@ -324,9 +324,9 @@ function Busca() {
     return () => Object.values(slideIntervals.current).forEach(clearInterval);
   }, [imageMap]);
 
-  // ------------------------------
+  
   // Filtro de posts por tipo e preço
-  // ------------------------------
+  
   const postsFiltrados = posts
     .filter((p) => filtroVenda === "todos" || p.type.toLowerCase() === filtroVenda)
     .filter((p) => (precoMin ? p.price >= parseFloat(precoMin) : true))

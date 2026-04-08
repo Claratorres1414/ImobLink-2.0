@@ -15,9 +15,9 @@ function Home() {
 
   const slideIntervals = useRef({});
 
-  // ------------------------------
+  
   // BUSCAR USUÁRIO
-  // ------------------------------
+  
   useEffect(() => {
     if (!token) return;
     fetch("http://localhost:8080/api/user/account", {
@@ -28,9 +28,9 @@ function Home() {
       .catch((err) => console.error("Erro ao buscar usuário:", err));
   }, [token]);
 
-  // ------------------------------
+  
   // BUSCAR TODAS AS IMAGENS DE UM POST
-  // ------------------------------
+  
   async function fetchAllImagesForPost(postId) {
     try {
       const res = await fetch(
@@ -77,9 +77,9 @@ function Home() {
     }
   }
 
-  // ------------------------------
+  
   // CARREGAR FEED
-  // ------------------------------
+
   useEffect(() => {
     let mounted = true;
     const createdObjectURLs = [];
@@ -220,9 +220,9 @@ function Home() {
     };
   }, [token]);
 
-  // ------------------------------
+  
   // AUTOPLAY DO SLIDER
-  // ------------------------------
+  
   useEffect(() => {
     Object.values(slideIntervals.current).forEach(clearInterval);
     slideIntervals.current = {};
@@ -250,9 +250,8 @@ function Home() {
       ? postsSeguros.filter((p) => (p.createdById ?? p.userId) !== user.id)
       : postsSeguros;
 
-  // ------------------------------
+
   // RENDERIZAÇÃO
-  // ------------------------------
   return (
     <DashboardLayout>
       <h2 className="text-2xl font-bold mb-6">Imóveis disponíveis</h2>

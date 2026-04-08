@@ -51,8 +51,19 @@ function DashboardLayout({ children }) {
               { headers: { Authorization: `Bearer ${token}` } }
             );
             if (resImg.ok) {
-              const blob = await resImg.blob();
-              setFotoPerfil(URL.createObjectURL(blob));
+              const contentType = resImg.headers.get("content-type");
+
+              if (contentType && contentType.includes("application/json")) {
+                const respostaImg = await resImg.json();
+                if (respostaImg.data) {
+                  setFotoPerfil(`data:image/jpeg;base64,${respostaImg.data}`);
+                } else {
+                  setFotoPerfil("/imagemperfil.jpg");
+                }
+              } else {
+                const blob = await resImg.blob();
+                setFotoPerfil(URL.createObjectURL(blob));
+              }
             }
           } catch (err) {
             console.error("Erro ao carregar avatar:", err);

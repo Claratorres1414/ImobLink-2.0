@@ -18,9 +18,9 @@ function EditarPostagem() {
 
   const API = "http://localhost:8080";
 
-  // ---------------------------
+  
   // Carregar dados do post
-  // ---------------------------
+  
   const carregarPostagem = async () => {
     try {
       const res = await fetch(`${API}/api/posts/getOne/${id}`, {
@@ -28,7 +28,9 @@ function EditarPostagem() {
       });
       if (!res.ok) throw new Error("Postagem não encontrada");
 
-      const data = await res.json();
+      const resposta = await res.json();
+      const data = resposta.data || resposta;
+
       setDescricao(data.description);
       setPreco(data.price);
       setRua(data.street);
@@ -41,15 +43,40 @@ function EditarPostagem() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (imgsRes.ok) {
-        const imgsData = await imgsRes.json(); // assume que retorna lista de { id, ... }
-        const imgsComUrl = await Promise.all(
-          imgsData.map(async (img) => {
-            const blob = await fetch(`${API}/api/images/get/${img.id}`, {
+
+      const respostaImgs = await imgsRes.json();
+      const imgsData = Array.isArray(respostaImgs.data) ? respostaImgs.data : [];
+
+      const imgsComUrl = await Promise.all(
+        imgsData.map(async (img) => {
+          try {
+            const resImg = await fetch(`${API}/api/images/get/${img.id}`, {
               headers: { Authorization: `Bearer ${token}` },
-            }).then((r) => r.blob());
-            return { id: img.id, url: URL.createObjectURL(blob) };
-          })
-        );
+            });
+            if (!resImg.ok) return { id: img.id, url: "/placeholder.jpg" };
+            const contentType = resImg.headers.get("content-type");
+
+            if (contentType && contentType.includes("application/json")) {
+              const respostaImg = await resImg.json();
+              return {
+                id: img.id,
+                url: respostaImg.data
+                  ? `data:image/jpeg;base64,${respostaImg.data}`
+                  : "/placeholder.jpg",
+              };
+            } else {
+              const blob = await resImg.blob();
+              return {
+                id: img.id,
+                url: URL.createObjectURL(blob),
+              };
+            }
+          } catch {
+            return { id: img.id, url: "/placeholder.jpg" };
+          }
+        })
+      );
+
         setImagensPost(imgsComUrl);
       }
     } catch (err) {
@@ -63,9 +90,9 @@ function EditarPostagem() {
     carregarPostagem();
   }, [id]);
 
-  // ---------------------------
+
   // Deletar imagem individual
-  // ---------------------------
+  
   const handleDeleteImage = async (imageId) => {
     if (imagensPost.length <= 1) {
       alert("A postagem deve ter pelo menos uma imagem.");
@@ -88,9 +115,9 @@ function EditarPostagem() {
     }
   };
 
-  // ---------------------------
+  
   // Salvar alterações
-  // ---------------------------
+  
   const salvarAlteracoes = async () => {
     try {
       const res = await fetch(`${API}/api/posts/edit/${id}`, {
