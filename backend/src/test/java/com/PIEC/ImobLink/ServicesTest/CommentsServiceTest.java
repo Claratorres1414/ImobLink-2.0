@@ -10,6 +10,7 @@ import com.PIEC.ImobLink.Repositorys.CommentRepository;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Services.CommentsService;
+import com.PIEC.ImobLink.Services.RequireUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,12 +24,13 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +43,9 @@ public class CommentsServiceTest {
 
     @Mock
     private PostRepository postRepository;
+
+    @Mock
+    private RequireUserService requireUserService;
 
     @InjectMocks
     private CommentsService commentsService;
@@ -94,8 +99,7 @@ public class CommentsServiceTest {
 
     @Test
     void commentAtUserProfile() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(author));
+        when(requireUserService.requireUser(any())).thenReturn(author);
 
         when(commentRepository.save(any(Comment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -113,8 +117,8 @@ public class CommentsServiceTest {
 
     @Test
     void userNotFoundComment() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         CommentRequest req = new CommentRequest(comment.getContent());
         Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
@@ -124,9 +128,19 @@ public class CommentsServiceTest {
     }
 
     @Test
+    void targetUserNotFoundComment() {
+        when(requireUserService.requireUser(any())).thenReturn(author);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        CommentRequest req = new CommentRequest(comment.getContent());
+
+        assertThrows(NoSuchElementException.class,
+                () -> commentsService.comment(req, 999L, auth));
+    }
+
+    @Test
     void commentAtPost() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(author));
+        when(requireUserService.requireUser(any())).thenReturn(author);
 
         when(postRepository.findById(anyLong()))
                 .thenReturn(Optional.of(post));
@@ -145,8 +159,8 @@ public class CommentsServiceTest {
 
     @Test
     void userNotFoundCommentPost() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         CommentRequest req = new CommentRequest(comment.getContent());
         Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
@@ -156,9 +170,19 @@ public class CommentsServiceTest {
     }
 
     @Test
+    void postNotFoundCommentPost() {
+        when(requireUserService.requireUser(any())).thenReturn(author);
+        when(postRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        CommentRequest req = new CommentRequest(comment.getContent());
+
+        assertThrows(NoSuchElementException.class,
+                () -> commentsService.commentPost(req, 999L, auth));
+    }
+
+    @Test
     void getCommentsByUserId() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any())).thenReturn(author);
 
         when(commentRepository.findAllByUserIdOrderByCreatedAtDesc(anyLong()))
                 .thenReturn(List.of(comment));
@@ -170,20 +194,18 @@ public class CommentsServiceTest {
 
     @Test
     void userNotFoundGetCommentsByUserId() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
-        CommentRequest req = new CommentRequest(comment.getContent());
         Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
 
         assertThrows(UsernameNotFoundException.class,
-                () -> commentsService.commentPost(req, post.getId(), authFake));
+                () -> commentsService.getCommentsByUserId(user.getId(), authFake));
     }
 
     @Test
     void getCommentsByPostId() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any())).thenReturn(author);
 
         when(commentRepository.findAllByPostIdOrderByCreatedAtDesc(anyLong()))
                 .thenReturn(List.of(comment));
@@ -197,20 +219,18 @@ public class CommentsServiceTest {
 
     @Test
     void userNotFoundGetCommentsByPostId() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
-        CommentRequest req = new CommentRequest(comment.getContent());
         Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
 
         assertThrows(UsernameNotFoundException.class,
-                () -> commentsService.commentPost(req, post.getId(), authFake));
+                () -> commentsService.getCommentsByPostId(post.getId(), authFake));
     }
 
     @Test
     void deleteComment() throws AccessDeniedException {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(author));
+        when(requireUserService.requireUser(any())).thenReturn(author);
 
         when(commentRepository.findById(anyLong()))
                 .thenReturn(Optional.of(comment));
@@ -222,20 +242,27 @@ public class CommentsServiceTest {
 
     @Test
     void userNotFoundDeleteComment() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
-        CommentRequest req = new CommentRequest(comment.getContent());
         Authentication authFake = new UsernamePasswordAuthenticationToken("email", author.getPassword());
 
         assertThrows(UsernameNotFoundException.class,
-                () -> commentsService.commentPost(req, post.getId(), authFake));
+                () -> commentsService.deleteComment(comment.getId(), authFake));
+    }
+
+    @Test
+    void commentNotFoundDeleteComment() {
+        when(requireUserService.requireUser(any())).thenReturn(author);
+        when(commentRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class,
+                () -> commentsService.deleteComment(999L, auth));
     }
 
     @Test
     void accessDeniedDeleteComment() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any())).thenReturn(user);
 
         when(commentRepository.findById(anyLong()))
                 .thenReturn(Optional.of(comment));
