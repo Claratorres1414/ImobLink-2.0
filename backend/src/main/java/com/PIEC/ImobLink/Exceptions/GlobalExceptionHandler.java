@@ -128,4 +128,20 @@ public class GlobalExceptionHandler {
                 request
         );
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiError> handleResourceNotFound(
+            ResourceNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ApiError> handleFileStorage(
+            FileStorageException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao processar arquivo", request);
+    }
 }
