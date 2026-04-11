@@ -46,9 +46,13 @@ public class GlobalExceptionHandler {
             NoSuchElementException ex,
             HttpServletRequest request
     ) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "Elemento não encontrado";
+        }
         return buildResponse(
                 HttpStatus.NOT_FOUND,
-                "Elemento não encontrado",
+                message,
                 request
         );
     }
