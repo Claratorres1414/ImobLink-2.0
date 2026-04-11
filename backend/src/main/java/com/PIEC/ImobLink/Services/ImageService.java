@@ -4,20 +4,17 @@ import com.PIEC.ImobLink.DTOs.ImageResponse;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Exceptions.ResourceNotFoundException;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,19 +25,16 @@ public class ImageService {
     private final FileStorageService fileStorageService;
     private final RequireUserService requireUserService;
 
-    public Images saveImage(MultipartFile file, Authentication auth) throws IOException {
+    public Images saveImage(MultipartFile file, Authentication auth) {
         User user = requireUserService.requireUser(auth);
         String filePath = fileStorageService.saveImage(file, user.getId());
-        Images image = buildImageEntity(file, filePath, user);
-
-        return imageRepository.save(image);
+        return imageRepository.save(buildImageEntity(file, filePath, user));
     }
 
-    public Images saveProfileImage(MultipartFile file, Authentication auth) throws IOException {
+    public Images saveProfileImage(MultipartFile file, Authentication auth) {
         User user = requireUserService.requireUser(auth);
         String filePath = fileStorageService.saveUserProfileImage(file, user.getId());
-        Images image = buildImageEntity(file, filePath, user);
-        imageRepository.save(image);
+        Images image = imageRepository.save(buildImageEntity(file, filePath, user));
 
         user.setImageProfileId(image.getId());
         userRepository.save(user);
@@ -48,33 +42,35 @@ public class ImageService {
         return image;
     }
 
-    public byte[] getFirstImageByPostId(@PathVariable Long postId, Authentication auth) throws IOException {
+    public byte[] getFirstImageByPostId(Long postId, Authentication auth) {
         requireUserService.requireUser(auth);
-        Post post = postRepository.getPostById(postId);
-        List<Images> images = post.getImages();
 
-        Images image = images.getFirst();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", postId));
+
+        Images image = post.getImages().stream()
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Imagem do post", postId));
 
         return fileStorageService.readFile(image.getFilepath());
     }
 
-    public List<ImageResponse> getAllImagesByPostId(@PathVariable Long postId, Authentication auth) {
+    public List<ImageResponse> getAllImagesByPostId(Long postId, Authentication auth) {
         requireUserService.requireUser(auth);
 
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new UsernameNotFoundException(auth.getName()));
+                .orElseThrow(() -> new ResourceNotFoundException("Post", postId));
 
-        return post.getImages()
-                .stream()
+        return post.getImages().stream()
                 .map(img -> new ImageResponse(img.getId(), img.getFilename(), img.getFilepath(), img.getContentType()))
                 .toList();
     }
 
-    public byte[] getImageById(@PathVariable Long imageId, Authentication auth) throws IOException {
+    public byte[] getImageById(Long imageId, Authentication auth) {
         requireUserService.requireUser(auth);
 
         Images image = imageRepository.findById(imageId)
-                .orElseThrow(() -> new NoSuchElementException(String.valueOf(imageId)));
+                .orElseThrow(() -> new ResourceNotFoundException("Imagem", imageId));
 
         return fileStorageService.readFile(image.getFilepath());
     }
