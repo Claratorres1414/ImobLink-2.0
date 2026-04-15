@@ -7,6 +7,7 @@ import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.FollowRespository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Services.FollowService;
+import com.PIEC.ImobLink.Services.RequireUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,9 @@ public class FollowServiceTest {
 
     @Mock
     private FollowRespository followRespository;
+
+    @Mock
+    private RequireUserService requireUserService;
 
     @InjectMocks
     private FollowService followService;
@@ -65,8 +69,8 @@ public class FollowServiceTest {
 
     @Test
     void shouldFollowAnUnfollowedUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.of(user2));
@@ -79,7 +83,6 @@ public class FollowServiceTest {
 
         followService.follow(auth, user2.getId());
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).findById(anyLong());
         verify(followRespository, times(1)).findByFollowerIdAndFollowingId(anyLong(), anyLong());
         verify(followRespository, times(1)).save(any(Follow.class));
@@ -87,8 +90,8 @@ public class FollowServiceTest {
 
     @Test
     void shouldNotFollowAnUnfollowedUserBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-            .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+            .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaa", user1.getPassword());
 
@@ -98,8 +101,8 @@ public class FollowServiceTest {
 
     @Test
     void shouldNotFollowAnUnfollowedUserBecauseYouAreTheFollowerAndTheFollowedUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         assertThrows(IllegalArgumentException.class,
                 () -> followService.follow(auth, user1.getId()));
@@ -107,8 +110,8 @@ public class FollowServiceTest {
 
     @Test
     void shouldNotFollowAnUnfollowedUserBecauseTheFollowedUserWasNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.empty());
@@ -126,8 +129,8 @@ public class FollowServiceTest {
         user1.getFollowings().add(follow);
         user2.getFollowers().add(follow);
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.of(user2));
@@ -148,8 +151,8 @@ public class FollowServiceTest {
         user1.getFollowings().add(follow);
         user2.getFollowers().add(follow);
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.of(user2));
@@ -159,7 +162,6 @@ public class FollowServiceTest {
 
         followService.unfollow(auth, user2.getId());
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).findById(anyLong());
         verify(followRespository, times(1)).findByFollowerIdAndFollowingId(anyLong(), anyLong());
         verify(followRespository, times(1)).delete(any(Follow.class));
@@ -167,8 +169,8 @@ public class FollowServiceTest {
 
     @Test
     void shouldNotUnfollowAnFollowedUserBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaa", user1.getPassword());
 
@@ -178,8 +180,8 @@ public class FollowServiceTest {
 
     @Test
     void shouldNotUnfollowAnFollowedUserBecauseTheFollowedUserWasNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.empty());
@@ -190,8 +192,8 @@ public class FollowServiceTest {
 
     @Test
     void shouldNotUnfollowAnUnfollowedUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.of(user2));
@@ -212,19 +214,18 @@ public class FollowServiceTest {
         user2.getFollowings().add(follow);
         user1.getFollowers().add(follow);
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         List<UserDetails> followers = followService.getFollowers(auth);
 
         assert followers.size() == 1;
-        verify(userRepository, times(1)).findByEmail(anyString());
     }
 
     @Test
     void shouldNotListUserFollowersBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaa", user1.getPassword());
 
@@ -241,19 +242,18 @@ public class FollowServiceTest {
         user1.getFollowings().add(follow);
         user2.getFollowers().add(follow);
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         List<UserDetails> followings = followService.getFollowings(auth);
 
         assert followings.size() == 1;
-        verify(userRepository, times(1)).findByEmail(anyString());
     }
 
     @Test
     void shouldNotListUserFollowingsBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaa", user1.getPassword());
 
