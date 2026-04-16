@@ -5,11 +5,13 @@ import com.PIEC.ImobLink.DTOs.ImageResponse;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.Exceptions.ResourceNotFoundException;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Services.FileStorageService;
 import com.PIEC.ImobLink.Services.ImageService;
+import com.PIEC.ImobLink.Services.RequireUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,9 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,6 +34,7 @@ import static org.mockito.Mockito.*;
 public class ImageServiceTest {
     @Mock private ImageRepository imageRepository;
     @Mock private UserRepository userRepository;
+    @Mock private RequireUserService requireUserService;
     @Mock private PostRepository postRepository;
     @Mock private FileStorageService fileStorageService;
     @Mock private MultipartFile file;
@@ -58,9 +59,9 @@ public class ImageServiceTest {
     }
 
     @Test
-    void shouldSaveImageSuccessfully() throws IOException {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+    void shouldSaveImageSuccessfully() {
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(file.getContentType())
                 .thenReturn("image/jpeg");
         when(fileStorageService.saveImage(any(), anyLong()))
@@ -80,31 +81,29 @@ public class ImageServiceTest {
 
     @Test
     void shouldThrowWhenUserNotFoundOnSaveImage() {
-
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(UsernameNotFoundException.class);
 
         assertThrows(UsernameNotFoundException.class,
                 () -> imageService.saveImage(file, auth));
     }
 
     @Test
-    void shouldPropagateIOExceptionOnSaveImage() throws IOException {
-
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+    void shouldPropagateIOExceptionOnSaveImage() {
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(fileStorageService.saveImage(any(), anyLong()))
-                .thenThrow(new IOException("Disk error"));
+                .thenThrow(new RuntimeException("Disk error"));
 
-        assertThrows(IOException.class,
+        assertThrows(RuntimeException.class,
                 () -> imageService.saveImage(file, auth));
     }
 
     @Test
-    void shouldSaveUserProfileImageSuccessfully() throws IOException {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+    void shouldSaveUserProfileImageSuccessfully() {
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(fileStorageService.saveUserProfileImage(any(), anyLong()))
                 .thenReturn("fake/path/fake.jpeg");
         when(file.getContentType())
@@ -123,10 +122,9 @@ public class ImageServiceTest {
     }
 
     @Test
-    void shouldUpdateUserProfileImageId() throws IOException {
-
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+    void shouldUpdateUserProfileImageId() {
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(fileStorageService.saveUserProfileImage(any(), anyLong()))
                 .thenReturn("fake/path/fake.jpeg");
@@ -150,18 +148,15 @@ public class ImageServiceTest {
 
     @Test
     void shouldThrowWhenUserNotFoundOnSaveProfileImage() {
-
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         assertThrows(UsernameNotFoundException.class,
                 () -> imageService.saveProfileImage(file, auth));
     }
 
     @Test
-    void shouldReturnFirstImageBytesByPostId() throws IOException {
-
-        // Arrange
+    void shouldReturnFirstImageBytesByPostId() {
         Images image = new Images();
         image.setFilepath("fake/path/image.jpeg");
 
@@ -171,11 +166,11 @@ public class ImageServiceTest {
 
         byte[] fakeBytes = "fake-image-content".getBytes();
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
-        when(postRepository.getPostById(anyLong()))
-                .thenReturn(post);
+        when(postRepository.findById(anyLong()))
+                .thenReturn(Optional.of(post));
 
         when(fileStorageService.readFile("fake/path/image.jpeg"))
                 .thenReturn(fakeBytes);
@@ -190,17 +185,16 @@ public class ImageServiceTest {
 
     @Test
     void shouldThrowWhenPostHasNoImages() {
-
         Post post = new Post();
         post.setImages(List.of());
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
-        when(postRepository.getPostById(anyLong()))
-                .thenReturn(post);
+        when(postRepository.findById(anyLong()))
+                .thenReturn(Optional.of(post));
 
-        assertThrows(NoSuchElementException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> imageService.getFirstImageByPostId(1L, auth));
     }
 
@@ -221,8 +215,8 @@ public class ImageServiceTest {
         Post post = new Post();
         post.setImages(List.of(img1, img2));
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(postRepository.findById(anyLong()))
                 .thenReturn(Optional.of(post));
@@ -238,27 +232,26 @@ public class ImageServiceTest {
     @Test
     void shouldThrowWhenPostNotFound() {
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(postRepository.findById(anyLong()))
                 .thenReturn(Optional.empty());
 
-        assertThrows(UsernameNotFoundException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> imageService.getAllImagesByPostId(1L, auth));
     }
 
     @Test
-    void shouldReturnImageBytesByImageId() throws IOException {
-
+    void shouldReturnImageBytesByImageId() {
         Images image = new Images();
         image.setId(1L);
         image.setFilepath("fake/path/image.jpeg");
 
         byte[] fakeBytes = "fake-image".getBytes();
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(imageRepository.findById(anyLong()))
                 .thenReturn(Optional.of(image));
@@ -275,43 +268,40 @@ public class ImageServiceTest {
 
     @Test
     void shouldThrowWhenImageNotFound() {
-
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(imageRepository.findById(anyLong()))
                 .thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> imageService.getImageById(1L, auth));
     }
 
     @Test
     void shouldThrowWhenAuthenticatedUserNotFound() {
-
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         assertThrows(UsernameNotFoundException.class,
                 () -> imageService.getImageById(1L, auth));
     }
 
     @Test
-    void shouldPropagateIOExceptionOnReadFile() throws IOException {
-
+    void shouldPropagateIOExceptionOnReadFile() {
         Images image = new Images();
         image.setFilepath("fake/path/image.jpeg");
 
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         when(imageRepository.findById(anyLong()))
                 .thenReturn(Optional.of(image));
 
         when(fileStorageService.readFile(anyString()))
-                .thenThrow(new IOException("Read error"));
+                .thenThrow(new RuntimeException("Read error"));
 
-        assertThrows(IOException.class,
+        assertThrows(RuntimeException.class,
                 () -> imageService.getImageById(1L, auth));
     }
 }
