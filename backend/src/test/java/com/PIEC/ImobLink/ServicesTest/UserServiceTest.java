@@ -8,6 +8,7 @@ import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
+import com.PIEC.ImobLink.Services.RequireUserService;
 import com.PIEC.ImobLink.Services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,8 @@ public class UserServiceTest {
     private ImageRepository imageRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private RequireUserService requireUserService;
 
     @InjectMocks
     private UserService userService;
@@ -92,18 +95,16 @@ public class UserServiceTest {
 
     @Test
     void shouldLoadCurrentUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         userService.loadUser(auth);
-
-        verify(userRepository, times(1)).findByEmail(anyString());
     }
 
     @Test
      void shouldNotLoadCurrentUserBecauseOfUserNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         Authentication auth = new UsernamePasswordAuthenticationToken("aaa", "password");
 
@@ -113,20 +114,19 @@ public class UserServiceTest {
 
     @Test
     void shouldLoadUserById() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(userRepository.getReferenceById(anyLong()))
                 .thenReturn(user2);
 
         userService.loadUserById(user2.getId(), auth);
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).getReferenceById(anyLong());
     }
 
     @Test
     void shouldNotLoadUserByIdBecauseOfUserNotFoundForTheCurrentUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         Authentication auth = new UsernamePasswordAuthenticationToken("aaa", "password");
 
@@ -147,21 +147,20 @@ public class UserServiceTest {
 
     @Test
     void shouldSearchForUserByEmail() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(userRepository.findTop10ByEmailContainingIgnoreCase(anyString()))
                 .thenReturn(List.of(user2));
 
         userService.searchUsers("eMAIl091", auth);
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).findTop10ByEmailContainingIgnoreCase(anyString());
     }
 
     @Test
     void shouldNotSearchForUserByEmailBecauseOfUserNotFoundForTheCurrentUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
         Authentication auth = new UsernamePasswordAuthenticationToken("aaa", "password");
 
         assertThrows(UsernameNotFoundException.class,
@@ -170,8 +169,8 @@ public class UserServiceTest {
 
     @Test
     void shouldSetUserInformation() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(userRepository.save(user))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -179,14 +178,13 @@ public class UserServiceTest {
         userService.setInfo(setInfo, auth);
 
         assert user.getBio().equals("aaaaa");
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).save(user);
     }
 
     @Test
     void shouldNotSetUserInformationBecauseOfUserNotFound () {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
         Authentication auth = new UsernamePasswordAuthenticationToken("aaa", "password");
 
         assertThrows(UsernameNotFoundException.class,
@@ -195,8 +193,8 @@ public class UserServiceTest {
 
     @Test
     void shouldSetUserPassword() throws AccessDeniedException {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(passwordEncoder.matches(anyString(), anyString()))
                 .thenReturn(true);
         when(userRepository.save(user))
@@ -206,14 +204,13 @@ public class UserServiceTest {
         Boolean resp = userService.setPassword(setPassword, auth);
 
         assert resp;
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).save(user);
     }
 
     @Test
     void shouldNotSetUserPasswordBecauseOfUserNotFound () {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
         Authentication auth = new UsernamePasswordAuthenticationToken("aaa", "password");
 
         assertThrows(UsernameNotFoundException.class,
@@ -222,8 +219,8 @@ public class UserServiceTest {
 
     @Test
     void shouldNotSetUserPasswordBecauseOfWrongPassword() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(passwordEncoder.matches(anyString(), anyString()))
                 .thenReturn(false);
 
@@ -234,8 +231,8 @@ public class UserServiceTest {
 
     @Test
     void shouldNotSetUserPasswordBecauseOfNullPassword() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         SetPasswordRequest setPassword = new SetPasswordRequest(user.getPassword(), null);
         assertThrows(AccessDeniedException.class,
@@ -244,8 +241,8 @@ public class UserServiceTest {
 
     @Test
     void shouldNotSetUserPasswordBecauseOfSamePassword () {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
 
         SetPasswordRequest setPassword = new SetPasswordRequest(user.getPassword(), user.getPassword());
         assertThrows(AccessDeniedException.class,
@@ -254,22 +251,21 @@ public class UserServiceTest {
 
     @Test
     void shouldDeleteUserProfile() throws AccessDeniedException {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(passwordEncoder.matches(anyString(), anyString()))
                 .thenReturn(true);
 
         userService.deleteProfile(new DeleteProfileRequest(user.getPassword()), auth);
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(imageRepository, times(1)).deleteByUserId(anyLong());
         verify(userRepository, times(1)).delete(user);
     }
 
     @Test
     void shouldNotDeleteUserProfileBecauseOfUserNotFound() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         Authentication auth = new UsernamePasswordAuthenticationToken("aaa", "password");
 
@@ -279,8 +275,8 @@ public class UserServiceTest {
 
     @Test
     void shouldNotDeleteUserProfileBecauseOfWrongPassword() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user);
         when(passwordEncoder.matches(anyString(), anyString()))
                 .thenReturn(false);
 

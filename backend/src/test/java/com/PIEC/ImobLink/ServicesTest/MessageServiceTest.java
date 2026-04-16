@@ -6,6 +6,7 @@ import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.MessageRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Services.MessageService;
+import com.PIEC.ImobLink.Services.RequireUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,8 @@ public class MessageServiceTest {
     private MessageRepository messageRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private RequireUserService requireUserService;
 
     @InjectMocks
     private MessageService messageService;
@@ -69,8 +72,8 @@ public class MessageServiceTest {
 
     @Test
     void shouldSendMessageToUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.of(user2));
 
@@ -79,15 +82,14 @@ public class MessageServiceTest {
 
         messageService.sendMessage("aaa", user2.getId(), auth);
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(userRepository, times(1)).findById(anyLong());
         verify(messageRepository, times(1)).save(any(Message.class));
     }
 
     @Test
     void shouldNotSendMessageToUserBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
 
@@ -97,8 +99,8 @@ public class MessageServiceTest {
 
     @Test
     void shouldNotSendMessageToUserBecauseOfUserNotFoundForOfferedId() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.empty());
 
@@ -108,21 +110,20 @@ public class MessageServiceTest {
 
     @Test
     void shouldGetMessageFromUserToUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
         when(messageRepository.findConversation(anyLong(), anyLong()))
                 .thenReturn(List.of(message));
 
         messageService.getMessages(user2.getId(), auth);
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(messageRepository, times(1)).findConversation(anyLong(), anyLong());
     }
 
     @Test
     void shouldNotGetMessageFromUserToUserBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
 
@@ -132,8 +133,8 @@ public class MessageServiceTest {
 
     @Test
     void shouldEditMessageFromUserToUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
         when(messageRepository.findMessageById(anyLong()))
                 .thenReturn(message);
         when(messageRepository.save(any(Message.class)))
@@ -141,15 +142,14 @@ public class MessageServiceTest {
 
         messageService.editMessage(message.getId(), "aaaaa", auth);
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(messageRepository, times(1)).findMessageById(anyLong());
         verify(messageRepository, times(1)).save(any(Message.class));
     }
 
     @Test
     void shouldNotEditMessageFromUserToUserBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
 
@@ -159,19 +159,18 @@ public class MessageServiceTest {
 
     @Test
     void shouldDeleteMessageFromUserToUser() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
 
         messageService.deleteMessage(message.getId(), auth);
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(messageRepository, times(1)).deleteById(anyLong());
     }
 
     @Test
     void shouldNotDeleteMessageFromUserToUserBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
 
@@ -181,8 +180,8 @@ public class MessageServiceTest {
 
     @Test
     void shouldListAllUserContacts() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user1));
+        when(requireUserService.requireUser(any()))
+                .thenReturn(user1);
         when(messageRepository.findContacts(anyLong()))
                 .thenReturn(List.of(user2.getId()));
         when(userRepository.findAllById(anyList()))
@@ -190,15 +189,14 @@ public class MessageServiceTest {
 
         messageService.getContacts(auth);
 
-        verify(userRepository, times(1)).findByEmail(anyString());
         verify(messageRepository, times(1)).findContacts(anyLong());
         verify(userRepository, times(1)).findAllById(anyList());
     }
 
     @Test
     void shouldNotListAllUserContactsBecauseOfUserNotFoundForOfferedAuth() {
-        when(userRepository.findByEmail(anyString()))
-                .thenReturn(Optional.empty());
+        when(requireUserService.requireUser(any()))
+                .thenThrow(new UsernameNotFoundException("user not found"));
 
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
 

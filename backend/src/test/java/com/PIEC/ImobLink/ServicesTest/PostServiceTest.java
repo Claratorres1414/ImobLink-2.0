@@ -26,6 +26,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -129,7 +130,7 @@ public class PostServiceTest {
     }
 
     @Test
-    void shouldEditAPost() {
+    void shouldEditAPost() throws AccessDeniedException {
         when(requireUserService.requireUser(any()))
                 .thenReturn(user);
 
@@ -164,7 +165,7 @@ public class PostServiceTest {
     }
 
     @Test
-    void shouldDeleteAPost() {
+    void shouldDeleteAPost() throws AccessDeniedException {
         when(requireUserService.requireUser(any()))
                 .thenReturn(user);
 
