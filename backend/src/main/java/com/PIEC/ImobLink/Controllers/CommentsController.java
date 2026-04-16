@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
@@ -76,7 +77,7 @@ public class CommentsController {
             description = "Permite deletar seu comentário"
     )
     @DeleteMapping("/deleteComment/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable Long id, Authentication auth) throws AccessDeniedException {
         commentsService.deleteComment(id, auth);
         return ResponseUtil.noContent(
                 "Comentário deletado com sucesso"
