@@ -7,9 +7,17 @@ def get_df(api_url, endpoint, headers):
     try:
         r = requests.get(f"{api_url}{endpoint}", headers=headers, timeout=8)
         if r.status_code == 200:
-            return pd.DataFrame(r.json())
-    except Exception:
-        pass
+            data = r.json()
+
+            # 🔥 CORREÇÃO AQUI
+            if isinstance(data, dict) and "data" in data:
+                return pd.DataFrame(data["data"])
+
+            return pd.DataFrame(data)
+
+    except Exception as e:
+        print("Erro:", e)
+
     return pd.DataFrame()
 
 
