@@ -8,11 +8,15 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 from deep_translator import GoogleTranslator  # ✅ TROCA AQUI
 
 load_dotenv()
-print("🔥 BLIP_CAPTION NOVO CARREGADO")
 # ----------------------------
 # 2. Inicializa modelo BLIP
 # ----------------------------
-processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
+try:
+    processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
+except:
+    processor = None
+    print("⚠️ Modelo não carregado")
+
 blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
 
 # ----------------------------

@@ -1,14 +1,29 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from blip_caption import gerar_legendas_completas
+from recommender import recommend
 from ocr_processor import processar_documento
 from model import treinar_modelo, prever_post, prever_feed
 import shutil
 import os
 import uuid
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, Request
+from pydantic import BaseModel
+from typing import List
+
 
 app = FastAPI()
+
+class Post(BaseModel):
+    id: int
+    description: str
+    type: str
+    avenue: str
+
+class RecommendationRequest(BaseModel):
+    user_id: int
+    posts: List[Post]
+    user_interactions: List[int]
 
 def salvar_temporariamente(file: UploadFile):
     filename = f"temp_{uuid.uuid4().hex}_{file.filename}"
@@ -85,6 +100,12 @@ async def prever_feed_endpoint(posts: list = Body(..., description="Lista de pos
         return resultados
     except Exception as e:
         return JSONResponse(content={"erro": str(e)}, status_code=500)
+    
+
+@app.post("/recommend")
+async def get_recommendations(data: RecommendationRequest):
+    recs = recommend(data.dict())
+    return recs
 
 #python -m uvicorn main:app --reload
 #http://127.0.0.1:8000/docs

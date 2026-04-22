@@ -1,6 +1,22 @@
 package com.PIEC.ImobLink.Services;
 
-import Role.Role;
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.Comment;
@@ -17,19 +33,9 @@ import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Util.FavsLimitedHeap;
 import com.PIEC.ImobLink.Util.LikesLimitedHeap;
 import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.AccessDeniedException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import Role.Role;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -451,5 +457,47 @@ public class PostService {
         if (!isOwner && !isAdmin(user)) {
             throw new AccessDeniedException("Você não tem permissão para alterar este post");
         }
+    }
+    private Long getUserId(Authentication auth) {
+        User user = requireUserService.requireUser(auth);
+        return user.getId();
+    }
+    public List<PostResponse> getRecommendations(Authentication auth) {
+        
+        Long userId = getUserId(auth);
+
+        List<PostResponse> allPosts = getFeed();
+        List<PostResponse> favs = getUserFavs(auth);
+
+        List<Long> interactedIds = favs.stream()
+                .map(PostResponse::getId)
+                .toList();
+
+        if (interactedIds.isEmpty()) {
+            return getFeed(); // ou topPosts
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("user_id", userId);
+        body.put("posts", allPosts);
+        body.put("user_interactions", interactedIds);
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<List> response = restTemplate.postForEntity(
+                "http://localhost:8000/recommend",
+                body,
+                List.class
+        );
+
+        List<Map<String, Object>> recs = response.getBody();
+
+        List<Long> ids = recs.stream()
+                .map(r -> Long.valueOf(r.get("id").toString()))
+                .toList();
+
+        // filtrar posts recomendados
+        return allPosts.stream()
+                .filter(p -> ids.contains(p.getId()))
+                .toList();
     }
 }
