@@ -1,11 +1,10 @@
-// src/navigation/index.tsx
 import { NavigationContainer } from '@react-navigation/native';
-import HomeScreen from '../screens/HomeScreen';
+import LoginScreen from "../screens/LoginScreen";
 
 export default function Routes() {
     return (
         <NavigationContainer>
-            <HomeScreen />
+            <LoginScreen />
         </NavigationContainer>
     );
 }
