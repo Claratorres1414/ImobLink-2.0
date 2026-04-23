@@ -5,7 +5,8 @@ import {useAuthStore} from "../store/authStore";
 import {ActivityIndicator, View} from "react-native";
 
 export default function Routes() {
-    const { token, loading } = useAuthStore();
+    const token = useAuthStore((state) => state.token);
+    const loading = useAuthStore((state) => state.loading)
 
     if (loading) {
         return (
