@@ -10,12 +10,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     token: null,
 
     signIn: async (email, password) => {
-        set({ token: 'fake-token' });
-        /*await new Promise((res) => setTimeout(res, 800));
-
+        await new Promise((res) => setTimeout(res, 800));
         if (email && password) {
-
-        }*/
+            set({ token: 'fake-token' });
+        }
     },
 
     signOut: () => set({ token: null }),
