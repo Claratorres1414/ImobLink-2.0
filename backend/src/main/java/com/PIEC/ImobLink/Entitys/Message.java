@@ -20,15 +20,21 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    String content;
+    @Column(nullable = false, length = 2000)
+    private String content;
+
     @CreationTimestamp
     private LocalDateTime sendedAt;
 
     @ManyToOne
-    @JoinColumn(name = "sender_id")
+    @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
     @ManyToOne
-    @JoinColumn(name = "receiver_id")
+    @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
+
+    @ManyToOne
+    @JoinColumn(name = "post_id")
+    private Post post;
 }
