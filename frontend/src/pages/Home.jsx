@@ -70,7 +70,27 @@ function Home() {
 
     async function carregar() {
       try {
-        const res = await fetch("http://localhost:8080/api/feed");
+        let recRes = await fetch(
+          "http://localhost:8080/api/posts/recommendations",
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
+
+        let recData = await recRes.json();
+        let recommended = recData.data || [];
+
+        let feedRes = await fetch("http://localhost:8080/api/feed");
+        let feedData = await feedRes.json();
+        let normalFeed = feedData.data || feedData;
+
+        // mistura estilo Instagram/TikTok
+        const finalPosts = [
+          ...recommended.slice(0, 5),
+          ...normalFeed.filter(p => !recommended.find(r => r.id === p.id))
+        ];
+
+        setPosts(finalPosts);
         if (!res.ok) throw new Error("Erro ao buscar publicações");
 
         const data = await res.json();

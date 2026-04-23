@@ -259,12 +259,4 @@ public class PostController {
                 postService.topLikedPosts(auth)
         );
     }
-    @GetMapping("/recommendations")
-        public ResponseEntity<ApiResponse<List<PostResponse>>> getRecommendations(Authentication auth) {
-        return ResponseUtil.ok(
-                "Recomendações carregadas",
-                postService.getRecommendations(auth)
-        );
-
-        }
 }

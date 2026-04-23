@@ -1,39 +1,40 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
 def build_text(post):
-    description = str(post.get("description", ""))
-    type_ = str(post.get("type", ""))
-    avenue = str(post.get("avenue", ""))
-    street = str(post.get("street", ""))
-    price = str(post.get("price", ""))
+    return " ".join([
+        str(post.get("description", "")),
+        str(post.get("type", "")),
+        str(post.get("avenue", "")),
+        str(post.get("street", "")),
+        str(post.get("price", "")),
+        str(post.get("likedTimes", "")),
+        str(post.get("views", ""))
+    ])
 
-    return f"{description} {type_} {avenue} {street} {price}"
 
 def recommend(data):
-    posts = data["posts"]
-    user_posts_ids = data["user_interactions"]
+    posts = data.get("posts", [])
+
+    if not posts:
+        return []
 
     texts = [build_text(p) for p in posts]
 
     vectorizer = TfidfVectorizer()
     tfidf_matrix = vectorizer.fit_transform(texts)
 
-    user_indices = [i for i, p in enumerate(posts) if p["id"] in user_posts_ids]
+    scores = []
 
-    if not user_indices:
-        return []
-
-    user_profile = tfidf_matrix[user_indices].mean(axis=0).A
-
-    similarities = cosine_similarity(user_profile, tfidf_matrix).flatten()
-
-    results = []
     for i, post in enumerate(posts):
-        if post["id"] not in user_posts_ids:
-            results.append({
-                "id": post["id"],
-                "score": float(similarities[i])
-            })
+        score = (
+            float(post.get("views", 0)) * 0.6 +
+            float(post.get("likedTimes", 0)) * 1.5
+        )
+        scores.append({
+            "id": post["id"],
+            "score": score
+        })
 
-    return sorted(results, key=lambda x: x["score"], reverse=True)[:10]
+    return sorted(scores, key=lambda x: x["score"], reverse=True)[:10]

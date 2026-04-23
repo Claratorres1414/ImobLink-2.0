@@ -10,9 +10,18 @@ import uuid
 from fastapi import FastAPI, Body, Request
 from pydantic import BaseModel
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # ou coloca "http://localhost:5173"
+    allow_credentials=True,
+    allow_methods=["*"],  # MUITO IMPORTANTE (inclui OPTIONS)
+    allow_headers=["*"],
+)
 
 class Post(BaseModel):
     id: int
@@ -105,7 +114,28 @@ async def prever_feed_endpoint(posts: list = Body(..., description="Lista de pos
 @app.post("/recommend")
 async def get_recommendations(data: RecommendationRequest):
     recs = recommend(data.dict())
+    
     return recs
+
+
+user_interactions_db = {}
+
+class Interaction(BaseModel):
+    user_id: int
+    post_id: int
+
+@app.post("/interaction")
+async def register_interaction(data: Interaction):
+    if data.user_id not in user_interactions_db:
+        user_interactions_db[data.user_id] = []
+
+    user_interactions_db[data.user_id].append(data.post_id)
+
+    print("INTERAÇÃO SALVA:", data)
+
+    return {"status": "ok"}
+
+
 
 #python -m uvicorn main:app --reload
 #http://127.0.0.1:8000/docs
