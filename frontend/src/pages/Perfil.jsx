@@ -28,15 +28,29 @@ function Perfil() {
     })
       .then(async (res) => {
         if (!res.ok) throw new Error("Erro ao carregar dados");
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = resposta.data || resposta;
         setDadosUsuario(data);
 
         if (data.imageProfileId) {
           fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
-            .then((res) => res.blob())
-            .then((blob) => setFotoPerfil(URL.createObjectURL(blob)))
+            .then(async (res) => {
+              if (!res.ok) throw new Error();
+
+              const contentType = res.headers.get("content-type");
+
+              if (contentType && contentType.includes("application/json")) {
+                const respostaImg = await res.json();
+                if (respostaImg.data) {
+                  setFotoPerfil(`data:image/jpeg;base64,${respostaImg.data}`);
+                }
+              } else {
+                const blob = await res.blob();
+                setFotoPerfil(URL.createObjectURL(blob));
+              }
+            })
             .catch(() => setFotoPerfil("/imagemperfil.jpg"));
         }
       })
@@ -57,8 +71,15 @@ function Perfil() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (followersRes.ok) setFollowers(await followersRes.json());
-        if (followingsRes.ok) setFollowings(await followingsRes.json());
+        if (followersRes.ok) {
+          const respostaFollowers = await followersRes.json();
+          setFollowers(Array.isArray(respostaFollowers.data) ? respostaFollowers.data : []);
+        }
+
+        if (followingsRes.ok) {
+          const respostaFollowings = await followingsRes.json();
+          setFollowings(Array.isArray(respostaFollowings.data) ? respostaFollowings.data : []);
+        }
       } catch (err) {
         console.error("Erro ao carregar seguidores:", err);
       }
@@ -75,7 +96,8 @@ function Perfil() {
         });
         if (!res.ok) throw new Error("Erro ao buscar favoritos");
 
-        const data = await res.json();
+        const resposta = await res.json();
+        const data = Array.isArray(resposta.data) ? resposta.data : [];
         setFavoritos(data);
 
         for (const post of data) {
@@ -86,9 +108,21 @@ function Perfil() {
             );
 
             if (imgRes.ok) {
-              const blob = await imgRes.blob();
-              const url = URL.createObjectURL(blob);
-              setImageMap((prev) => ({ ...prev, [post.id]: url }));
+              const contentType = imgRes.headers.get("content-type");
+
+              if (contentType && contentType.includes("application/json")) {
+                const respostaImg = await imgRes.json();
+                if (respostaImg.data) {
+                  setImageMap((prev) => ({
+                    ...prev,
+                    [post.id]: `data:image/jpeg;base64,${respostaImg.data}`,
+                  }));
+                }
+              } else {
+                const blob = await imgRes.blob();
+                const url = URL.createObjectURL(blob);
+                setImageMap((prev) => ({ ...prev, [post.id]: url }));
+              }
             } else {
               setImageMap((prev) => ({ ...prev, [post.id]: "/placeholder.jpg" }));
             }
@@ -115,8 +149,21 @@ function Perfil() {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (res.ok) {
-              const blob = await res.blob();
-              newAvatarMap[u.id ?? u.userId ?? u.email] = URL.createObjectURL(blob);
+              const contentType = imgRes.headers.get("content-type");
+
+              if (contentType && contentType.includes("application/json")) {
+                const respostaImg = await imgRes.json();
+                if (respostaImg.data) {
+                  setImageMap((prev) => ({
+                    ...prev,
+                    [post.id]: `data:image/jpeg;base64,${respostaImg.data}`,
+                  }));
+                }
+              } else {
+                const blob = await imgRes.blob();
+                const url = URL.createObjectURL(blob);
+                setImageMap((prev) => ({ ...prev, [post.id]: url }));
+              }
             } else {
               newAvatarMap[u.id ?? u.userId ?? u.email] = "/imagemperfil.jpg";
             }

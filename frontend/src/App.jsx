@@ -8,9 +8,14 @@ import PublicarPostagem from "./pages/PublicarPostagem";
 import MeusAnuncios from "./pages/MeusAnuncios";
 import EditarPostagem from "./pages/EditarPostagem";
 import PostagemDetalhada from "./pages/PostagemDetalhada";
-import UserProfile from "./pages/UserProfile"; // <-- NOVO IMPORT
+import UserProfile from "./pages/UserProfile";
+import Busca from "./pages/Busca";
 
-// 🔒 Proteção de rotas
+// Chat pages
+import ChatPage from "./pages/ChatPage";
+import ConversasPage from "./pages/ConversasPage";
+
+// Proteção de rotas
 function RotaProtegida({ children }) {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
@@ -24,7 +29,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
 
-        {/* Rotas protegidas */}
+        {/* Rotas protegidas (renderam as páginas — as páginas devem conter DashboardLayout se preciso) */}
         <Route
           path="/home"
           element={
@@ -88,12 +93,40 @@ function App() {
           }
         />
 
-        {/* NOVA ROTA - perfil público */}
         <Route
           path="/user/:id"
           element={
             <RotaProtegida>
               <UserProfile />
+            </RotaProtegida>
+          }
+        />
+
+        <Route
+          path="/busca"
+          element={
+            <RotaProtegida>
+              <Busca />
+            </RotaProtegida>
+          }
+        />
+
+        {/* Conversas (lista) */}
+        <Route
+          path="/conversas"
+          element={
+            <RotaProtegida>
+              <ConversasPage />
+            </RotaProtegida>
+          }
+        />
+
+        {/* Chat individual */}
+        <Route
+          path="/chat/:id"
+          element={
+            <RotaProtegida>
+              <ChatPage />
             </RotaProtegida>
           }
         />
