@@ -1,6 +1,21 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from "react";
 
-export default function LoginScreen() {
+type Props = {
+    onLogin: () => void;
+};
+
+export default function LoginScreen({ onLogin }: Props) {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    async function handleLogin() {
+        if (email && password) {
+            console.log("Login ok");
+            onLogin();
+        }
+    }
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>ImobLink</Text>
@@ -9,17 +24,20 @@ export default function LoginScreen() {
             <TextInput
                 placeholder="e-mail"
                 style={styles.input}
-                autoCapitalize="none"
-                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize={"none"}
             />
 
             <TextInput
                 placeholder="senha"
                 style={styles.input}
-                secureTextEntry
+                secureTextEntry={true}
+                value={password}
+                onChangeText={setPassword}
             />
 
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={handleLogin}>
                 <Text style={styles.buttonText}>Entrar</Text>
             </TouchableOpacity>
         </View>
