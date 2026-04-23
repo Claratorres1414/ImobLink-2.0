@@ -3,12 +3,10 @@ import FeedScreen from '../screens/FeedScreen'
 
 const Stack = createNativeStackNavigator();
 
-export default function AppStack({ onGetOut }: any) {
+export default function AppStack() {
     return (
         <Stack.Navigator screenOptions={{headerShown: false}}>
-            <Stack.Screen name="Feed">
-                {(props) => <FeedScreen {...props} onGetOut={onGetOut} />}
-            </Stack.Screen>
+            <Stack.Screen name="Feed" component={FeedScreen} />
         </Stack.Navigator>
     )
 }

@@ -1,18 +1,13 @@
 import {View, Text, StyleSheet, TouchableOpacity} from "react-native";
+import {useAuthStore} from "../store/authStore";
 
-type Props = {
-    onGetOut: () => void;
-};
-
-export default function FeedScreen({ onGetOut }: Props) {
-    async function getOut() {
-        onGetOut();
-    }
+export default function FeedScreen() {
+    const signOut = useAuthStore((state) => state.signOut);
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity style={styles.button} onPress={getOut}>
-                <Text style={styles.buttonText}>voltar</Text>
+            <TouchableOpacity style={styles.button} onPress={signOut}>
+                <Text style={styles.buttonText}>Sair</Text>
             </TouchableOpacity>
 
             <Text>Feed vai ser aqui 👍</Text>

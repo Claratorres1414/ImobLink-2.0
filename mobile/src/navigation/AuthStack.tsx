@@ -3,12 +3,10 @@ import LoginScreen from "../screens/LoginScreen";
 
 const Stack = createNativeStackNavigator();
 
-export default function AuthStack({ onLogin }: any) {
+export default function AuthStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Login">
-                {(props) => <LoginScreen {...props} onLogin={onLogin} />}
-            </Stack.Screen>
+            <Stack.Screen name="Login" component={LoginScreen} />
         </Stack.Navigator>
     );
 }

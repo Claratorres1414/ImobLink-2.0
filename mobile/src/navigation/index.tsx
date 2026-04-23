@@ -1,18 +1,14 @@
 import { NavigationContainer } from '@react-navigation/native';
 import AuthStack from './AuthStack';
 import AppStack from './AppStack';
-import {useState} from "react";
+import {useAuthStore} from "../store/authStore";
 
 export default function Routes() {
-    const [isLogged, setIsLogged] = useState(false)
+    const token = useAuthStore((state) => state.token);
 
     return (
         <NavigationContainer>
-            {isLogged ? (
-                <AppStack onGetOut={() => setIsLogged(false)} />
-            ) : (
-                <AuthStack onLogin={() => setIsLogged(true)} />
-            )}
+            {token ? <AppStack /> : <AuthStack />}
         </NavigationContainer>
     );
 }

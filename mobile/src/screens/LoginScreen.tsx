@@ -1,18 +1,17 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState } from "react";
+import { useAuthStore } from "../store/authStore";
 
-type Props = {
-    onLogin: () => void;
-};
+export default function LoginScreen() {
+    const signIn = useAuthStore((state) => state.signIn);
 
-export default function LoginScreen({ onLogin }: Props) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     async function handleLogin() {
         if (email && password) {
             console.log("Login ok");
-            onLogin();
+            await signIn(email, password);
         }
     }
 
