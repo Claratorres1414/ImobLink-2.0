@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import Routes from './src/navigation';
 import {useAuthStore} from "./src/store/authStore";
 import {useEffect} from "react";
@@ -13,7 +12,6 @@ export default function App() {
   return (
       <>
         <Routes />
-        <StatusBar style="auto" />
       </>
   );
 }
