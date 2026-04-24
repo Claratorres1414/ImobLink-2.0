@@ -11,6 +11,12 @@ export default function FeedScreen() {
     const [images, setImages] = useState<Record<number, string>>({});
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [visiblePosts, setVisiblePosts] = useState<number[]>([]);
+
+    const onViewableItemsChanged = ({ viewableItems }: any) => {
+        const ids = viewableItems.map((item: any) => item.item.id);
+        setVisiblePosts(ids);
+    }
 
     async function loadFeed() {
         try {
@@ -20,8 +26,7 @@ export default function FeedScreen() {
                 : [];
 
             setPosts(mapped);
-
-            loadImages(mapped);
+            setImages({});
         } catch (error) {
             console.log('Erro ao carregar feed:', error);
         } finally {
@@ -29,26 +34,33 @@ export default function FeedScreen() {
         }
     }
 
-    async function loadImages(posts: any[]) {
+    async function loadImages() {
         const newImages: Record<number, string> = {};
 
         await Promise.all(
-            posts.map(async (post) => {
+            visiblePosts.map(async (postId) => {
+                if (images[postId]) return;
+
                 try {
-                    const response = await api.get(`/images/${post.id}/post/thumb`);
+                    const response= await api.get(`/images/${postId}/post/thumb`);
                     const base64 = response.data.data;
 
                     const imageUri = buildBase64Image(base64);
 
                     if (imageUri) {
-                        newImages[post.id] = imageUri;
+                        newImages[postId] = imageUri;
                     }
                 } catch (error) {
-                    console.log(`Erro ${error} ao carregar imagem do post: ${post.id}`);
+                    console.log(`Erro ao carregar imagem do post: ${postId}`);
                 }
             })
         );
-        setImages(newImages);
+        if (Object.keys(newImages).length > 0) {
+            setImages((prev) => ({
+                ...prev,
+                ...newImages
+            }));
+        }
     }
 
     async function onRefresh() {
@@ -58,8 +70,14 @@ export default function FeedScreen() {
     }
 
     useEffect(() => {
-        loadFeed();
+       loadFeed();
     }, []);
+
+    useEffect(() => {
+        if (visiblePosts.length > 0) {
+            loadImages();
+        }
+    }, [visiblePosts]);
 
     if (loading) {
         return <ActivityIndicator style={{ flex: 1 }} />;
@@ -78,6 +96,11 @@ export default function FeedScreen() {
                 )}
                 refreshing={refreshing}
                 onRefresh={onRefresh}
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+                initialNumToRender={5}
+                maxToRenderPerBatch={5}
+                windowSize={5}
             />
         </View>
     );

@@ -1,11 +1,12 @@
 import { Image, Text, View, StyleSheet } from "react-native";
+import React from "react";
 
 type Props = {
     post: any,
     imageUri?: string;
 };
 
-export default function PostCard({ post, imageUri }: Props) {
+function PostCard({ post, imageUri }: Props) {
     return (
         <View style={styles.card}>
             {imageUri && (
@@ -26,6 +27,8 @@ export default function PostCard({ post, imageUri }: Props) {
         </View>
     );
 }
+
+export default React.memo(PostCard);
 
 const styles = StyleSheet.create({
     card: {
