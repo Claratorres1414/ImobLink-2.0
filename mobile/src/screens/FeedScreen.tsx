@@ -10,6 +10,7 @@ export default function FeedScreen() {
     const [posts, setPosts] = useState<any[]>([]);
     const [images, setImages] = useState<Record<number, string>>({});
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     async function loadFeed() {
         try {
@@ -50,6 +51,12 @@ export default function FeedScreen() {
         setImages(newImages);
     }
 
+    async function onRefresh() {
+        setRefreshing(true);
+        await loadFeed();
+        setRefreshing(false);
+    }
+
     useEffect(() => {
         loadFeed();
     }, []);
@@ -63,11 +70,14 @@ export default function FeedScreen() {
             <FlatList
                 data={posts}
                 keyExtractor={(item) => String(item.id)}
-                renderItem={({ item }) =>
+                renderItem={({ item }) => (
                     <PostCard
                         post={item}
                         imageUri={images[item.id]}
-                    />}
+                    />
+                )}
+                refreshing={refreshing}
+                onRefresh={onRefresh}
             />
         </View>
     );
