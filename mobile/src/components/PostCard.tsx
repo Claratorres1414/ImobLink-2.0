@@ -1,10 +1,16 @@
 import { Image, Text, View, StyleSheet } from "react-native";
 
-export default function PostCard ({ post }: any) {
+type Props = {
+    post: any,
+    imageUri?: string;
+};
+
+export default function PostCard({ post, imageUri }: Props) {
     return (
         <View style={styles.card}>
-            {post.imageUrl && (
-                <Image source={{ uri: post.imageUrl }} style={styles.image} />
+            {imageUri && (
+                <Image source={{ uri: imageUri, }}
+                       style={styles.image}/>
             )}
 
             <View style={styles.content}>
@@ -36,7 +42,10 @@ const styles = StyleSheet.create({
         elevation: 3,
 
     },
-    image: { width:'100%', height:200 },
+    image: {
+        width:'100%',
+        height:350
+    },
     content: {padding: 12,},
     price: {
         fontSize: 18,
