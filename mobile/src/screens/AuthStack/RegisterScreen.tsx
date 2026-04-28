@@ -1,9 +1,11 @@
-import {ScrollView, Text, TouchableOpacity, StyleSheet, TextInput, View} from "react-native";
+import {ScrollView, Text, TouchableOpacity, StyleSheet, TextInput, View, Alert} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
 import {AuthStackParamList} from "../../navigation/types";
 import {useMemo, useState} from "react";
 import {isValidEmail, maskCpf, maskPhone} from "../../utils/registerForm";
+import {registerUser} from "../../apiServices/authService";
+import {onlyNumbers} from "../../utils/forms";
 
 type NavigationProps = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -12,6 +14,7 @@ export default function RegisterScreen() {
 
     const [cpf, setCpf] = useState('');
     const [phone, setPhone] = useState('');
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConf, setPasswordConf] = useState('');
@@ -27,17 +30,54 @@ export default function RegisterScreen() {
         return (
             cpf.length === 14 &&
             phone.length >= 14 &&
+            name != "" &&
             isValidEmail(email) &&
             password.length >= 6 &&
             password === passwordConf
-
         );
     }, [cpf, phone, email, password, passwordConf]);
+
+    const [loading, setLoading] = useState(false);
+
+    async function handleRegister() {
+        if (!isFormValid || loading) return;
+
+        try {
+            setLoading(true);
+
+            await registerUser({
+                cpf: onlyNumbers(cpf),
+                phoneNumber: onlyNumbers(phone),
+                name,
+                email,
+                password,
+            });
+
+            Alert.alert("Sucesso", "Conta criada com sucesso!");
+            navigation.goBack();
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message || "Não foi possível criar sua conta";
+            Alert.alert("Erro", message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>Cadastre-se</Text>
             <Text style={styles.subtitle}>Preencha os dados para começar</Text>
+
+            <View style={styles.field}>
+                <TextInput
+                    placeholder="Nome completo"
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize={"none"}
+                />
+            </View>
 
             <View style={styles.field}>
                 <TextInput
@@ -95,8 +135,14 @@ export default function RegisterScreen() {
                 {passwordConfError && <Text style={styles.errorText}>As senhas não coincidem</Text>}
             </View>
 
-            <TouchableOpacity style={[styles.button, !isFormValid && styles.buttonDisabled]}>
-                <Text style={styles.buttonText}>Cadastrar</Text>
+            <TouchableOpacity
+                style={[styles.button, (!isFormValid || loading) && styles.buttonDisabled]}
+                disabled={!isFormValid || loading}
+                onPress={handleRegister}
+            >
+                <Text style={styles.buttonText}>
+                    {loading ? "Cadastrando..." : "Cadastrar"}
+                </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.linkContainer} onPress={() => navigation.goBack()}>
