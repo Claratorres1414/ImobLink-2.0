@@ -6,11 +6,14 @@ import {useMemo, useState} from "react";
 import {isValidEmail, maskCpf, maskPhone} from "../../utils/registerForm";
 import {registerUser} from "../../apiServices/authService";
 import {onlyNumbers} from "../../utils/forms";
+import {useAuthStore} from "../../store/authStore";
 
 type NavigationProps = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
 export default function RegisterScreen() {
     const navigation = useNavigation<NavigationProps>();
+
+    const signIn = useAuthStore((state) => state.signIn);
 
     const [cpf, setCpf] = useState('');
     const [phone, setPhone] = useState('');
@@ -53,8 +56,8 @@ export default function RegisterScreen() {
                 password,
             });
 
+            await signIn(email, password)
             Alert.alert("Sucesso", "Conta criada com sucesso!");
-            navigation.goBack();
         } catch (error: any) {
             const message =
                 error?.response?.data?.message || "Não foi possível criar sua conta";
