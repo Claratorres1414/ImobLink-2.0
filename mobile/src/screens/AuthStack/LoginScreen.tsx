@@ -1,8 +1,15 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState } from "react";
-import { useAuthStore } from "../store/authStore";
+import { useAuthStore } from "../../store/authStore";
+import { useNavigation } from "@react-navigation/native";
+import {NativeStackNavigationProp} from "@react-navigation/native-stack";
+import {AuthStackParamList} from "../../navigation/types";
+
+type NavigationProps = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
+    const navigation = useNavigation<NavigationProps>();
+
     const signIn = useAuthStore((state) => state.signIn);
 
     const [email, setEmail] = useState('');
@@ -38,6 +45,9 @@ export default function LoginScreen() {
 
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
                 <Text style={styles.buttonText}>Entrar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.linkContainer} onPress={() => navigation.navigate('Register')}>
+                <Text>Não tem conta? Cadastre-se</Text>
             </TouchableOpacity>
         </View>
     );
@@ -80,5 +90,10 @@ const styles = StyleSheet.create({
         color: '#fff',
         textAlign: 'center',
         fontWeight: '600',
+    },
+
+    linkContainer: {
+        marginTop: 16,
+        alignItems: 'center'
     },
 });
