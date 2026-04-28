@@ -1,8 +1,9 @@
-import {View, Text, TouchableOpacity, StyleSheet, TextInput} from "react-native";
+import {ScrollView, Text, TouchableOpacity, StyleSheet, TextInput, View} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
 import {AuthStackParamList} from "../../navigation/types";
-import {useState} from "react";
+import {useMemo, useState} from "react";
+import {isValidEmail, maskCpf, maskPhone} from "../../utils/registerForm";
 
 type NavigationProps = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -15,51 +16,86 @@ export default function RegisterScreen() {
     const [password, setPassword] = useState('');
     const [passwordConf, setPasswordConf] = useState('');
 
+    const cpfError = cpf.length > 0 && cpf.length < 14;
+    const phoneError = phone.length > 0 && phone.length < 15;
+    const emailError = email.length > 0 && !isValidEmail(email);
+    const passwordError = password.length > 0 && password.length < 6;
+    const passwordConfError =
+        passwordConf.length > 0 && password !== passwordConf;
+
+    const isFormValid = useMemo(() => {
+        return (
+            cpf.length === 14 &&
+            phone.length >= 14 &&
+            isValidEmail(email) &&
+            password.length >= 6 &&
+            password === passwordConf
+
+        );
+    }, [cpf, phone, email, password, passwordConf]);
+
     return (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>Cadastre-se</Text>
+            <Text style={styles.subtitle}>Preencha os dados para começar</Text>
 
-            <TextInput
-                placeholder="cpf: 000.000.000-00"
-                style={styles.input}
-                value={cpf}
-                onChangeText={setCpf}
-                autoCapitalize={"none"}
-            />
+            <View style={styles.field}>
+                <TextInput
+                    placeholder="CPF"
+                    style={[styles.input, cpfError && styles.inputError]}
+                    value={cpf}
+                    onChangeText={(text) => setCpf(maskCpf(text))}
+                    keyboardType="numeric"
+                />
+                {cpfError && <Text style={styles.errorText}>CPF inválido</Text> }
+            </View>
 
-            <TextInput
-                placeholder="telefone: (00) 90000-0000"
-                style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
-                autoCapitalize={"none"}
-            />
+            <View>
+                <TextInput
+                    placeholder="Telefone"
+                    style={[styles.input, phoneError && styles.inputError]}
+                    value={phone}
+                    onChangeText={(text) => setPhone(maskPhone(text))}
+                    keyboardType="phone-pad"
+                />
+                {phoneError && <Text style={styles.errorText}>Telefone inválido</Text>}
+            </View>
 
-            <TextInput
-                placeholder="e-mail"
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize={"none"}
-            />
+            <View>
+                <TextInput
+                    placeholder="e-mail"
+                    style={[styles.input, emailError && styles.inputError]}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize={"none"}
+                    keyboardType="email-address"
+                />
+                {emailError && <Text style={styles.errorText}>E-mail inválido</Text>}
+            </View>
 
-            <TextInput
-                placeholder="senha"
-                style={styles.input}
-                secureTextEntry={true}
-                value={password}
-                onChangeText={setPassword}
-            />
+            <View>
+                <TextInput
+                    placeholder="senha"
+                    style={[styles.input, passwordError && styles.inputError]}
+                    secureTextEntry={true}
+                    value={password}
+                    onChangeText={setPassword}
+                />
+                {passwordError && <Text style={styles.errorText}>A senha deve conter no mínimo 6 caracteres</Text>}
+            </View>
 
-            <TextInput
-                placeholder="confirme sua senha"
-                style={styles.input}
-                secureTextEntry={true}
-                value={passwordConf}
-                onChangeText={setPasswordConf}
-            />
+            <View>
+                <TextInput
+                    placeholder="confirme sua senha"
+                    style={[styles.input, passwordConfError && styles.inputError]}
+                    secureTextEntry={true}
+                    value={passwordConf}
+                    onChangeText={setPasswordConf}
+                />
+                {passwordConfError && <Text style={styles.errorText}>As senhas não coincidem</Text>}
+            </View>
 
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={[styles.button, !isFormValid && styles.buttonDisabled]}>
                 <Text style={styles.buttonText}>Cadastrar</Text>
             </TouchableOpacity>
 
@@ -68,7 +104,7 @@ export default function RegisterScreen() {
                     Já tem conta? Voltar para login
                 </Text>
             </TouchableOpacity>
-        </View>
+        </ScrollView>
     );
 }
 
@@ -88,6 +124,10 @@ const styles = StyleSheet.create({
     subtitle: {
         color: "#666",
         marginBottom: 20,
+        textAlign: "center",
+    },
+    field: {
+        marginBottom: 10,
     },
     input: {
         backgroundColor: '#fff',
@@ -97,11 +137,23 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ddd',
     },
+    inputError: {
+        borderColor: "#E74C3C",
+    },
+    errorText: {
+        color: "#E74C3C",
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
+    },
     button: {
         backgroundColor: '#2E86DE',
         padding: 14,
         borderRadius: 8,
         marginTop: 8,
+    },
+    buttonDisabled: {
+        backgroundColor: "#A9C9F5",
     },
     buttonText: {
         color: '#fff',
