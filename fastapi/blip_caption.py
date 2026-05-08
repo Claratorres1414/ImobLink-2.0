@@ -112,10 +112,9 @@ def gerar_legendas_completas(caminho_imagem: str) -> dict:
 
     prompts_base = [
         "This is a beautiful house made of ",
-        "A luxurious home with ",
+        "A home with ",
         "A charming residence featuring ",
         "A cozy house with ",
-        "A stunning mansion built with "
     ]
 
     legendas_en = []

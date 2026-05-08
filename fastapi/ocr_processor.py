@@ -14,20 +14,29 @@ def redimensionar_imagem(caminho, largura_alvo=1000):
     return cv2.resize(imagem, (largura_alvo, nova_altura))
 
 def extrair_nome(resultados):
-    texto_tudo = " ".join([r[1] for r in resultados])
-    match = re.search(r'nome\s*[:\-]?\s*([A-ZÀ-Úa-zà-ú\s]{5,}?)(?=\s+(fili|data|natu|org|sexo|nome da mãe|observa|$))', texto_tudo, re.IGNORECASE)
-    
-    if match:
-        nome = match.group(1).strip()
-        if len(nome.split()) >= 2:
-            return nome
+    for item in resultados:
+        texto = item[1].strip()
 
-    candidatos = [
-        caixa[1] for caixa in resultados
-        if len(caixa[1].split()) >= 3 and not any(char.isdigit() for char in caixa[1])
-    ]
-    return max(candidatos, key=len) if candidatos else "Nome não identificado"
+        texto_lower = texto.lower()
 
+        # procura qualquer variação tipo FILACAO, FILIACAO, FILIAÇÃO etc
+        if "fila" in texto_lower or "fili" in texto_lower:
+            
+            partes = re.split(r'fil[a-zçãáõôêéíóú]*', texto, flags=re.IGNORECASE)
+
+            if partes:
+                nome = partes[0].strip()
+
+                # remove "nome" caso venha junto
+                nome = re.sub(r'^nome\s*', '', nome, flags=re.IGNORECASE)
+
+                # remove espaços duplicados
+                nome = re.sub(r'\s+', ' ', nome).strip()
+
+                if len(nome.split()) >= 3:
+                    return nome
+
+    return "Nome não identificado"
 def extrair_data_nascimento(texto):
     match = re.search(r'(\d{2}[\/\-]\d{2}[\/\-]\d{4})', texto)
     return match.group(0) if match else "Data não identificada"

@@ -25,6 +25,8 @@ def recommend(data):
     vectorizer = TfidfVectorizer()
     tfidf_matrix = vectorizer.fit_transform(texts)
 
+    cosine_sim = cosine_similarity(tfidf_matrix)
+
     scores = []
 
     for i, post in enumerate(posts):
