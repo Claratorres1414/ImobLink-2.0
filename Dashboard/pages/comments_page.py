@@ -3,6 +3,8 @@ import pandas as pd
 
 def pagina_comentarios(comentarios_df, usuarios_df, posts_df):
 
+    comentarios_df = comentarios_df.copy()
+
     st.header("💬 Comentários da ImobLink")
 
     if comentarios_df.empty:
@@ -10,71 +12,86 @@ def pagina_comentarios(comentarios_df, usuarios_df, posts_df):
         return
 
     # ============================================
-    # 1️⃣ Detectar automaticamente qual coluna contém o texto do comentário
+    # 1️⃣ TEXTO DO COMENTÁRIO
     # ============================================
-
     coluna_comentario = None
     for c in ["comment", "comentario", "content", "text", "mensagem"]:
         if c in comentarios_df.columns:
             coluna_comentario = c
             break
 
-    if coluna_comentario:
-        comentarios_df["Comentário"] = comentarios_df[coluna_comentario].fillna("(sem texto)")
+    comentarios_df["Comentário"] = (
+        comentarios_df[coluna_comentario].fillna("(sem texto)")
+        if coluna_comentario
+        else "(sem texto)"
+    )
+
+    # ============================================
+    # 2️⃣ MAPEAR AUTOR
+    # ============================================
+    if {"id", "name"}.issubset(usuarios_df.columns) and "authorId" in comentarios_df.columns:
+        mapa_nomes = usuarios_df.set_index("id")["name"]
+        comentarios_df["Nome"] = comentarios_df["authorId"].map(mapa_nomes).fillna("Usuário")
     else:
-        comentarios_df["Comentário"] = "(sem texto)"
+        comentarios_df["Nome"] = "Usuário"
 
-    # Nome do autor
-    comentarios_df["Nome"] = comentarios_df.get("autorNome", "Usuário")
-
-    # Foto
-    comentarios_df["Foto"] = comentarios_df.get("autorImagem", None)
-
-    # Data
-    comentarios_df["Data"] = comentarios_df.get("createdAt", "")
-
-    # PostId
-    comentarios_df["PostId"] = comentarios_df.get("postId", None)
+    if {"id", "imageProfilePath"}.issubset(usuarios_df.columns) and "authorId" in comentarios_df.columns:
+        mapa_fotos = usuarios_df.set_index("id")["imageProfilePath"]
+        comentarios_df["Foto"] = comentarios_df["authorId"].map(mapa_fotos)
+    else:
+        comentarios_df["Foto"] = None
 
     # ============================================
-    # 2️⃣ MAPEAR NOME DO POST
+    # 3️⃣ DATA E POST ID
     # ============================================
+    comentarios_df["Data"] = (
+        comentarios_df["createdAt"]
+        if "createdAt" in comentarios_df.columns
+        else ""
+    )
 
-    if "description" in posts_df.columns:
-        comentarios_df["Post"] = comentarios_df["PostId"].map(
-            posts_df.set_index("id")["description"]
-        )
+    comentarios_df["PostId"] = (
+        comentarios_df["postId"]
+        if "postId" in comentarios_df.columns
+        else None
+    )
+
+    # ============================================
+    # 4️⃣ MAPEAR POST
+    # ============================================
+    if {"id", "description"}.issubset(posts_df.columns):
+        mapa_posts = posts_df.set_index("id")["description"]
+        comentarios_df["Post"] = comentarios_df["PostId"].map(mapa_posts).fillna("Post desconhecido")
     else:
         comentarios_df["Post"] = "Post desconhecido"
 
     # ============================================
-    # 3️⃣ ORDENAR POR DATA
+    # 5️⃣ ORDENAR DATA
     # ============================================
+    comentarios_df["Data"] = pd.to_datetime(
+        comentarios_df["Data"],
+        errors="coerce"
+    )
 
-    try:
-        comentarios_df["Data"] = pd.to_datetime(comentarios_df["Data"])
-        comentarios_df = comentarios_df.sort_values("Data", ascending=False)
-    except:
-        pass
+    comentarios_df = comentarios_df.sort_values("Data", ascending=False)
 
     # ============================================
-    # 4️⃣ FILTRO POR USUÁRIO (agora em cima!)
+    # 6️⃣ FILTRO
     # ============================================
-
     st.subheader("🔎 Filtrar por Usuário")
 
-    nomes = comentarios_df["Nome"].dropna().unique().tolist()
+    nomes = sorted(comentarios_df["Nome"].dropna().unique().tolist())
     usuario_sel = st.selectbox("Selecione:", ["Todos"] + nomes)
 
-    if usuario_sel != "Todos":
-        comentarios_filtrados = comentarios_df[comentarios_df["Nome"] == usuario_sel]
-    else:
-        comentarios_filtrados = comentarios_df
+    comentarios_filtrados = (
+        comentarios_df[comentarios_df["Nome"] == usuario_sel]
+        if usuario_sel != "Todos"
+        else comentarios_df
+    )
 
     # ============================================
-    # 5️⃣ TABELA
+    # 7️⃣ TABELA
     # ============================================
-
     st.subheader("📋 Todos os Comentários")
     st.dataframe(comentarios_filtrados, use_container_width=True)
 
@@ -82,9 +99,8 @@ def pagina_comentarios(comentarios_df, usuarios_df, posts_df):
     st.metric("Quantidade total", len(comentarios_filtrados))
 
     # ============================================
-    # 6️⃣ CARDS DE EXIBIÇÃO
+    # 8️⃣ CARDS
     # ============================================
-
     st.subheader("🗂 Exibição Visual")
 
     for _, row in comentarios_filtrados.iterrows():
@@ -93,15 +109,24 @@ def pagina_comentarios(comentarios_df, usuarios_df, posts_df):
 
             # Foto
             if pd.notna(row["Foto"]) and row["Foto"]:
-                col1.image(row["Foto"], width=60)
+                foto = row["Foto"]
+
+                if pd.notna(foto) and foto:
+                    if isinstance(foto, str) and foto.startswith("/"):
+                        foto = f"http://localhost:8080{foto}"
+
+                    col1.image(foto, width=60)
+                else:
+                    col1.write("👤")
             else:
                 col1.write("👤")
 
-            # Nome + data
-            col2.markdown(f"**{row['Nome']}** — *{row['Data']}*")
+            data_formatada = (
+                row["Data"].strftime("%d/%m/%Y %H:%M")
+                if pd.notna(row["Data"])
+                else "Sem data"
+            )
 
-            # Comentário (agora SEMPRE aparece se existir)
+            col2.markdown(f"**{row['Nome']}** — *{data_formatada}*")
             col2.markdown(f"💬 {row['Comentário']}")
-
-            # Nome do post
             col2.caption(f"📌 Post: {row['Post']}")

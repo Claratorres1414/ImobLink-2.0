@@ -61,8 +61,17 @@ def pagina_usuario(api_url: str, usuarios: pd.DataFrame, posts: pd.DataFrame, to
     try:
         followers = requests.get(f"{api_url}/follow/getFollowers/{user_id}", headers=headers, timeout=8)
         followings = requests.get(f"{api_url}/follow/getFollowings/{user_id}", headers=headers, timeout=8)
-        followers_df = pd.DataFrame(followers.json()) if followers.status_code == 200 else pd.DataFrame()
-        followings_df = pd.DataFrame(followings.json()) if followings.status_code == 200 else pd.DataFrame()
+        followers_df = (
+            pd.DataFrame(followers.json().get("data", []))
+            if followers.status_code == 200
+                else pd.DataFrame()
+            )
+
+        followings_df = (
+            pd.DataFrame(followings.json().get("data", []))
+            if followings.status_code == 200
+            else pd.DataFrame()
+        )
     except Exception:
         followers_df = pd.DataFrame()
         followings_df = pd.DataFrame()
