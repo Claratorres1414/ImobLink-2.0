@@ -8,7 +8,7 @@ import { buildBase64Image } from "../utils/image";
 
 export default function FeedScreen() {
     const [posts, setPosts] = useState<any[]>([]);
-    const [images, setImages] = useState<Record<number, string>>({});
+    const [images, setImages] = useState<Record<number, string[]>>({});
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [visiblePosts, setVisiblePosts] = useState<number[]>([]);
@@ -34,33 +34,66 @@ export default function FeedScreen() {
         }
     }
 
-    async function loadImages() {
-        const newImages: Record<number, string> = {};
+    async function loadImages(posts: any[]) {
+        const newImages: Record<number, string[]> = {};
 
         await Promise.all(
-            visiblePosts.map(async (postId) => {
-                if (images[postId]) return;
+            posts
+                .filter((post) => visiblePosts.includes(post.id))
+                .map(async (post) => {
+                    try {
+                        // busca IDs das imagens do post
+                        const listResponse = await api.get(
+                            `/images/${post.id}/post/all`
+                        );
 
-                try {
-                    const response= await api.get(`/images/${postId}/post/thumb`);
-                    const base64 = response.data.data;
+                        const imageList = listResponse.data.data || [];
 
-                    const imageUri = buildBase64Image(base64);
+                        const urls: string[] = [];
 
-                    if (imageUri) {
-                        newImages[postId] = imageUri;
+                        // agora busca CADA imagem individualmente
+                        await Promise.all(
+                            imageList.map(async (img: any) => {
+                                try {
+                                    const imageResponse = await api.get(
+                                        `/images/get/${img.id}`
+                                    );
+
+                                    // backend retorna base64
+                                    const base64 = imageResponse.data.data;
+
+                                    const imageUri = buildBase64Image(base64);
+
+                                    if (imageUri) {
+                                        urls.push(imageUri);
+                                    }
+
+                                } catch (err) {
+                                    console.log(
+                                        `Erro imagem ${img.id}:`,
+                                        err
+                                    );
+                                }
+                            })
+                        );
+
+                        if (urls.length > 0) {
+                            newImages[post.id] = urls;
+                        }
+
+                    } catch (error) {
+                        console.log(
+                            `Erro ao carregar imagens do post ${post.id}`,
+                            error
+                        );
                     }
-                } catch (error) {
-                    console.log(`Erro ao carregar imagem do post: ${postId}`);
-                }
-            })
+                })
         );
-        if (Object.keys(newImages).length > 0) {
-            setImages((prev) => ({
-                ...prev,
-                ...newImages
-            }));
-        }
+
+        setImages((prev) => ({
+            ...prev,
+            ...newImages
+        }));
     }
 
     async function onRefresh() {
@@ -74,10 +107,10 @@ export default function FeedScreen() {
     }, []);
 
     useEffect(() => {
-        if (visiblePosts.length > 0) {
-            loadImages();
+        if (visiblePosts.length > 0 && posts.length > 0) {
+            loadImages(posts);
         }
-    }, [visiblePosts]);
+    }, [visiblePosts, posts]);
 
     if (loading) {
         return <ActivityIndicator style={{ flex: 1 }} />;
@@ -91,7 +124,7 @@ export default function FeedScreen() {
                 renderItem={({ item }) => (
                     <PostCard
                         post={item}
-                        imageUri={images[item.id]}
+                        images={images[item.id] || []}
                     />
                 )}
                 refreshing={refreshing}

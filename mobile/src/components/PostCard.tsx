@@ -1,17 +1,80 @@
-import { Image, Text, View, StyleSheet } from "react-native";
-import React from "react";
+import { Image, Text, View, StyleSheet, ScrollView, Dimensions } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+
+const { width } = Dimensions.get("window");
 
 type Props = {
     post: any,
-    imageUri?: string;
+    images?: string[];
 };
 
-function PostCard({ post, imageUri }: Props) {
+function PostCard({ post, images = [] }: Props) {
+    const scrollRef = useRef<ScrollView | null>(null);
+
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    useEffect(() => {
+        if (images?.length <= 1) return;
+
+        const interval = setInterval(() => {
+            const nextIndex =
+                currentIndex === images.length - 1
+                    ? 0
+                    : currentIndex + 1;
+
+            scrollRef.current?.scrollTo({
+                x: nextIndex * (width - 32),
+                y: 0,
+                animated: true
+            });
+
+            setCurrentIndex(nextIndex);
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [currentIndex, images]);
+
     return (
         <View style={styles.card}>
-            {imageUri && (
-                <Image source={{ uri: imageUri, }}
-                       style={styles.image}/>
+            {images.length > 0 && (
+                <View>
+                    <ScrollView
+                        ref={scrollRef}
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        onMomentumScrollEnd={(event) => {
+                            const slide =
+                                Math.round(
+                                    event.nativeEvent.contentOffset.x /
+                                    (width - 32)
+                                );
+                            setCurrentIndex(slide)
+                        }}
+                    >
+                        {images.map((uri, index) => (
+                            <Image
+                                key={`${post.id}-${index}`}
+                                source={{ uri }}
+                                style={styles.image}
+                            />
+                        ))}
+                    </ScrollView>
+
+                    {images.length > 1 && (
+                        <View style={styles.dotsContainer}>
+                            {images.map((_, index) => (
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.dot,
+                                        currentIndex === index && styles.activeDot
+                                    ]}
+                                />
+                            ))}
+                        </View>
+                    )}
+                </View>
             )}
 
             <View style={styles.content}>
@@ -46,8 +109,26 @@ const styles = StyleSheet.create({
 
     },
     image: {
-        width:'100%',
+        width: width - 32,
         height:350
+    },
+    dotsContainer: {
+        position: 'absolute',
+        bottom: 10,
+        alignSelf: 'center',
+        flexDirection: 'row',
+    },
+
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'rgba(255,255,255,0.5)',
+        marginHorizontal: 4,
+    },
+
+    activeDot: {
+        backgroundColor: '#fff',
     },
     content: {padding: 12,},
     price: {
