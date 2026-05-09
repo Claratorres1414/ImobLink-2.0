@@ -42,7 +42,6 @@ export default function FeedScreen() {
                 .filter((post) => visiblePosts.includes(post.id))
                 .map(async (post) => {
                     try {
-                        // busca IDs das imagens do post
                         const listResponse = await api.get(
                             `/images/${post.id}/post/all`
                         );
@@ -51,7 +50,6 @@ export default function FeedScreen() {
 
                         const urls: string[] = [];
 
-                        // agora busca CADA imagem individualmente
                         await Promise.all(
                             imageList.map(async (img: any) => {
                                 try {
@@ -59,7 +57,6 @@ export default function FeedScreen() {
                                         `/images/get/${img.id}`
                                     );
 
-                                    // backend retorna base64
                                     const base64 = imageResponse.data.data;
 
                                     const imageUri = buildBase64Image(base64);
