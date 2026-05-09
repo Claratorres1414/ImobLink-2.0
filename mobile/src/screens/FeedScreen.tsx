@@ -5,6 +5,15 @@ import {mapPostFromApi} from "../mappers/postMapper";
 import PostCard from "../components/PostCard";
 import { api } from "../apiServices/api";
 import { buildBase64Image } from "../utils/image";
+import { useNavigation } from "@react-navigation/native";
+import {RootStackParamList} from "../navigation/types";
+import {NativeStackNavigationProp} from "@react-navigation/native-stack";
+
+type FeedNavigationProp =
+    NativeStackNavigationProp<
+        RootStackParamList,
+        "Feed"
+    >;
 
 export default function FeedScreen() {
     const [posts, setPosts] = useState<any[]>([]);
@@ -12,6 +21,8 @@ export default function FeedScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [visiblePosts, setVisiblePosts] = useState<number[]>([]);
+
+    const navigation = useNavigation<FeedNavigationProp>();
 
     const onViewableItemsChanged = ({ viewableItems }: any) => {
         const ids = viewableItems.map((item: any) => item.item.id);
@@ -122,6 +133,11 @@ export default function FeedScreen() {
                     <PostCard
                         post={item}
                         images={images[item.id] || []}
+                        onPress={() =>
+                            navigation.navigate("PostDetails", {
+                                postId: item.id
+                            })
+                        }
                     />
                 )}
                 refreshing={refreshing}

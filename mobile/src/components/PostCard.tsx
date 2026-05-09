@@ -1,14 +1,16 @@
 import { Image, Text, View, StyleSheet, ScrollView, Dimensions } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { TouchableOpacity } from "react-native";
 
 const { width } = Dimensions.get("window");
 
 type Props = {
     post: any,
     images?: string[];
+    onPress?: () => void;
 };
 
-function PostCard({ post, images = [] }: Props) {
+function PostCard({ post, images = [], onPress }: Props) {
     const scrollRef = useRef<ScrollView | null>(null);
 
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -35,59 +37,64 @@ function PostCard({ post, images = [] }: Props) {
     }, [currentIndex, images]);
 
     return (
-        <View style={styles.card}>
-            {images.length > 0 && (
-                <View>
-                    <ScrollView
-                        ref={scrollRef}
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
-                        onMomentumScrollEnd={(event) => {
-                            const slide =
-                                Math.round(
-                                    event.nativeEvent.contentOffset.x /
-                                    (width - 32)
-                                );
-                            setCurrentIndex(slide)
-                        }}
-                    >
-                        {images.map((uri, index) => (
-                            <Image
-                                key={`${post.id}-${index}`}
-                                source={{ uri }}
-                                style={styles.image}
-                            />
-                        ))}
-                    </ScrollView>
-
-                    {images.length > 1 && (
-                        <View style={styles.dotsContainer}>
-                            {images.map((_, index) => (
-                                <View
-                                    key={index}
-                                    style={[
-                                        styles.dot,
-                                        currentIndex === index && styles.activeDot
-                                    ]}
+        <TouchableOpacity
+            activeOpacity={0.95}
+            onPress={onPress}
+        >
+            <View style={styles.card}>
+                {images.length > 0 && (
+                    <View>
+                        <ScrollView
+                            ref={scrollRef}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            onMomentumScrollEnd={(event) => {
+                                const slide =
+                                    Math.round(
+                                        event.nativeEvent.contentOffset.x /
+                                        (width - 32)
+                                    );
+                                setCurrentIndex(slide)
+                            }}
+                        >
+                            {images.map((uri, index) => (
+                                <Image
+                                    key={`${post.id}-${index}`}
+                                    source={{ uri }}
+                                    style={styles.image}
                                 />
                             ))}
-                        </View>
-                    )}
-                </View>
-            )}
+                        </ScrollView>
 
-            <View style={styles.content}>
-                <Text style={styles.price}>R$ {post.price}</Text>
-                <Text style={styles.location}>{post.street}, {post.number}</Text>
-                <Text numberOfLines={2} style={styles.description}>{post.description}</Text>
+                        {images.length > 1 && (
+                            <View style={styles.dotsContainer}>
+                                {images.map((_, index) => (
+                                    <View
+                                        key={index}
+                                        style={[
+                                            styles.dot,
+                                            currentIndex === index && styles.activeDot
+                                        ]}
+                                    />
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                )}
 
-                <View style={styles.metrics}>
-                    <Text>Likes: {post.likedTimes}</Text>
-                    <Text>Views: {post.views}</Text>
+                <View style={styles.content}>
+                    <Text style={styles.price}>R$ {post.price}</Text>
+                    <Text style={styles.location}>{post.street}, {post.number}</Text>
+                    <Text numberOfLines={2} style={styles.description}>{post.description}</Text>
+
+                    <View style={styles.metrics}>
+                        <Text>Likes: {post.likedTimes}</Text>
+                        <Text>Views: {post.views}</Text>
+                    </View>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 }
 
