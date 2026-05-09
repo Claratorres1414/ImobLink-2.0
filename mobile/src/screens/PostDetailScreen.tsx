@@ -1,7 +1,7 @@
 import {View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Dimensions} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Heart, MessageCircle, Phone, Star } from "lucide-react-native";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -124,6 +124,28 @@ export default function PostDetailScreen({route}: Props) {
                     </View>
                 )}
             </View>
+
+            <View style={styles.actionsContainer}>
+                <View style={styles.leftActions}>
+                    <TouchableOpacity activeOpacity={0.7}>
+                        <Heart size={28} color="#7D92D4" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity activeOpacity={0.7}>
+                        <MessageCircle size={28} color="#7D92D4" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity activeOpacity={0.7}>
+                        <Phone size={28} color="#7D92D4" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.rightActions}>
+                    <TouchableOpacity activeOpacity={0.7}>
+                        <Star size={28} color="#7D92D4"/>
+                    </TouchableOpacity>
+                </View>
+            </View>
         </SafeAreaView>
     );
 }
@@ -222,4 +244,23 @@ const styles = StyleSheet.create({
     activeDot: {
         backgroundColor: "#7D92D4",
     },
+    actionsContainer: {
+        marginTop: 5,
+
+        marginHorizontal: 24,
+
+        flexDirection: "row",
+        alignItems: "center",
+    },
+
+    leftActions: {
+        flexDirection: "row",
+        alignItems: "center",
+
+        gap: 18,
+    },
+
+    rightActions: {
+        marginLeft: "auto"
+    }
 });
