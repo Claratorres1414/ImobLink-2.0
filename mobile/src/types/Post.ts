@@ -4,6 +4,7 @@ export type Post = {
     description: string;
     price: number;
     street: string;
+    avenue: string;
     number: string;
     createdAt: string;
     createdBy: string;

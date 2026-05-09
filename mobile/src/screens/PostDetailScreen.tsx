@@ -7,6 +7,7 @@ import { RootStackParamList } from "../navigation/types";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {getPostImages} from "../apiServices/imageService";
 import React, {useEffect, useRef, useState} from "react";
+import { api } from "../apiServices/api";
 
 const { width } = Dimensions.get("window");
 
@@ -31,6 +32,7 @@ export default function PostDetailScreen({route}: Props) {
 
     const [images, setImages] = useState<string[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [postDetails, setPostDetails] = useState<any>(null);
     const scrollRef = useRef<ScrollView>(null);
 
     async function loadImages() {
@@ -46,8 +48,25 @@ export default function PostDetailScreen({route}: Props) {
         }
     }
 
+    async function loadPostDetails() {
+        try {
+            const response = await api.get(
+                `/posts/getOne/${post.id}`
+            );
+
+            setPostDetails(response.data.data);
+
+        } catch (error) {
+            console.log(
+                "Erro ao carregar detalhes do post:",
+                error
+            );
+        }
+    }
+
     useEffect(() => {
         loadImages();
+        loadPostDetails();
     }, []);
 
     return (
@@ -155,32 +174,36 @@ export default function PostDetailScreen({route}: Props) {
                     </Text>
 
                     <Text style={styles.postDescription}>
-                        Descrição do imóvel aqui.
+                        {postDetails?.description}
                     </Text>
                 </View>
 
                 <View style={styles.detailsBlock}>
                     <Text style={styles.detailText}>
-                        Tipo: aluguel
+                        Tipo: {postDetails?.type}
                     </Text>
 
                     <Text style={styles.detailText}>
-                        Rua: Avenida Brasil
+                        Rua: {postDetails?.street}
                     </Text>
 
                     <Text style={styles.detailText}>
-                        Bairro: Centro
+                        Bairro: {postDetails?.avenue}
                     </Text>
 
                     <Text style={styles.detailText}>
-                        Número: 120
+                        Número: {postDetails?.number}
                     </Text>
                 </View>
 
                 <Text style={styles.publishDate}>
-                    Publicado em 08/05/2026, 14:35
+                    Publicado em {
+                    postDetails?.createdAt
+                        ? new Date(postDetails.createdAt)
+                            .toLocaleString("pt-BR")
+                        : ""
+                }
                 </Text>
-
             </View>
         </SafeAreaView>
     );
