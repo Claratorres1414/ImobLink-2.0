@@ -128,7 +128,7 @@ export default function PostDetailScreen({route}: Props) {
             <View style={styles.actionsContainer}>
                 <View style={styles.leftActions}>
                     <TouchableOpacity activeOpacity={0.7}>
-                        <Heart size={28} color="#7D92D4" />
+                        <Heart size={30} color="#7D92D4" />
                     </TouchableOpacity>
 
                     <TouchableOpacity activeOpacity={0.7}>
@@ -142,9 +142,45 @@ export default function PostDetailScreen({route}: Props) {
 
                 <View style={styles.rightActions}>
                     <TouchableOpacity activeOpacity={0.7}>
-                        <Star size={28} color="#7D92D4"/>
+                        <Star size={30} color="#7D92D4"/>
                     </TouchableOpacity>
                 </View>
+            </View>
+
+            <View style={styles.postInfoContainer}>
+
+                <View style={styles.descriptionBlock}>
+                    <Text style={styles.postTitle}>
+                        Título do imóvel
+                    </Text>
+
+                    <Text style={styles.postDescription}>
+                        Descrição do imóvel aqui.
+                    </Text>
+                </View>
+
+                <View style={styles.detailsBlock}>
+                    <Text style={styles.detailText}>
+                        Tipo: aluguel
+                    </Text>
+
+                    <Text style={styles.detailText}>
+                        Rua: Avenida Brasil
+                    </Text>
+
+                    <Text style={styles.detailText}>
+                        Bairro: Centro
+                    </Text>
+
+                    <Text style={styles.detailText}>
+                        Número: 120
+                    </Text>
+                </View>
+
+                <Text style={styles.publishDate}>
+                    Publicado em 08/05/2026, 14:35
+                </Text>
+
             </View>
         </SafeAreaView>
     );
@@ -262,5 +298,59 @@ const styles = StyleSheet.create({
 
     rightActions: {
         marginLeft: "auto"
-    }
+    },
+
+    postInfoContainer: {
+        marginTop: 12,
+
+        marginHorizontal: 24,
+        marginBottom: 20,
+
+        width: "auto",
+        minHeight: 320,
+    },
+
+    descriptionBlock: {
+        width: "100%",
+    },
+
+    postTitle: {
+        fontSize: 17,
+        fontWeight: "700",
+
+        color: "#333D52",
+    },
+
+    postDescription: {
+        marginTop: 8,
+
+        fontSize: 13,
+        fontWeight: "600",
+
+        lineHeight: 18,
+
+        color: "#333D52",
+    },
+
+    detailsBlock: {
+        marginTop: 18,
+
+        gap: 10,
+    },
+
+    detailText: {
+        fontSize: 12,
+        fontWeight: "600",
+
+        color: "#7D92D4",
+    },
+
+    publishDate: {
+        marginTop: 30,
+
+        fontSize: 9,
+        fontWeight: "300",
+
+        color: "#333D52",
+    },
 });
