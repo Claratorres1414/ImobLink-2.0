@@ -30,7 +30,13 @@ export default function AppStack() {
                 name="PostDetails"
                 component={PostDetailScreen}
                 options={{
-                    headerShown: false
+                    headerShown: false,
+
+                    animation: "simple_push",
+
+                    contentStyle: {
+                        backgroundColor: "#fff",
+                    },
                 }}
             />
 

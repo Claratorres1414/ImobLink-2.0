@@ -28,12 +28,14 @@ export default function PostDetailScreen({ route }: Props) {
             <TouchableOpacity
                 style={styles.backButton}
                 activeOpacity={0.7}
-                onPress={() =>
-                    navigation.reset({
-                        index: 0,
-                        routes: [{ name: "Feed" }],
-                    })
-                }
+                onPress={() => {
+                    setTimeout(() => {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: "Feed" }],
+                        });
+                    }, 100);
+                }}
             >
                 <ArrowLeft size={30} color="#A3C3FF" />
             </TouchableOpacity>
