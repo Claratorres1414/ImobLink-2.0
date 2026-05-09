@@ -7,6 +7,6 @@ export type RootStackParamList = {
     Feed: undefined;
 
     PostDetails: {
-        postId: number;
+        post: any;
     }
 }

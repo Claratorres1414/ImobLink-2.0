@@ -135,7 +135,7 @@ export default function FeedScreen() {
                         images={images[item.id] || []}
                         onPress={() =>
                             navigation.navigate("PostDetails", {
-                                postId: item.id
+                                post: item,
                             })
                         }
                     />

@@ -1,10 +1,14 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
+import {View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Dimensions} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { ArrowLeft } from "lucide-react-native";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {getPostImages} from "../apiServices/imageService";
+import React, {useEffect, useRef, useState} from "react";
+
+const { width } = Dimensions.get("window");
 
 type Props = {
     route: RouteProp<
@@ -19,9 +23,32 @@ type NavigationProps =
         "PostDetails"
     >;
 
-export default function PostDetailScreen({ route }: Props) {
+export default function PostDetailScreen({route}: Props) {
     const navigation =
         useNavigation<NavigationProps>();
+
+    const {post} = route.params;
+
+    const [images, setImages] = useState<string[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const scrollRef = useRef<ScrollView>(null);
+
+    async function loadImages() {
+        try {
+            const urls = await getPostImages(post.id);
+
+            setImages(urls);
+        } catch (error) {
+            console.log(
+                "Erro ao carregar imagens na postagem detalhada:",
+                error
+            );
+        }
+    }
+
+    useEffect(() => {
+        loadImages();
+    }, []);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -32,12 +59,12 @@ export default function PostDetailScreen({ route }: Props) {
                     setTimeout(() => {
                         navigation.reset({
                             index: 0,
-                            routes: [{ name: "Feed" }],
+                            routes: [{name: "Feed"}],
                         });
                     }, 100);
                 }}
             >
-                <ArrowLeft size={30} color="#A3C3FF" />
+                <ArrowLeft size={30} color="#A3C3FF"/>
             </TouchableOpacity>
 
             <View style={styles.header}>
@@ -58,7 +85,44 @@ export default function PostDetailScreen({ route }: Props) {
                         Seguir
                     </Text>
                 </TouchableOpacity>
+            </View>
+            <View>
+                <ScrollView
+                    ref={scrollRef}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={(event) => {
+                        const slide =
+                            Math.round(
+                                event.nativeEvent.contentOffset.x /
+                                width
+                            );
+                        setCurrentIndex(slide)
+                    }}
+                >
+                    {images.map((uri, index) => (
+                        <Image
+                            key={`${post.id}-${index}`}
+                            source={{ uri }}
+                            style={styles.image}
+                        />
+                    ))}
+                </ScrollView>
 
+                {images.length > 1 && (
+                    <View style={styles.dotsContainer}>
+                        {images.map((_, index) => (
+                            <View
+                                key={index}
+                                style={[
+                                    styles.dot,
+                                    currentIndex === index && styles.activeDot
+                                ]}
+                            />
+                        ))}
+                    </View>
+                )}
             </View>
         </SafeAreaView>
     );
@@ -137,5 +201,25 @@ const styles = StyleSheet.create({
     followText: {
         color: "#E9E9E9",
         fontWeight: "600",
-    }
+    },
+    image: {
+        width,
+        height: 350,
+        resizeMode: "cover",
+    },
+    dotsContainer: {
+        flexDirection: "row",
+        justifyContent: "center",
+        marginTop: 12,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginHorizontal: 4,
+        backgroundColor: "#D9D9D9",
+    },
+    activeDot: {
+        backgroundColor: "#7D92D4",
+    },
 });
