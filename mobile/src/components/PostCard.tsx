@@ -85,7 +85,7 @@ function PostCard({ post, images = [], onPress }: Props) {
 
                 <View style={styles.content}>
                     <Text style={styles.price}>R$ {post.price}</Text>
-                    <Text style={styles.location}>{post.street}, {post.number}</Text>
+                    <Text style={styles.location}>{post.street}, {post.avenue}, {post.number}</Text>
                     <Text numberOfLines={2} style={styles.description}>{post.description}</Text>
 
                     <View style={styles.metrics}>

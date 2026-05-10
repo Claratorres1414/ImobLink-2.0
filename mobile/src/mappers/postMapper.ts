@@ -6,6 +6,7 @@ export function mapPostFromApi(post: any) {
         description: post.description,
         imageUrl: getPostFirstImageUrl(post.id),
         price: post.price,
+        avenue: post.avenue,
         street: post.street,
         number: post.number,
         likedTimes: post.likedTimes,
