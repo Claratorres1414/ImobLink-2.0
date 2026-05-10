@@ -10,4 +10,5 @@ export type Post = {
     createdBy: string;
     likedTimes: number;
     views: number;
+    userId: number;
 };

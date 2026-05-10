@@ -7,7 +7,10 @@ import { RootStackParamList } from "../navigation/types";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {getPostImages} from "../apiServices/imageService";
 import React, {useEffect, useRef, useState} from "react";
+
 import { api } from "../apiServices/api";
+import { getUserAccount } from "../apiServices/userService";
+import { getProfileImage } from "../apiServices/imageService";
 
 const { width } = Dimensions.get("window");
 
@@ -33,6 +36,10 @@ export default function PostDetailScreen({route}: Props) {
     const [images, setImages] = useState<string[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [postDetails, setPostDetails] = useState<any>(null);
+    const [postUser, setPostUser] = useState<any>(null);
+    const [profileImage, setProfileImage] =
+        useState<string | null>(null);
+
     const scrollRef = useRef<ScrollView>(null);
 
     async function loadImages() {
@@ -69,6 +76,31 @@ export default function PostDetailScreen({route}: Props) {
         loadPostDetails();
     }, []);
 
+    async function loadPostUser(userId: number) {
+        try {
+            const data = await getUserAccount(userId);
+
+            setPostUser(data.data);
+
+            const imageUri = await getProfileImage(
+                data.data.imageProfileId
+            );
+
+            setProfileImage(imageUri);
+        } catch (error) {
+            console.log(
+                "Erro ao carregar usuário do post:",
+                error
+            );
+        }
+    }
+
+    useEffect(() => {
+        if (postDetails?.userId) {
+            loadPostUser(postDetails.userId);
+        }
+    }, [postDetails]);
+
     return (
         <SafeAreaView style={styles.container}>
             <TouchableOpacity
@@ -90,12 +122,16 @@ export default function PostDetailScreen({route}: Props) {
 
                 <View style={styles.userInfo}>
                     <Image
-                        source={require("../assets/default_profile.jpg")}
+                        source={
+                            profileImage
+                                ? { uri: profileImage }
+                                : require("../assets/default_profile.jpg")
+                        }
                         style={styles.avatar}
                     />
 
                     <Text style={styles.username}>
-                        user
+                        {postUser?.name || "User"}
                     </Text>
                 </View>
 
@@ -304,7 +340,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#7D92D4",
     },
     actionsContainer: {
-        marginTop: 5,
+        marginTop: 8,
 
         marginHorizontal: 24,
 

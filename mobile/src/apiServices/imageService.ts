@@ -46,3 +46,30 @@ export async function getPostImages(
         return [];
     }
 }
+
+export async function getProfileImage(
+    imageId: number | null
+) : Promise<string | null> {
+    if (!imageId) {
+        return null;
+    }
+
+    try {
+        const response = await api.get(
+            `/images/get/${imageId}`
+        );
+
+        const base64 = response.data.data;
+
+        const imageUri = buildBase64Image(base64)
+
+        return imageUri || null;
+    } catch (error) {
+        console.log(
+            "Erro ao carregar imagem do perfil:",
+            error
+        );
+
+        return null;
+    }
+}
