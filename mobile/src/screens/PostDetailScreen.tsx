@@ -13,7 +13,9 @@ import { getUserAccount } from "../apiServices/userService";
 import { getProfileImage } from "../apiServices/imageService";
 import {
     likePost,
-    unlikePost
+    unlikePost,
+    favPost,
+    unfavPost
 } from "../apiServices/postService";
 
 const { width } = Dimensions.get("window");
@@ -47,6 +49,7 @@ export default function PostDetailScreen({route}: Props) {
     const scrollRef = useRef<ScrollView>(null);
 
     const [liked, setLiked] = useState(false);
+    const [faved, setFaved] = useState(false);
 
     async function loadImages() {
         try {
@@ -110,6 +113,7 @@ export default function PostDetailScreen({route}: Props) {
     useEffect(() => {
         if (postDetails) {
             setLiked(postDetails.wasLiked);
+            setFaved(postDetails.wasFaved);
         }
     }, [postDetails]);
 
@@ -127,6 +131,25 @@ export default function PostDetailScreen({route}: Props) {
         } catch (error) {
             console.log(
                 "Erro ao curtir/descurtir post:",
+                error
+            );
+        }
+    }
+
+    async function handleFav() {
+        const previousFaved = faved;
+
+        setFaved(!previousFaved)
+
+        try {
+            if (previousFaved) {
+                await unfavPost(post.id);
+            } else {
+                await favPost(post.id);
+            }
+        } catch (error) {
+            console.log(
+                "Erro ao favoritar/desfavoritar post:",
                 error
             );
         }
@@ -234,8 +257,15 @@ export default function PostDetailScreen({route}: Props) {
                 </View>
 
                 <View style={styles.rightActions}>
-                    <TouchableOpacity activeOpacity={0.7}>
-                        <Star size={30} color="#7D92D4"/>
+                    <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={handleFav}
+                    >
+                        <Star
+                            size={30}
+                            color={faved ? "#FFC107" : "#7D92D4"}
+                            fill = {faved ? "#FFC107" : "transparent"}
+                        />
                     </TouchableOpacity>
                 </View>
             </View>
