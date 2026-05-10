@@ -155,6 +155,18 @@ export default function PostDetailScreen({route}: Props) {
         }
     }
 
+    const postDate = postDetails?.wasUpdated
+        ? postDetails?.updatedAt
+        : postDetails?.createdAt;
+
+    const postDateLabel = postDetails?.wasUpdated
+        ? "Editado em"
+        : "Publicado em";
+
+    const formattedDate = postDate
+        ? new Date(postDate).toLocaleString("pt-BR")
+        : "";
+
     return (
         <SafeAreaView style={styles.container}>
             <TouchableOpacity
@@ -301,12 +313,7 @@ export default function PostDetailScreen({route}: Props) {
                 </View>
 
                 <Text style={styles.publishDate}>
-                    Publicado em {
-                    postDetails?.createdAt
-                        ? new Date(postDetails.createdAt)
-                            .toLocaleString("pt-BR")
-                        : ""
-                }
+                    {postDateLabel} {formattedDate}
                 </Text>
             </View>
         </SafeAreaView>
