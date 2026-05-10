@@ -11,6 +11,10 @@ import React, {useEffect, useRef, useState} from "react";
 import { api } from "../apiServices/api";
 import { getUserAccount } from "../apiServices/userService";
 import { getProfileImage } from "../apiServices/imageService";
+import {
+    likePost,
+    unlikePost
+} from "../apiServices/postService";
 
 const { width } = Dimensions.get("window");
 
@@ -41,6 +45,8 @@ export default function PostDetailScreen({route}: Props) {
         useState<string | null>(null);
 
     const scrollRef = useRef<ScrollView>(null);
+
+    const [liked, setLiked] = useState(false);
 
     async function loadImages() {
         try {
@@ -100,6 +106,31 @@ export default function PostDetailScreen({route}: Props) {
             loadPostUser(postDetails.userId);
         }
     }, [postDetails]);
+
+    useEffect(() => {
+        if (postDetails) {
+            setLiked(postDetails.wasLiked);
+        }
+    }, [postDetails]);
+
+    async function handleLike() {
+        const previousLiked = liked;
+
+        setLiked(!previousLiked)
+
+        try {
+            if (previousLiked) {
+                await unlikePost(post.id);
+            } else {
+                await likePost(post.id);
+            }
+        } catch (error) {
+            console.log(
+                "Erro ao curtir/descurtir post:",
+                error
+            );
+        }
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -182,8 +213,15 @@ export default function PostDetailScreen({route}: Props) {
 
             <View style={styles.actionsContainer}>
                 <View style={styles.leftActions}>
-                    <TouchableOpacity activeOpacity={0.7}>
-                        <Heart size={30} color="#7D92D4" />
+                    <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={handleLike}
+                    >
+                        <Heart
+                            size={30}
+                            color={liked ? "#FF6B6B" : "#7D92D4"}
+                            fill={liked ? "#FF6B6B" : "transparent"}
+                        />
                     </TouchableOpacity>
 
                     <TouchableOpacity activeOpacity={0.7}>
