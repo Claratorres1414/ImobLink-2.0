@@ -1,7 +1,8 @@
 package com.PIEC.ImobLink.Controllers;
 
+import com.PIEC.ImobLink.DTOs.ChatSummaryResponse;
 import com.PIEC.ImobLink.DTOs.MessageResponse;
-import com.PIEC.ImobLink.DTOs.UserDetails;
+import com.PIEC.ImobLink.DTOs.SendMessageRequest;
 import com.PIEC.ImobLink.Response.ApiResponse;
 import com.PIEC.ImobLink.Services.MessageService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,21 +24,32 @@ public class MessageController {
     private final MessageService messageService;
 
     @Operation(
-            summary = "Listar contatos",
-            description = "Busca a lista de contatos do usuário"
+            summary = "Listar conversas",
+            description = "Busca a lista de conversas do usuário com última mensagem e dados do contato"
     )
     @GetMapping("/chats")
-    public ResponseEntity<ApiResponse<List<UserDetails>>> getChats(Authentication auth) {
+    public ResponseEntity<ApiResponse<List<ChatSummaryResponse>>> getChats(Authentication auth) {
         return messageService.getContacts(auth);
     }
 
     @Operation(
             summary = "Enviar mensagem",
-            description = "Permite enviar uma mensagem a outro usuário"
+            description = "Permite enviar uma mensagem a outro usuário, opcionalmente vinculada a um post"
     )
     @PostMapping("/send/{id}")
-    public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(@PathVariable Long id, @RequestParam String content, Authentication auth) {
-        return messageService.sendMessage(content, id, auth);
+    public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(
+            @PathVariable Long id,
+            @RequestBody(required = false) SendMessageRequest request,
+            @RequestParam(required = false) String content,
+            Authentication auth
+    ) {
+        String finalContent = request != null && request.getContent() != null
+                ? request.getContent()
+                : content;
+
+        Long postId = request != null ? request.getPostId() : null;
+
+        return messageService.sendMessage(finalContent, postId, id, auth);
     }
 
     @Operation(
@@ -54,7 +66,11 @@ public class MessageController {
             description = "Permite editar o conteúdo de uma mensagem posteriormente enviada"
     )
     @PatchMapping("/edit/{mId}")
-    public ResponseEntity<ApiResponse<MessageResponse>> editMessage(@PathVariable Long mId, @RequestParam String content, Authentication auth) {
+    public ResponseEntity<ApiResponse<MessageResponse>> editMessage(
+            @PathVariable Long mId,
+            @RequestParam String content,
+            Authentication auth
+    ) {
         return messageService.editMessage(mId, content, auth);
     }
 

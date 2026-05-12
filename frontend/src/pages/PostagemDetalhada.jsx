@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
+import Comentarios from "../components/Comentarios";
 
 function PostagemDetalhada() {
   const { id } = useParams();
   const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
   const [post, setPost] = useState(null);
   const [imagens, setImagens] = useState([]);
@@ -12,33 +14,40 @@ function PostagemDetalhada() {
   const [favoritado, setFavoritado] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+
   const [comentarios, setComentarios] = useState([]);
   const [novoComentario, setNovoComentario] = useState("");
   const [showComentarioBox, setShowComentarioBox] = useState(false);
+
   const [autorPost, setAutorPost] = useState(null);
+  const [meuId, setMeuId] = useState(null);
 
   const intervalRef = useRef(null);
 
   async function buscarFotoPerfil(imageId) {
     if (!imageId) return "/imagemperfil.jpg";
 
-    const tentativas = [
-      `http://localhost:8080/api/images/get/${imageId}`,
-      `http://localhost:8080/api/images/${imageId}/profile`,
-      `http://localhost:8080/api/images/profile/${imageId}`,
-    ];
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/images/get/${imageId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    for (let url of tentativas) {
-      try {
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const blob = await res.blob();
-          return URL.createObjectURL(blob);
+      if (!res.ok) return "/imagemperfil.jpg";
+
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const resposta = await res.json();
+        if (resposta.data) {
+          return `data:image/jpeg;base64,${resposta.data}`;
         }
-      } catch {}
-    }
+      } else {
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+      }
+    } catch {}
+
     return "/imagemperfil.jpg";
   }
 
@@ -51,7 +60,8 @@ function PostagemDetalhada() {
 
       if (!res.ok) return;
 
-      const dados = await res.json();
+      const resposta = await res.json();
+      const dados = resposta.data || resposta;
       const foto = await buscarFotoPerfil(dados.imageProfileId);
 
       setAutorPost({
@@ -74,7 +84,13 @@ function PostagemDetalhada() {
       );
 
       if (res.ok) {
-        const lista = await res.json();
+        const resposta = await res.json();
+        const lista = Array.isArray(resposta?.data)
+          ? resposta.data
+          : Array.isArray(resposta)
+          ? resposta
+          : [];
+
         const urls = [];
 
         for (const img of lista) {
@@ -84,8 +100,18 @@ function PostagemDetalhada() {
               { headers: { Authorization: `Bearer ${token}` } }
             );
             if (!f.ok) continue;
-            const blob = await f.blob();
-            urls.push(URL.createObjectURL(blob));
+
+            const contentType = f.headers.get("content-type");
+
+            if (contentType && contentType.includes("application/json")) {
+              const respostaImg = await f.json();
+              if (respostaImg.data) {
+                urls.push(`data:image/jpeg;base64,${respostaImg.data}`);
+              }
+            } else {
+              const blob = await f.blob();
+              urls.push(URL.createObjectURL(blob));
+            }
           } catch {}
         }
 
@@ -101,9 +127,22 @@ function PostagemDetalhada() {
         `http://localhost:8080/api/images/${postId}/post/thumb`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       if (res.ok) {
-        const blob = await res.blob();
-        setImagens([URL.createObjectURL(blob)]);
+        const contentType = res.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+          const respostaThumb = await res.json();
+          if (respostaThumb.data) {
+            setImagens([`data:image/jpeg;base64,${respostaThumb.data}`]);
+          } else {
+            setImagens(["/placeholder.jpg"]);
+          }
+        } else {
+          const blob = await res.blob();
+          setImagens([URL.createObjectURL(blob)]);
+        }
+
         return;
       }
     } catch {}
@@ -111,25 +150,37 @@ function PostagemDetalhada() {
     setImagens(["/placeholder.jpg"]);
   }
 
-  async function carregarComentarios(userId) {
+  async function carregarComentarios(postId) {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/comments/getComments/${userId}`,
+        `http://localhost:8080/api/comments/getComments/post/${postId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!res.ok) return;
 
-      const lista = await res.json();
+      const resposta = await res.json();
+
+      const lista = Array.isArray(resposta?.data)
+        ? resposta.data
+        : Array.isArray(resposta)
+        ? resposta
+        : [];
+
       const completos = await Promise.all(
         lista.map(async (c) => {
           let autor = { name: "Usuário" };
+
           try {
             const r = await fetch(
               `http://localhost:8080/api/user/getAccount/${c.authorId}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
-            if (r.ok) autor = await r.json();
+
+            if (r.ok) {
+              const respostaAutor = await r.json();
+              autor = respostaAutor.data || respostaAutor;
+            }
           } catch {}
 
           return {
@@ -189,6 +240,16 @@ function PostagemDetalhada() {
   useEffect(() => {
     async function carregar() {
       try {
+        const userRes = await fetch("http://localhost:8080/api/user/account", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (userRes.ok) {
+          const respostaUser = await userRes.json();
+          const userData = respostaUser.data || respostaUser;
+          setMeuId(userData.id);
+        }
+
         const res = await fetch(
           `http://localhost:8080/api/posts/getOne/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -197,21 +258,30 @@ function PostagemDetalhada() {
         if (!res.ok) throw new Error("Postagem não encontrada");
 
         const data = await res.json();
-        setPost(data);
-        setLiked(data.wasLiked);
-        setLikesCount(data.likedTimes);
+        const postData = data.data || data;
 
-        carregarAutor(data.userId);
-        carregarImagens(data.id);
-        carregarComentarios(data.userId);
+        setPost(postData);
+        setLiked(Boolean(postData.wasLiked));
+        setLikesCount(Number(postData.likedTimes) || 0);
+
+        if (postData.userId) {
+          carregarAutor(postData.userId);
+        }
+
+        if (postData.id) {
+          carregarImagens(postData.id);
+          carregarComentarios(postData.id);
+        }
 
         const favRes = await fetch(
           "http://localhost:8080/api/posts/my-favs",
           { headers: { Authorization: `Bearer ${token}` } }
         );
+
         if (favRes.ok) {
-          const favs = await favRes.json();
-          const isFav = favs.some((f) => f.id === data.id);
+          const respostaFavs = await favRes.json();
+          const favs = Array.isArray(respostaFavs?.data) ? respostaFavs.data : [];
+          const isFav = favs.some((f) => f.id === postData.id);
           setFavoritado(isFav);
         }
       } catch (err) {
@@ -220,7 +290,7 @@ function PostagemDetalhada() {
     }
 
     carregar();
-  }, [id]);
+  }, [id, token]);
 
   useEffect(() => {
     if (imagens.length <= 1) return;
@@ -239,6 +309,11 @@ function PostagemDetalhada() {
     setIndice((i) => (i - 1 + imagens.length) % imagens.length);
   }
 
+  function falarSobrePost() {
+    if (!autorPost || !post) return;
+    navigate(`/chat/${autorPost.id}?postId=${post.id}`);
+  }
+
   if (!post) {
     return (
       <DashboardLayout>
@@ -247,10 +322,11 @@ function PostagemDetalhada() {
     );
   }
 
+  const ehDonoDoPost = meuId && post.userId && Number(meuId) === Number(post.userId);
+
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto p-4 space-y-8">
-        
         {/* SLIDER */}
         <div className="relative w-full h-[420px] rounded-xl overflow-hidden shadow-lg bg-black">
           {imagens.map((src, i) => (
@@ -328,7 +404,7 @@ function PostagemDetalhada() {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M11.48 3.499a.562.562 0 011.04 0l2.07 4.195a.563.563 0 00.424.307l4.63.673a.563.563 0 01.312.96l-3.35 3.27a.563.563 0 00-.162.498l.79 4.6a.563.563 0 01-.817.593l-4.137-2.176a.563.563 0 00-.524 0l-4.137 2.176a.563.563 0 01-.817-.593l.79-4.6a.563.563 0 00-.162-.498l-3.35-3.27a.563.563 0 01.312-.96l4.63-.673a.563.563 0 00.424-.307l2.07-4.195z"
+              d="M11.48 3.499a.562.562 0 011.04 0l2.07 4.195a.563.563 0 00.424.307l4.63.673a.563.563 0 01.312.96l-3.35 3.27a.563.563 0 00-.162.498l.79 4.6a.563.563 0 01-.817.593l-4.137-2.176a.563.563 0 00-.524 0l-4.137 2.176a.563.563 0 01-.817-.593l.79-4.6a.563.562 0 00-.162-.498l-3.35-3.27a.563.563 0 01.312-.96l4.63-.673a.563.563 0 00.424-.307l2.07-4.195z"
             />
           </svg>
           {favoritado ? "Remover dos favoritos" : "Adicionar aos favoritos"}
@@ -351,18 +427,30 @@ function PostagemDetalhada() {
               strokeLinecap="round"
               strokeLinejoin="round"
               d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 
-               4.5 0 116.364 6.364L12 21.364l-7.682-7.682a4.5 4.5 
-               0 010-6.364z"
+               4.5 0 116.364 6.364L12 21.364l-7.682-7.682a4.5 
+               4.5 0 010-6.364z"
             />
           </svg>
           {likesCount} curtidas
         </button>
 
-        {/* AUTOR - AGORA LINK CORRETO */}
+        {/* BOTÃO DE CONVERSA */}
+        {autorPost && !ehDonoDoPost && (
+          <button
+            onClick={falarSobrePost}
+            className="px-5 py-3 bg-purple-600 text-white rounded-xl shadow hover:bg-purple-700 transition font-semibold"
+          >
+            Perguntar sobre este imóvel
+          </button>
+        )}
+
+        {/* AUTOR */}
         {autorPost && (
-          <Link
-            to={`/user/${autorPost.id}`}
-            className="block border rounded-xl shadow p-5 flex gap-4 items-center bg-white hover:bg-gray-50 transition"
+          <button
+            onClick={() =>
+              ehDonoDoPost ? navigate("/perfil") : navigate(`/user/${autorPost.id}`)
+            }
+            className="w-full text-left border rounded-xl shadow p-5 flex gap-4 items-center bg-white hover:bg-gray-50 transition"
           >
             <img
               src={autorPost.imagem}
@@ -377,13 +465,17 @@ function PostagemDetalhada() {
                 📞 {autorPost.telefone || "Telefone não informado"}
               </p>
             </div>
-          </Link>
+          </button>
         )}
 
         {/* INFO IMÓVEL */}
         <div className="bg-white border rounded-xl p-5 shadow space-y-2">
           <p><strong>Preço:</strong> R$ {post.price}</p>
+          <p><strong>Tipo:</strong> {post.type}</p>
           <p><strong>Rua:</strong> {post.street}</p>
+          {post.number && (
+            <p><strong>Número:</strong> {post.number}</p>
+          )}
           <p><strong>Bairro:</strong> {post.avenue}</p>
         </div>
 
@@ -414,7 +506,7 @@ function PostagemDetalhada() {
                   if (!novoComentario.trim()) return;
 
                   const res = await fetch(
-                    `http://localhost:8080/api/comments/comment/${post.userId}`,
+                    `http://localhost:8080/api/comments/comment/post/${post.id}`,
                     {
                       method: "POST",
                       headers: {
@@ -428,7 +520,9 @@ function PostagemDetalhada() {
                   if (res.ok) {
                     setNovoComentario("");
                     setShowComentarioBox(false);
-                    carregarComentarios(post.userId);
+                    carregarComentarios(post.id);
+                  } else {
+                    console.error("Falha ao enviar comentário", res.status);
                   }
                 }}
                 className="mt-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow"
@@ -438,24 +532,11 @@ function PostagemDetalhada() {
             </div>
           )}
 
-          {comentarios.map((c) => (
-            <div
-              key={c.id}
-              className="bg-white border p-4 rounded-xl shadow-sm flex gap-3"
-            >
-              <img
-                src={c.autorImagem}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-              <div className="flex-1">
-                <p className="font-semibold">{c.autorNome}</p>
-                <p>{c.content}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {new Date(c.createdAt).toLocaleString("pt-BR")}
-                </p>
-              </div>
-            </div>
-          ))}
+          <Comentarios
+            comentarios={comentarios}
+            token={token}
+            onDelete={(id) => setComentarios((prev) => prev.filter(c => c.id !== id))}
+          />
         </div>
       </div>
     </DashboardLayout>

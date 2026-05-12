@@ -12,37 +12,73 @@ function EditarPostagem() {
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
-  const [imagemAtual, setImagemAtual] = useState(null);
-  const [novaImagem, setNovaImagem] = useState(null);
+  const [tipo, setTipo] = useState("");
 
-  // ---------------------------
-  // ✅ Carregar dados da postagem
-  // ---------------------------
+  const [imagensPost, setImagensPost] = useState([]);
+
+  const API = "http://localhost:8080";
+
+  
+  // Carregar dados do post
+  
   const carregarPostagem = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/posts/getOne/${id}`, {
+      const res = await fetch(`${API}/api/posts/getOne/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error("Postagem não encontrada");
 
-      if (!res.ok) {
-        throw new Error("Postagem não encontrada");
-      }
-
-      const data = await res.json();
+      const resposta = await res.json();
+      const data = resposta.data || resposta;
 
       setDescricao(data.description);
       setPreco(data.price);
       setRua(data.street);
       setNumero(data.number);
       setBairro(data.avenue);
+      setTipo(data.type);
 
-      // ✅ Carregar imagem principal corretamente
-      const imgBlob = await fetch(
-        `http://localhost:8080/api/images/${id}/post/thumb`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      ).then((r) => r.blob());
+      // Carregar todas as imagens do post
+      const imgsRes = await fetch(`${API}/api/images/${id}/post/all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (imgsRes.ok) {
 
-      setImagemAtual(URL.createObjectURL(imgBlob));
+      const respostaImgs = await imgsRes.json();
+      const imgsData = Array.isArray(respostaImgs.data) ? respostaImgs.data : [];
+
+      const imgsComUrl = await Promise.all(
+        imgsData.map(async (img) => {
+          try {
+            const resImg = await fetch(`${API}/api/images/get/${img.id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!resImg.ok) return { id: img.id, url: "/placeholder.jpg" };
+            const contentType = resImg.headers.get("content-type");
+
+            if (contentType && contentType.includes("application/json")) {
+              const respostaImg = await resImg.json();
+              return {
+                id: img.id,
+                url: respostaImg.data
+                  ? `data:image/jpeg;base64,${respostaImg.data}`
+                  : "/placeholder.jpg",
+              };
+            } else {
+              const blob = await resImg.blob();
+              return {
+                id: img.id,
+                url: URL.createObjectURL(blob),
+              };
+            }
+          } catch {
+            return { id: img.id, url: "/placeholder.jpg" };
+          }
+        })
+      );
+
+        setImagensPost(imgsComUrl);
+      }
     } catch (err) {
       console.error(err);
       alert("Erro ao carregar postagem.");
@@ -55,27 +91,49 @@ function EditarPostagem() {
   }, [id]);
 
 
-  // ---------------------------
-  // ✅ Salvar alterações
-  // ---------------------------
-  const salvarAlteracoes = async () => {
-    const formData = new FormData();
-    formData.append("id", id);
-    formData.append("description", descricao);
-    formData.append("price", preco);
-    formData.append("street", rua);
-    formData.append("number", numero);
-    formData.append("avenue", bairro);
-
-    if (novaImagem) {
-      formData.append("image", novaImagem);
+  // Deletar imagem individual
+  
+  const handleDeleteImage = async (imageId) => {
+    if (imagensPost.length <= 1) {
+      alert("A postagem deve ter pelo menos uma imagem.");
+      return;
     }
 
     try {
-      const res = await fetch("http://localhost:8080/api/posts/update", {
-        method: "PATCH",
+      const res = await fetch(`${API}/api/posts/deleteImage/${id}/${imageId}`, {
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      });
+      if (res.ok) {
+        setImagensPost((prev) => prev.filter((img) => img.id !== imageId));
+      } else {
+        alert("Não foi possível deletar a imagem.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao conectar com o servidor.");
+    }
+  };
+
+  
+  // Salvar alterações
+  
+  const salvarAlteracoes = async () => {
+    try {
+      const res = await fetch(`${API}/api/posts/edit/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          description: descricao,
+          price: preco,
+          street: rua,
+          avenue: bairro,
+          type: tipo,
+          number: numero,
+        }),
       });
 
       if (res.ok) {
@@ -84,8 +142,8 @@ function EditarPostagem() {
       } else {
         alert("Erro ao atualizar postagem.");
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       alert("Erro ao conectar com o servidor.");
     }
   };
@@ -94,26 +152,30 @@ function EditarPostagem() {
     <DashboardLayout>
       <div className="flex justify-center mt-10">
         <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            Editar Postagem
-          </h2>
+          <h2 className="text-xl font-bold text-gray-800">Editar Postagem</h2>
 
-          {/* ✅ IMAGEM */}
-          {imagemAtual && (
-            <img
-              src={imagemAtual}
-              alt="Imagem atual"
-              className="w-full rounded border"
-            />
-          )}
+          {/* Mostrar todas as imagens do post com botão de exclusão */}
+          <div className="flex gap-3 flex-wrap">
+            {imagensPost.map((img) => (
+              <div key={img.id} className="relative w-40 h-40">
+                <img
+                  src={img.url}
+                  alt="Imagem do post"
+                  className="w-full h-full object-cover rounded"
+                />
+                {imagensPost.length > 1 && (
+                  <button
+                    className="absolute top-1 right-1 bg-red-600 text-white px-2 py-1 rounded"
+                    onClick={() => handleDeleteImage(img.id)}
+                  >
+                    X
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setNovaImagem(e.target.files[0])}
-          />
-
-          {/* ✅ CAMPOS */}
+          {/* Campos do post */}
           <input
             type="text"
             value={descricao}
@@ -121,7 +183,6 @@ function EditarPostagem() {
             className="w-full border p-2 rounded"
             placeholder="Descrição"
           />
-
           <input
             type="number"
             value={preco}
@@ -129,7 +190,6 @@ function EditarPostagem() {
             className="w-full border p-2 rounded"
             placeholder="Preço"
           />
-
           <input
             type="text"
             value={rua}
@@ -137,7 +197,6 @@ function EditarPostagem() {
             className="w-full border p-2 rounded"
             placeholder="Rua"
           />
-
           <input
             type="text"
             value={numero}
@@ -145,13 +204,19 @@ function EditarPostagem() {
             className="w-full border p-2 rounded"
             placeholder="Número"
           />
-
           <input
             type="text"
             value={bairro}
             onChange={(e) => setBairro(e.target.value)}
             className="w-full border p-2 rounded"
             placeholder="Bairro"
+          />
+          <input
+            type="text"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value)}
+            className="w-full border p-2 rounded"
+            placeholder="Tipo (aluguel/venda)"
           />
 
           <button
