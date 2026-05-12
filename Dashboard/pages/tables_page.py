@@ -48,7 +48,7 @@ def pagina_tabelas(usuarios: pd.DataFrame, posts: pd.DataFrame, api_url: str, to
     try:
         r = requests.get(f"{api_url}/posts/topPosts/views", headers=headers, timeout=8)
         if r.status_code == 200:
-            data = r.json()
+            data = r.json().get("data", [])
 
             pattern = r"Post:\s*(\d+)\s*\|\s*Views:\s*(\d+)\s*\|\s*Author:\s*(\d+)"
             parsed = [re.match(pattern, item) for item in data]
@@ -76,7 +76,7 @@ def pagina_tabelas(usuarios: pd.DataFrame, posts: pd.DataFrame, api_url: str, to
     try:
         r = requests.get(f"{api_url}/posts/topPosts/likes", headers=headers, timeout=8)
         if r.status_code == 200:
-            data = r.json()
+            data = r.json().get("data", [])
 
             pattern_likes = r"Post(\d+)\s*\|\s*Liked Times:\s*(\d+)\s*\|\s*Author:\s*(\d+)"
 

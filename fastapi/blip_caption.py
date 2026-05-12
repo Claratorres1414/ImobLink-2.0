@@ -8,11 +8,15 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 from deep_translator import GoogleTranslator  # ✅ TROCA AQUI
 
 load_dotenv()
-print("🔥 BLIP_CAPTION NOVO CARREGADO")
 # ----------------------------
 # 2. Inicializa modelo BLIP
 # ----------------------------
-processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
+try:
+    processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
+except:
+    processor = None
+    print("⚠️ Modelo não carregado")
+
 blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
 
 # ----------------------------
@@ -108,10 +112,9 @@ def gerar_legendas_completas(caminho_imagem: str) -> dict:
 
     prompts_base = [
         "This is a beautiful house made of ",
-        "A luxurious home with ",
+        "A home with ",
         "A charming residence featuring ",
         "A cozy house with ",
-        "A stunning mansion built with "
     ]
 
     legendas_en = []

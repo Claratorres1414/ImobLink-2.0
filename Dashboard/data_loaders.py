@@ -45,8 +45,8 @@ def carregar_todos_dados(api_url, token):
             if not res.ok:
                 continue
 
-            lista = res.json()     # array de comentários
-
+            json_data = res.json()
+            lista = json_data.get("data", [])
             for c in lista:
 
                 # Buscar dados do autor (igual ao front faz)
@@ -54,7 +54,7 @@ def carregar_todos_dados(api_url, token):
                 try:
                     autor_res = requests.get(autor_url, headers=headers)
                     if autor_res.ok:
-                        autor = autor_res.json()
+                        autor = autor_res.json().get("data", {})
                     else:
                         autor = {"name": "Usuário", "imageProfileId": None}
                 except:
