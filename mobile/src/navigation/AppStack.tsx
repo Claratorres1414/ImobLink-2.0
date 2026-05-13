@@ -5,6 +5,7 @@ import FeedScreen from "../screens/FeedScreen";
 import PostDetailScreen from "../screens/PostDetailScreen";
 
 import LogoutButton from "../components/LogoutButton";
+import CreateNewPostScreen from "../screens/CreateNewPostScreen";
 
 const Stack =
     createNativeStackNavigator<RootStackParamList>();
@@ -18,6 +19,7 @@ export default function AppStack() {
                 component={FeedScreen}
                 options={{
                     headerShown: true,
+                    animation: "simple_push",
                     headerStyle: {
                         backgroundColor: "#fff"
                     },
@@ -34,6 +36,19 @@ export default function AppStack() {
 
                     animation: "simple_push",
 
+                    contentStyle: {
+                        backgroundColor: "#fff",
+                    },
+                }}
+            />
+
+            <Stack.Screen
+                name="CreateNewPost"
+                component={CreateNewPostScreen}
+
+                options={{
+                    headerShown: false,
+                    animation: "simple_push",
                     contentStyle: {
                         backgroundColor: "#fff",
                     },

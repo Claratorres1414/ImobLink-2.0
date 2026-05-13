@@ -14,20 +14,15 @@ export type TabKey = 'home' | 'search' | 'add' | 'chat' | 'profile';
 
 export interface TabBarProps {
     activeTab?: TabKey;
-
     onTabPress?: (tab: TabKey) => void;
-
     activeColor?: string;
-
     inactiveColor?: string;
-
     backgroundColor?: string;
-
     addButtonColor?: string;
-
     addIconColor?: string;
-
     style?: StyleProp<ViewStyle>;
+
+    onAddPress?: () => void;
 }
 
 const HomeIcon = ({ color }: { color: string }) => (
@@ -108,6 +103,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                                                   addButtonColor = '#333D52',
                                                   addIconColor = '#FFFFFF',
                                                   style,
+                                                  onAddPress,
                                               }) => {
     const insets = useSafeAreaInsets();
 
@@ -174,7 +170,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                 />
 
                 <TouchableOpacity
-                    onPress={() => handlePress('add')}
+                    onPress={onAddPress}
                     activeOpacity={0.85}
                     style={styles.addButtonWrapper}
                     accessibilityLabel="Adicionar post"

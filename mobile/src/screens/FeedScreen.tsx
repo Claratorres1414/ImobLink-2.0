@@ -151,7 +151,7 @@ export default function FeedScreen() {
                 windowSize={5}
             />
 
-            <Tabbar />
+            <Tabbar onAddPress={() => navigation.navigate("CreateNewPost")} />
         </View>
     );
 }
