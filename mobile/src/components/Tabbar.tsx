@@ -4,37 +4,31 @@ import {
     TouchableOpacity,
     StyleSheet,
     Platform,
-    Dimensions,
     StyleProp,
     ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Circle, Rect } from 'react-native-svg';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
+import Svg, { Path, Circle, } from 'react-native-svg';
 
 export type TabKey = 'home' | 'search' | 'add' | 'chat' | 'profile';
 
 export interface TabBarProps {
-    /** Tab atualmente ativo */
     activeTab?: TabKey;
-    /** Callback disparado ao pressionar uma tab */
+
     onTabPress?: (tab: TabKey) => void;
-    /** Cor do ícone ativo (padrão: '#1A1A2E') */
+
     activeColor?: string;
-    /** Cor do ícone inativo (padrão: '#9B9B9B') */
+
     inactiveColor?: string;
-    /** Cor de fundo da barra (padrão: '#FFFFFF') */
+
     backgroundColor?: string;
-    /** Cor do botão central de adicionar (padrão: '#1A1A2E') */
+
     addButtonColor?: string;
-    /** Cor do ícone dentro do botão de adicionar (padrão: '#FFFFFF') */
+
     addIconColor?: string;
-    /** Estilo extra para o container */
+
     style?: StyleProp<ViewStyle>;
 }
-
-// ─── Ícones SVG ──────────────────────────────────────────────────────────────
 
 const HomeIcon = ({ color }: { color: string }) => (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -93,12 +87,10 @@ const ProfileIcon = ({ color }: { color: string }) => (
     </Svg>
 );
 
-// ─── Configuração das tabs ────────────────────────────────────────────────────
-
 const TABS: { key: TabKey; label: string }[] = [
     { key: 'home', label: 'Início' },
     { key: 'search', label: 'Buscar' },
-    { key: 'add', label: 'Novo' },
+    { key: 'add', label: 'Novo post' },
     { key: 'chat', label: 'Chat' },
     { key: 'profile', label: 'Perfil' },
 ];
@@ -110,10 +102,10 @@ const GAP_OUTER = 42;
 export const TabBar: React.FC<TabBarProps> = ({
                                                   activeTab = 'home',
                                                   onTabPress,
-                                                  activeColor = '#1A1A2E',
+                                                  activeColor = '#333D52',
                                                   inactiveColor = '#9B9B9B',
                                                   backgroundColor = '#FFFFFF',
-                                                  addButtonColor = '#1A1A2E',
+                                                  addButtonColor = '#333D52',
                                                   addIconColor = '#FFFFFF',
                                                   style,
                                               }) => {
@@ -185,7 +177,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                     onPress={() => handlePress('add')}
                     activeOpacity={0.85}
                     style={styles.addButtonWrapper}
-                    accessibilityLabel="Novo"
+                    accessibilityLabel="Adicionar post"
                     accessibilityRole="button"
                 >
                     <View style={[styles.addButton, { backgroundColor: addButtonColor }]}>
