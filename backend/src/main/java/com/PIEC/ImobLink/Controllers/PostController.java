@@ -49,7 +49,17 @@ public class PostController {
         List<MultipartFile> imagesList = Arrays.asList(images);
         return ResponseUtil.created(
                 "Post criado com sucesso",
-                postService.createPost(imagesList, data.getDescription(), data.getPrice(), data.getStreet(), data.getAvenue(), data.getNumber(), data.getType(), auth)
+                postService.createPost(
+                        imagesList,
+                        data.getDescription(),
+                        data.getPrice(),
+                        data.getStreet(),
+                        data.getAvenue(),
+                        data.getNumber(),
+                        data.getType(),
+                        data.getTags(),
+                        auth
+                )
         );
     }
 
@@ -122,6 +132,21 @@ public class PostController {
         return ResponseUtil.ok(
                 "Posts buscados com sucesso",
                 postService.searchPostByStreet(street, auth)
+        );
+    }
+
+    @Operation(
+            summary = "Buscar por tag",
+            description = "Permite filtrar posts por uma tag cadastrada"
+    )
+    @GetMapping("/search/tag")
+    public ResponseEntity<ApiResponse<List<PostResponse>>> searchByTag(
+            @RequestParam("tag") String tag,
+            Authentication auth
+    ) {
+        return ResponseUtil.ok(
+                "Posts buscados por tag com sucesso",
+                postService.searchPostByTag(tag, auth)
         );
     }
 

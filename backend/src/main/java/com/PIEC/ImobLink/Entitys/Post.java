@@ -57,6 +57,14 @@ public class Post {
     @JoinTable(name = "post_reacheds", joinColumns = @JoinColumn(name = "post_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     private List<User> reacheds = new ArrayList<>();
 
+    @ManyToMany
+    @JoinTable(
+            name = "posts_tags",
+            joinColumns = @JoinColumn(name = "post_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private List<Tag> tags = new ArrayList<>();
+
     public void addImage(Images image) {
         images.add(image);
     }

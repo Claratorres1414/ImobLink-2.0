@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.DTOs;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class PostRequest {
@@ -10,4 +11,5 @@ public class PostRequest {
     private String avenue;
     private String number;
     private String type;
+    private List<String> tags;
 }
