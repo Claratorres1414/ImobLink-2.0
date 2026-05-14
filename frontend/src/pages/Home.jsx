@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { formatarPreco, formatarEndereco } from "../utils/formatters";
 import PostTags from "../components/PostTags";
 
-
 function Home() {
   const [posts, setPosts] = useState([]);
   const [user, setUser] = useState(null);
@@ -364,8 +363,6 @@ function Home() {
                     {formatarPreco(post.price)}
                   </p>
 
-<<<<<<< HEAD
-=======
                   {(() => {
                     const endereco = formatarEndereco(post.street, post.number, post.avenue);
 
@@ -379,7 +376,6 @@ function Home() {
 
                   <PostTags tags={post.tags} />
 
->>>>>>> 1e5c0eef (Implementado o sistema de tags no Frontend Ref #241)
                   <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
                     <span>👍 {likeInfo.count}</span>
                     <span>💬 {commentQty}</span>

@@ -4,7 +4,6 @@ import DashboardLayout from "../components/DashboardLayout";
 import { formatarPreco, formatarEndereco } from "../utils/formatters";
 import PostTags from "../components/PostTags";
 
-
 function MeusAnuncios() {
   const [posts, setPosts] = useState([]);
   const [imageMap, setImageMap] = useState({});
