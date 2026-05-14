@@ -1,0 +1,11 @@
+ALTER TABLE users
+ADD COLUMN questionnaire_completed BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE users
+ADD COLUMN objective VARCHAR(50);
+
+ALTER TABLE users
+ADD COLUMN property_type VARCHAR(50);
+
+ALTER TABLE users
+ADD COLUMN price_range VARCHAR(50);
