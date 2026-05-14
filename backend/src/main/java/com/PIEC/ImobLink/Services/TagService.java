@@ -74,10 +74,12 @@ public class TagService {
 
         Set<String> uniqueNames = new LinkedHashSet<>(rawNames);
 
-        return uniqueNames.stream()
-                .filter(name -> name != null && !name.trim().isBlank())
-                .map(this::getOrCreateTag)
-                .toList();
+        return new ArrayList<>(
+                uniqueNames.stream()
+                        .filter(name -> name != null && !name.trim().isBlank())
+                        .map(this::getOrCreateTag)
+                        .toList()
+        );
     }
 
     public List<TagResponse> searchTags(String query) {
@@ -88,16 +90,18 @@ public class TagService {
         }
 
         return tagRepository
-                .findTop10ByNormalizedNameContainingIgnoreCaseOrderByNameAsc(normalizedQuery)
+                .searchUsedTags(normalizedQuery)
                 .stream()
+                .limit(10)
                 .map(TagResponse::new)
                 .toList();
     }
 
     public List<TagResponse> suggestions() {
         return tagRepository
-                .findTop10ByOrderByNameAsc()
+                .findTop10UsedTags()
                 .stream()
+                .limit(10)
                 .map(TagResponse::new)
                 .toList();
     }
