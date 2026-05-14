@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
+import TagSelector from "../components/TagSelector"
+import { formatarPrecoInput, precoInputParaNumero } from "../utils/formatters";
 
 function PublicarPostagem() {
   const [descricao, setDescricao] = useState("");
@@ -8,7 +10,8 @@ function PublicarPostagem() {
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
-  const [tipo, setTipo] = useState(""); // ✅ tipo: venda/aluguel
+  const [tipo, setTipo] = useState("");
+  const [tags, setTags] = useState([]);
 
   const [imagens, setImagens] = useState([]);
   const [preview, setPreview] = useState([]);
@@ -19,7 +22,6 @@ function PublicarPostagem() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  // ✅ IA: gerar legenda automática com a primeira imagem
   const gerarLegenda = async () => {
     if (imagens.length === 0) {
       setErro("Selecione pelo menos 1 imagem para gerar a legenda.");
@@ -50,7 +52,6 @@ function PublicarPostagem() {
     }
   };
 
-  // ✅ manipular múltiplas imagens
   const handleImagemChange = (e) => {
     const files = Array.from(e.target.files);
     setImagens(files);
@@ -58,7 +59,7 @@ function PublicarPostagem() {
     setPreview(previews);
   };
 
-  // ✅ enviar postagem
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -73,11 +74,12 @@ function PublicarPostagem() {
 
     const dadosPost = {
       description: descricao,
-      price: Number(preco),
+      price: precoInputParaNumero(preco),
       street: rua,
       number: numero,
       avenue: bairro,
       type: tipo,
+      tags
     };
 
     formData.append(
@@ -136,12 +138,11 @@ function PublicarPostagem() {
           />
 
           <input
-            type="number"
+            type="text"
             placeholder="Preço"
             value={preco}
-            onChange={(e) => setPreco(e.target.value)}
+            onChange={(e) => setPreco(formatarPrecoInput(e.target.value))}
             className="w-full p-2 border rounded"
-            min="0"
           />
 
           <input
@@ -168,7 +169,7 @@ function PublicarPostagem() {
             className="w-full p-2 border rounded"
           />
 
-          {/* ✅ Checkboxes estilizados */}
+          {/*Checkboxes estilizados */}
           <div>
             <label className="block font-semibold mb-2 text-gray-800">Tipo de anúncio</label>
             <div className="flex gap-4">
@@ -198,7 +199,12 @@ function PublicarPostagem() {
             </div>
           </div>
 
-          {/* ✅ Input múltiplas imagens */}
+          <TagSelector
+            tagsSelecionadas={tags}
+            setTagsSelecionadas={setTags}
+          />
+
+          {/* Input múltiplas imagens */}
           <div>
             <label className="block font-semibold mb-1">Imagens do imóvel</label>
             <input

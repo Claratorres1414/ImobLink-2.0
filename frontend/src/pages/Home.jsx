@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { formatarPreco, formatarEndereco } from "../utils/formatters";
+import PostTags from "../components/PostTags";
 
 
 function Home() {
@@ -358,11 +360,26 @@ function Home() {
                   <p className="text-gray-800 font-semibold">
                     {post.description}
                   </p>
-                  <p className="text-gray-600 text-sm">Preço: R$ {post.price}</p>
-                  <p className="text-gray-600 text-sm">
-                    {post.street}, {post.number}
+                  <p className="text-blue-700 text-lg font-bold">
+                    {formatarPreco(post.price)}
                   </p>
 
+<<<<<<< HEAD
+=======
+                  {(() => {
+                    const endereco = formatarEndereco(post.street, post.number, post.avenue);
+
+                    return (
+                      <div className="text-gray-600 text-sm">
+                        <p>{endereco.linha1}</p>
+                        <p>{endereco.linha2}</p>
+                      </div>
+                    );
+                  })()}
+
+                  <PostTags tags={post.tags} />
+
+>>>>>>> 1e5c0eef (Implementado o sistema de tags no Frontend Ref #241)
                   <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
                     <span>👍 {likeInfo.count}</span>
                     <span>💬 {commentQty}</span>

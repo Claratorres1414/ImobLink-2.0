@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 import Comentarios from "../components/Comentarios";
+import { formatarPreco, formatarTelefone, formatarEndereco } from "../utils/formatters";
+import PostTags from "../components/PostTags";
 
 function PostagemDetalhada() {
   const { id } = useParams();
@@ -384,6 +386,11 @@ function PostagemDetalhada() {
         <h2 className="text-3xl font-bold text-gray-900">
           {post.description}
         </h2>
+
+        <PostTags
+          tags={post.tags}
+          onTagClick={(tag) => navigate(`/busca?query=${encodeURIComponent(tag)}&tag=${encodeURIComponent(tag)}`)}
+        />
         <p className="text-sm text-gray-500">
           Publicado em {new Date(post.createdAt).toLocaleString("pt-BR")}
         </p>
@@ -462,7 +469,7 @@ function PostagemDetalhada() {
               </p>
               <p className="text-gray-600">{autorPost.email}</p>
               <p className="text-gray-500 text-sm">
-                📞 {autorPost.telefone || "Telefone não informado"}
+                📞 {formatarTelefone(autorPost.telefone) || "Telefone não informado"}
               </p>
             </div>
           </button>
@@ -470,13 +477,18 @@ function PostagemDetalhada() {
 
         {/* INFO IMÓVEL */}
         <div className="bg-white border rounded-xl p-5 shadow space-y-2">
-          <p><strong>Preço:</strong> R$ {post.price}</p>
+          <p><strong>Preço:</strong> {formatarPreco(post.price)}</p>
           <p><strong>Tipo:</strong> {post.type}</p>
-          <p><strong>Rua:</strong> {post.street}</p>
-          {post.number && (
-            <p><strong>Número:</strong> {post.number}</p>
-          )}
-          <p><strong>Bairro:</strong> {post.avenue}</p>
+          {(() => {
+            const endereco = formatarEndereco(post.street, post.number, post.avenue);
+
+            return (
+              <div className="text-gray-700">
+                <p>{endereco.linha1}</p>
+                <p>{endereco.linha2}</p>
+              </div>
+            );
+          })()}
         </div>
 
         {/* COMENTÁRIOS */}

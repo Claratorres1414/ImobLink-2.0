@@ -2,6 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { format } from "date-fns";
 import { useNavigate, useLocation } from "react-router-dom";
+import { formatarPreco, formatarEndereco } from "../utils/formatters";
+import PostTags from "../components/PostTags";
+import { formatarPrecoInput } from "../utils/formatters";
 
 // Componente para o card de usuário
 function UserCard({ u, token }) {
@@ -80,12 +83,17 @@ function Busca() {
   const [filtroVenda, setFiltroVenda] = useState("todos"); // 'todos' | 'aluguel' | 'venda'
   const [precoMin, setPrecoMin] = useState("");
   const [precoMax, setPrecoMax] = useState("");
+  const [tagsSelecionadas, setTagsSelecionadas] = useState([]);
+  const [tagsDisponiveis, setTagsDisponiveis] = useState([]);
+  const [buscaTag, setBuscaTag] = useState("");
+  const [ordenacao, setOrdenacao] = useState("recentes");
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const slideIntervals = useRef({});
   const location = useLocation();
   const query = new URLSearchParams(location.search).get("query") || "";
+  const tagUrl = new URLSearchParams(location.search).get("tag") || "";
 
   
   // Buscar usuário logado
@@ -128,6 +136,28 @@ function Busca() {
     fetchUsuarios();
   }, [query, token]);
 
+  //Buscar Tags
+  useEffect(() => {
+  async function carregarTags() {
+    try {
+      const res = await fetch("http://localhost:8080/api/tags/suggestions", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok) return;
+
+      const resposta = await res.json();
+      const data = Array.isArray(resposta.data) ? resposta.data : [];
+      setTagsDisponiveis(data);
+    } catch (err) {
+      console.error("Erro ao carregar tags:", err);
+    }
+  }
+
+  
+
+  carregarTags();
+}, [token]);
   
   // Buscar posts
   
@@ -147,9 +177,19 @@ function Busca() {
 
         if (!mounted) return;
 
-        const filtrados = dataPosts.filter((p) =>
-          p.description.toLowerCase().includes(query.toLowerCase())
-        );
+        const filtrados = dataPosts.filter((p) => {
+          const termo = query.toLowerCase();
+          const descricaoCombina = p.description?.toLowerCase().includes(termo);
+          const tagsCombinam = Array.isArray(p.tags)
+            ? p.tags.some((tag) =>
+                String(tag.name || tag)
+                  .toLowerCase()
+                  .includes(termo)
+              )
+            : false;
+
+          return descricaoCombina || tagsCombinam;
+        });
         setPosts(filtrados);
 
         for (const post of filtrados) {
@@ -329,61 +369,200 @@ function Busca() {
   
   const postsFiltrados = posts
     .filter((p) => filtroVenda === "todos" || p.type.toLowerCase() === filtroVenda)
-    .filter((p) => (precoMin ? p.price >= parseFloat(precoMin) : true))
-    .filter((p) => (precoMax ? p.price <= parseFloat(precoMax) : true));
+
+    .filter((p) =>
+      precoMin
+        ? p.price >= Number(String(precoMin).replace(/\D/g, "")) / 100
+        : true
+    )
+
+    .filter((p) =>
+      precoMax
+        ? p.price <= Number(String(precoMax).replace(/\D/g, "")) / 100
+        : true
+    )
+
+    .filter((p) => {
+      if (tagsSelecionadas.length === 0) return true;
+
+      if (!Array.isArray(p.tags)) return false;
+
+      const tagsDoPost = p.tags.map((tag) =>
+        String(tag.name || tag).toLowerCase()
+      );
+
+      return tagsSelecionadas.every((tagSelecionada) =>
+        tagsDoPost.includes(tagSelecionada.toLowerCase())
+      );
+    })
+
+    .sort((a, b) => {
+      switch (ordenacao) {
+        case "antigas":
+          return new Date(a.createdAt) - new Date(b.createdAt);
+
+        case "maiorPreco":
+          return Number(b.price || 0) - Number(a.price || 0);
+
+        case "menorPreco":
+          return Number(a.price || 0) - Number(b.price || 0);
+
+        case "maisLikes":
+          return Number(b.likedTimes || 0) - Number(a.likedTimes || 0);
+
+        case "maisFavoritos":
+          return Number(b.favedTimes || 0) - Number(a.favedTimes || 0);
+
+        case "recentes":
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+    });
+  
+  function adicionarTagBusca(nomeTag) {
+  if (!nomeTag) return;
+
+  const jaExiste = tagsSelecionadas.some(
+    (tag) => tag.toLowerCase() === nomeTag.toLowerCase()
+  );
+
+  if (jaExiste) return;
+
+  setTagsSelecionadas([...tagsSelecionadas, nomeTag]);
+}
+
+function removerTagBusca(nomeTag) {
+  setTagsSelecionadas(
+    tagsSelecionadas.filter(
+      (tag) => tag.toLowerCase() !== nomeTag.toLowerCase()
+    )
+  );
+}
+
+const tagsFiltradas = tagsDisponiveis
+  .filter((tag) =>
+    tag.name.toLowerCase().includes(buscaTag.toLowerCase())
+  )
+  .slice(0, 10);
 
   return (
     <DashboardLayout>
       <h2 className="text-2xl font-bold mb-6">Resultados da busca para "{query}"</h2>
 
       {/* Filtros */}
-      <div className="mb-6 flex flex-wrap gap-4 items-center">
-        <div>
-          <label className="mr-2 font-semibold">Tipo:</label>
-          <select
-            value={filtroTipo}
-            onChange={(e) => setFiltroTipo(e.target.value)}
-            className="border p-1 rounded"
+<div className="mb-8 bg-white border rounded-xl p-4 shadow-sm">
+  <div className="flex flex-wrap gap-4 items-end mb-4">
+    <div>
+      <label className="block text-sm font-semibold mb-1">Tipo:</label>
+      <select
+        value={filtroTipo}
+        onChange={(e) => setFiltroTipo(e.target.value)}
+        className="border p-2 rounded-lg min-w-[120px]"
+      >
+        <option value="todos">Todos</option>
+        <option value="usuarios">Usuários</option>
+        <option value="posts">Posts</option>
+      </select>
+    </div>
+
+    <div>
+      <label className="block text-sm font-semibold mb-1">Venda/Aluguel:</label>
+      <select
+        value={filtroVenda}
+        onChange={(e) => setFiltroVenda(e.target.value)}
+        className="border p-2 rounded-lg min-w-[130px]"
+      >
+        <option value="todos">Todos</option>
+        <option value="aluguel">Aluguel</option>
+        <option value="venda">Venda</option>
+      </select>
+    </div>
+
+    <div>
+      <label className="block text-sm font-semibold mb-1">Preço mínimo:</label>
+      <input
+        type="text"
+        value={precoMin}
+        onChange={(e) => setPrecoMin(formatarPrecoInput(e.target.value))}
+        className="border p-2 rounded-lg w-36"
+        placeholder="R$ 0,00"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-semibold mb-1">Preço máximo:</label>
+      <input
+        type="text"
+        value={precoMax}
+        onChange={(e) => setPrecoMax(formatarPrecoInput(e.target.value))}
+        className="border p-2 rounded-lg w-36"
+        placeholder="R$ 0,00"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-semibold mb-1">Ordenar por:</label>
+      <select
+        value={ordenacao}
+        onChange={(e) => setOrdenacao(e.target.value)}
+        className="border p-2 rounded-lg min-w-[160px]"
+      >
+        <option value="recentes">Mais recentes</option>
+        <option value="antigas">Mais antigas</option>
+        <option value="maiorPreco">Maior preço</option>
+        <option value="menorPreco">Menor preço</option>
+        <option value="maisLikes">Mais likes</option>
+        <option value="maisFavoritos">Mais favoritos</option>
+      </select>
+    </div>
+  </div>
+
+  <div className="border-t pt-4">
+    <label className="block text-sm font-semibold mb-2">
+      Filtrar por tags:
+    </label>
+
+    <input
+      type="text"
+      value={buscaTag}
+      onChange={(e) => setBuscaTag(e.target.value)}
+      placeholder="Pesquisar tag..."
+      className="border p-2 rounded-lg w-full max-w-md mb-3"
+    />
+
+    <p className="text-xs text-gray-500 mb-2">
+      Sugestões mais populares
+    </p>
+
+    <div className="flex flex-wrap gap-2 mb-2">
+      {tagsFiltradas.map((tag) => (
+        <button
+          key={tag.id}
+          type="button"
+          onClick={() => adicionarTagBusca(tag.name)}
+          className="px-3 py-1 bg-gray-100 text-gray-700 border rounded-full text-sm hover:bg-blue-50 hover:text-blue-700"
+        >
+          #{tag.name}
+        </button>
+      ))}
+    </div>
+
+    {tagsSelecionadas.length > 0 && (
+      <div className="flex flex-wrap gap-2 mt-3">
+        {tagsSelecionadas.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => removerTagBusca(tag)}
+            className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm hover:bg-red-600 transition"
           >
-            <option value="todos">Todos</option>
-            <option value="usuarios">Usuários</option>
-            <option value="posts">Posts</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="mr-2 font-semibold">Venda/Aluguel:</label>
-          <select
-            value={filtroVenda}
-            onChange={(e) => setFiltroVenda(e.target.value)}
-            className="border p-1 rounded"
-          >
-            <option value="todos">Todos</option>
-            <option value="aluguel">Aluguel</option>
-            <option value="venda">Venda</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="mr-2 font-semibold">Preço mínimo:</label>
-          <input
-            type="number"
-            value={precoMin}
-            onChange={(e) => setPrecoMin(e.target.value)}
-            className="border p-1 rounded w-20"
-          />
-        </div>
-
-        <div>
-          <label className="mr-2 font-semibold">Preço máximo:</label>
-          <input
-            type="number"
-            value={precoMax}
-            onChange={(e) => setPrecoMax(e.target.value)}
-            className="border p-1 rounded w-20"
-          />
-        </div>
+            #{tag} ×
+          </button>
+        ))}
       </div>
+    )}
+  </div>
+</div>
 
       {/* Usuários */}
       {filtroTipo !== "posts" && (
@@ -442,10 +621,25 @@ function Busca() {
                       <p className="text-gray-800 font-semibold">
                         {post.description}
                       </p>
-                      <p className="text-gray-600 text-sm">Preço: R$ {post.price}</p>
-                      <p className="text-gray-600 text-sm">
-                        {post.street}, {post.number}
+                      <p className="text-blue-700 text-lg font-bold">
+                        {formatarPreco(post.price)}
                       </p>
+
+                      {(() => {
+                        const endereco = formatarEndereco(post.street, post.number, post.avenue);
+
+                        return (
+                          <div className="text-gray-600 text-sm">
+                            <p>{endereco.linha1}</p>
+                            <p>{endereco.linha2}</p>
+                          </div>
+                        );
+                      })()}
+
+                      <PostTags
+                        tags={post.tags}
+                        onTagClick={(tag) => navigate(`/busca?query=${encodeURIComponent(tag)}`)}
+                      />
 
                       <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
                         <span>👍 {likeInfo.count}</span>

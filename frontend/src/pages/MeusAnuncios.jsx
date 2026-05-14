@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
+import { formatarPreco, formatarEndereco } from "../utils/formatters";
+import PostTags from "../components/PostTags";
 
 
 function MeusAnuncios() {
@@ -335,9 +337,22 @@ async function abrirComentarios(postId) {
                   <div className="p-4">
                     <h3 className="font-bold text-lg">{post.description}</h3>
 
-                    <p className="text-gray-600">
-                      R$ {post.price} – {post.street}, {post.number}
+                    <p className="text-blue-700 text-lg font-bold">
+                      {formatarPreco(post.price)}
                     </p>
+
+                    {(() => {
+                      const endereco = formatarEndereco(post.street, post.number, post.avenue);
+
+                      return (
+                        <div className="text-gray-600 text-sm">
+                          <p>{endereco.linha1}</p>
+                          <p>{endereco.linha2}</p>
+                        </div>
+                      );
+                    })()}
+
+                    <PostTags tags={post.tags} />
 
                     <div className="flex justify-between mt-2 text-sm text-gray-600">
                       <span>👍 {likeInfo.count}</span>

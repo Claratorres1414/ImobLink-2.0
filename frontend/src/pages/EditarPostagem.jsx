@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
+import TagSelector from "../components/TagSelector";
+import { formatarPrecoInput, precoInputParaNumero } from "../utils/formatters";
 
 function EditarPostagem() {
   const { id } = useParams();
@@ -13,6 +15,7 @@ function EditarPostagem() {
   const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
   const [tipo, setTipo] = useState("");
+  const [tags, setTags] = useState([]);
 
   const [imagensPost, setImagensPost] = useState([]);
 
@@ -32,11 +35,12 @@ function EditarPostagem() {
       const data = resposta.data || resposta;
 
       setDescricao(data.description);
-      setPreco(data.price);
+      setPreco(formatarPrecoInput(String(Math.round(Number(data.price || 0) * 100))));
       setRua(data.street);
       setNumero(data.number);
       setBairro(data.avenue);
       setTipo(data.type);
+      setTags(Array.isArray(data.tags) ? data.tags.map((tag) => tag.name) : []);
 
       // Carregar todas as imagens do post
       const imgsRes = await fetch(`${API}/api/images/${id}/post/all`, {
@@ -128,11 +132,12 @@ function EditarPostagem() {
         },
         body: JSON.stringify({
           description: descricao,
-          price: preco,
+          price: precoInputParaNumero(preco),
           street: rua,
           avenue: bairro,
           type: tipo,
           number: numero,
+          tags,
         }),
       });
 
@@ -184,9 +189,9 @@ function EditarPostagem() {
             placeholder="Descrição"
           />
           <input
-            type="number"
+            type="text"
             value={preco}
-            onChange={(e) => setPreco(e.target.value)}
+            onChange={(e) => setPreco(formatarPrecoInput(e.target.value))}
             className="w-full border p-2 rounded"
             placeholder="Preço"
           />
@@ -217,6 +222,11 @@ function EditarPostagem() {
             onChange={(e) => setTipo(e.target.value)}
             className="w-full border p-2 rounded"
             placeholder="Tipo (aluguel/venda)"
+          />
+
+          <TagSelector
+            tagsSelecionadas={tags}
+            setTagsSelecionadas={setTags}
           />
 
           <button

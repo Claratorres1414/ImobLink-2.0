@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
+import { formatarTelefone, limparMascara } from "../utils/formatters";
 
 function EditarPerfil() {
   const [dadosUsuario, setDadosUsuario] = useState({});
@@ -34,7 +35,7 @@ const data = resposta.data || resposta;
 setDadosUsuario(data);
 setNovaBio(data.bio || "");
 setNovoNome(data.name || "");
-setNovoTelefone(data.phoneNumber || "");
+setNovoTelefone(formatarTelefone(data.phoneNumber || ""));
 
 // Busca imagem se existir
 if (data.imageProfileId) {
@@ -83,7 +84,7 @@ if (data.imageProfileId) {
         },
         body: JSON.stringify({
           name: novoNome,
-          phoneNumber: novoTelefone,
+          phoneNumber: limparMascara(novoTelefone),
           bio: novaBio,
         }),
       });
@@ -224,8 +225,9 @@ if (data.imageProfileId) {
             <input
               type="text"
               value={novoTelefone}
-              onChange={(e) => setNovoTelefone(e.target.value)}
+              onChange={(e) => setNovoTelefone(formatarTelefone(e.target.value))}
               placeholder="Telefone"
+              maxLength={15}
               className="w-full border rounded p-2"
             />
             <textarea
