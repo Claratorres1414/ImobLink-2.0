@@ -9,8 +9,12 @@ import { Plus } from 'lucide-react-native';
 const { width } = Dimensions.get('window');
 const SLIDER_HEIGHT = 360;
 
-export default function ImageSlider() {
-    const [images, setImages] = useState<string[]>([]);
+interface ImageSliderProps {
+    images: string[];
+    onImagesChange: (images: string[]) => void;
+}
+
+export default function ImageSlider({ images, onImagesChange }: ImageSliderProps) {
     const flatListRef = useRef<FlatList>(null);
 
     async function pickImage() {
@@ -22,7 +26,7 @@ export default function ImageSlider() {
 
         if (!result.canceled) {
             const uris = result.assets.map((a) => a.uri);
-            setImages((prev) => [...prev, ...uris]);
+            onImagesChange([...images, ...uris]);
 
             setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
@@ -125,6 +129,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.6)',
     },
     dotAdd: {
-        backgroundColor: 'rgba(255,255,255,0.3)', // dot do slide "+" mais discreto
+        backgroundColor: 'rgba(255,255,255,0.3)',
     },
 });

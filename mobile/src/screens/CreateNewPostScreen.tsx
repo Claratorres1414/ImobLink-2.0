@@ -1,4 +1,4 @@
-import {Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native";
+import {Alert, Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native";
 import {RouteProp, useNavigation} from "@react-navigation/native";
 import {RootStackParamList} from "../navigation/types";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
@@ -6,6 +6,7 @@ import {ArrowLeft} from "lucide-react-native";
 import React, {useState} from "react";
 import {SafeAreaView} from "react-native-safe-area-context";
 import AddImageSlider from '../components/AddImagesSlider';
+import {createPost} from "../apiServices/postService";
 
 const { width } = Dimensions.get("window");
 
@@ -31,7 +32,51 @@ export default function CreateNewPostScreen({route}: Props) {
     const [bairro, setBairro] = useState('');
     const [rua, setRua] = useState('');
     const [numero, setNumero] = useState('');
+    const [preco, setPreco] = useState('');
     const [tipo, setTipo] = useState<'venda' | 'aluguel' | null>(null);
+    const [imagens, setImagens] = useState<string[]>([]);
+
+    async function publish() {
+        if (!descricao || !preco || !rua || !numero || !bairro || !tipo || imagens.length === 0) {
+            Alert.alert("Atenção", "Por favor, preencha todoso os campos!");
+            return
+        }
+
+        const formData = new FormData();
+
+        const dadosPost = {
+            description: descricao,
+            price: preco,
+            street: rua,
+            number: numero,
+            avenue: bairro,
+            type: tipo,
+        };
+
+        formData.append("data", {
+            string: JSON.stringify(dadosPost),
+            type: "application/json",
+            name: "data.json",
+        } as any);
+
+        imagens.forEach((uri) => {
+            const filename = uri.split('/').pop() ?? 'image.jpg';
+            const ext = filename.split('.').pop() ?? 'jpg';
+
+            formData.append("images", {
+                uri,
+                name: filename,
+                type: `image/${ext}`,
+            } as any);
+        });
+
+        try {
+            await createPost(formData);
+            navigation.reset({ index: 0, routes: [{ name: "Feed" }] });
+        } catch (e) {
+            Alert.alert("Erro", "Não foi possível publicar. Tente novamente.")
+        }
+    }
 
     return(
         <SafeAreaView style={styles.container}>
@@ -51,19 +96,22 @@ export default function CreateNewPostScreen({route}: Props) {
                     <ArrowLeft size={30} color="#7D92D4"/>
                 </TouchableOpacity>
 
-                <TouchableOpacity activeOpacity={0.7} onPress={() => {}}>
+                <TouchableOpacity activeOpacity={0.7} onPress={publish}>
                     <Text style={styles.publishText}>Publicar</Text>
                 </TouchableOpacity>
             </View>
             <View style={styles.imageContainer}>
-                <AddImageSlider />
+                <AddImageSlider
+                    images={imagens}
+                    onImagesChange={setImagens}
+                />
             </View>
 
             <ScrollView style={styles.scrollContent}>
                 <View style={styles.form}>
                     <TextInput
                         style={styles.input}
-                        placeholder="Título"
+                        placeholder="Adicione um título..."
                         placeholderTextColor="#ABABAB"
                         value={titulo}
                         onChangeText={setTitulo}
@@ -71,7 +119,7 @@ export default function CreateNewPostScreen({route}: Props) {
 
                     <TextInput
                         style={[styles.input, styles.inputMultiline]}
-                        placeholder="Descrição"
+                        placeholder="Adicione uma descrição..."
                         placeholderTextColor="#ABABAB"
                         value={descricao}
                         onChangeText={setDescricao}
@@ -81,7 +129,7 @@ export default function CreateNewPostScreen({route}: Props) {
 
                     <TextInput
                         style={styles.input}
-                        placeholder="Bairro"
+                        placeholder="Informe o bairro..."
                         placeholderTextColor="#ABABAB"
                         value={bairro}
                         onChangeText={setBairro}
@@ -89,7 +137,7 @@ export default function CreateNewPostScreen({route}: Props) {
 
                     <TextInput
                         style={styles.input}
-                        placeholder="Rua"
+                        placeholder="Informe a rua..."
                         placeholderTextColor="#ABABAB"
                         value={rua}
                         onChangeText={setRua}
@@ -97,10 +145,19 @@ export default function CreateNewPostScreen({route}: Props) {
 
                     <TextInput
                         style={styles.input}
-                        placeholder="Número"
+                        placeholder="Informe o número..."
                         placeholderTextColor="#ABABAB"
                         value={numero}
                         onChangeText={setNumero}
+                        keyboardType="numeric"
+                    />
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Informe o preço..."
+                        placeholderTextColor="#ABABAB"
+                        value={preco}
+                        onChangeText={setPreco}
                         keyboardType="numeric"
                     />
 
