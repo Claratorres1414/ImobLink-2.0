@@ -1,15 +1,20 @@
 package com.PIEC.ImobLink.Services;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -46,9 +51,13 @@ public class RecommendationService {
         System.out.println("INTERAÇÃO SALVA COM SUCESSO");
     }
 
-    // ----------------------------
-    // 🤖 GERAR RECOMENDAÇÕES
-    // ----------------------------
+    public Boolean questionnaireStatus(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("USER NÃO ENCONTRADO"));
+
+        return user.getQuestionnaireCompleted();
+    }
+    
     public List<Post> recomendar(Long userId) {
 
         List<Post> posts = postRepository.findAll();
