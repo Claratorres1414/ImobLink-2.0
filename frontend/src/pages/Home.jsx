@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import Questionnaire from "../components/Questionnaire";
 
 function Home() {
   const [posts, setPosts] = useState([]);
@@ -10,6 +11,7 @@ function Home() {
   const [carouselIndex, setCarouselIndex] = useState({});
   const [likedMap, setLikedMap] = useState({});
   const [commentsCount, setCommentsCount] = useState({});
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
@@ -26,6 +28,36 @@ function Home() {
       .then((res) => res.json())
       .then((data) => setUser(data))
       .catch((err) => console.error("Erro ao buscar usuário:", err));
+  }, [token]);
+
+  // ------------------------------
+  // VER SE QUESTIONÁRIO FOI RESPONDIDO
+  // ------------------------------ 
+  useEffect(() => {
+    async function checkQuestionnaireStatus() {
+      if (!token) return;
+
+      try {
+        const response = await fetch(
+          "http://localhost:8080/api/posts/questionnaire/status",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const completed = await response.json();
+
+        if (!completed) {
+          setShowQuestionnaire(true);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar questionário:", error);
+      }
+    }
+
+    checkQuestionnaireStatus();
   }, [token]);
 
   // ------------------------------
@@ -211,12 +243,55 @@ function Home() {
 
   const postsFiltrados =
     user && user.name ? posts.filter((p) => p.createdBy !== user.name) : posts;
+  const handleQuestionnaireSubmit = async (data) => {
+    try {
+      await fetch("http://localhost:8080/api/posts/questionnaire", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      setShowQuestionnaire(false);
+    } catch (error) {
+      console.error("Erro ao salvar questionário:", error);
+    }
+  };
+
+  const handleSkipQuestionnaire = async () => {
+    try {
+      await fetch("http://localhost:8080/api/posts/questionnaire", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          objective: null,
+          propertyType: null,
+          priceRange: null,
+        }),
+      });
+
+      setShowQuestionnaire(false);
+    } catch (error) {
+      console.error("Erro ao pular questionário:", error);
+    }
+  };
 
   // ------------------------------
   // RENDERIZAÇÃO
   // ------------------------------
   return (
     <DashboardLayout>
+      {showQuestionnaire && (
+        <Questionnaire
+          onSubmit={handleQuestionnaireSubmit}
+          onSkip={handleSkipQuestionnaire}
+        />
+      )}
       <h2 className="text-2xl font-bold mb-6">Imóveis disponíveis</h2>
 
       {postsFiltrados.length === 0 ? (
