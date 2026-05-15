@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.List;
@@ -54,7 +56,12 @@ public class Post {
 
     private int views;
     @ManyToMany
-    @JoinTable(name = "post_reacheds", joinColumns = @JoinColumn(name = "post_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JoinTable(
+        name = "post_reacheds",
+        joinColumns = @JoinColumn(name = "post_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @JsonIgnore
     private List<User> reacheds = new ArrayList<>();
 
     public void addImage(Images image) {

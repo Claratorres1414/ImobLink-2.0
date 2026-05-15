@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.PIEC.ImobLink.DTOs.PostRecommendationDTO;
 import com.PIEC.ImobLink.DTOs.QuestionnaireRequest;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
@@ -33,15 +34,12 @@ public class RecommendationService {
         user.setObjective(request.getObjective());
         user.setPropertyType(request.getPropertyType());
         user.setPriceRange(request.getPriceRange());
-
         user.setQuestionnaireCompleted(true);
 
         userRepository.save(user);
     }
-    public void registrarInteracao(Long userId, Long postId) {
-        System.out.println("USER ID: " + userId);
-        System.out.println("POST ID: " + postId);
 
+    public void registrarInteracao(Long userId, Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("POST NÃO ENCONTRADO"));
 
@@ -54,11 +52,8 @@ public class RecommendationService {
 
         if (!post.getReacheds().contains(user)) {
             post.getReacheds().add(user);
+            postRepository.save(post);
         }
-
-        postRepository.save(post);
-
-        System.out.println("INTERAÇÃO SALVA COM SUCESSO");
     }
 
     public Boolean questionnaireStatus(Long userId) {
@@ -68,39 +63,49 @@ public class RecommendationService {
         return user.getQuestionnaireCompleted();
     }
 
-    public List<Post> recomendar(Long userId) {
+    public List<PostRecommendationDTO> recomendar(Long userId) {
 
         List<Post> posts = postRepository.findAll();
-        User user = userRepository.findById(userId).orElseThrow();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("USER NÃO ENCONTRADO"));
+
+        // perfil do usuário
         Map<String, Object> userProfile = new HashMap<>();
         userProfile.put("objective", user.getObjective());
         userProfile.put("propertyType", user.getPropertyType());
         userProfile.put("priceRange", user.getPriceRange());
 
-        // pega interações do usuário (views)
+        // posts com interação do usuário
         Set<Long> interagidos = posts.stream()
-                .filter(p -> p.getReacheds().contains(user))
+                .filter(post -> post.getReacheds() != null && post.getReacheds().contains(user))
                 .map(Post::getId)
                 .collect(Collectors.toSet());
 
-        // monta payload pro FastAPI
+        // payload para FastAPI
         Map<String, Object> payload = new HashMap<>();
 
-        List<Map<String, Object>> postsPayload = posts.stream().map(p -> {
+        List<Map<String, Object>> postsPayload = posts.stream().map(post -> {
             Map<String, Object> map = new HashMap<>();
-            map.put("id", p.getId());
-            map.put("description", p.getDescription());
-            map.put("type", p.getType());
-            map.put("avenue", p.getAvenue());
+
+            map.put("id", post.getId());
+            map.put("description", post.getDescription());
+            map.put("type", post.getType());
+            map.put("avenue", post.getAvenue());
+            map.put("street", post.getStreet());
+            map.put("price", post.getPrice());
+            map.put("likedTimes",
+                post.getLikedTimes() != null ? post.getLikedTimes().size() : 0);
+            map.put("views", post.getViews());
+
             return map;
         }).toList();
 
+        payload.put("user_id", userId);
         payload.put("posts", postsPayload);
         payload.put("user_interactions", interagidos);
-        payload.put("user_id", userId);
         payload.put("user_profile", userProfile);
 
-        // chama FastAPI
         RestTemplate restTemplate = new RestTemplate();
 
         List<Map<String, Object>> response = restTemplate.postForObject(
@@ -109,15 +114,19 @@ public class RecommendationService {
                 List.class
         );
 
-        if (response == null || response.isEmpty()) {
-            return posts; // fallback
+        // fallback caso FastAPI falhe
+        if (response == null) {
+            return posts.stream()
+                    .map(this::toDTO)
+                    .toList();
         }
 
-        // ordena baseado no score
+        // mapa id -> score
         Map<Long, Double> scoreMap = new HashMap<>();
-        for (Map<String, Object> r : response) {
-            Long id = Long.valueOf(r.get("id").toString());
-            Double score = Double.valueOf(r.get("score").toString());
+
+        for (Map<String, Object> item : response) {
+            Long id = Long.valueOf(item.get("id").toString());
+            Double score = Double.valueOf(item.get("score").toString());
             scoreMap.put(id, score);
         }
 
@@ -126,6 +135,21 @@ public class RecommendationService {
                         scoreMap.getOrDefault(p2.getId(), 0.0),
                         scoreMap.getOrDefault(p1.getId(), 0.0)
                 ))
-                .collect(Collectors.toList());
+                .map(this::toDTO)
+                .toList();
+    }
+
+    private PostRecommendationDTO toDTO(Post post) {
+        return new PostRecommendationDTO(
+                post.getId(),
+                post.getDescription(),
+                post.getPrice(),
+                post.getStreet(),
+                post.getAvenue(),
+                post.getNumber(),
+                post.getType(),
+                post.getLikedTimes() != null ? post.getLikedTimes().size() : 0,
+                post.getViews()
+        );
     }
 }

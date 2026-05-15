@@ -3,6 +3,8 @@ package com.PIEC.ImobLink.Entitys;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import Role.Role;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -94,6 +96,7 @@ public class User {
     private List<Message> receivedMessages = new ArrayList<>();
 
     @ManyToMany(mappedBy = "reacheds")
+    @JsonIgnore
     private List<Post> viewedPosts = new ArrayList<>();
 
 

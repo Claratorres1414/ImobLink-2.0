@@ -10,9 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.PIEC.ImobLink.DTOs.PostResponse;
+import com.PIEC.ImobLink.DTOs.PostRecommendationDTO;
 import com.PIEC.ImobLink.DTOs.QuestionnaireRequest;
-import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Services.RecommendationService;
 
@@ -52,14 +51,11 @@ public class RecommendationController {
     }
    
     @GetMapping("/recommendations")
-    public List<PostResponse> getRecommendations(Authentication auth) {
+    public List<PostRecommendationDTO> getRecommendations(Authentication auth) {
         Long userId = getUserId(auth);
 
-        List<Post> posts = recommendationService.recomendar(userId);
-
-        return posts.stream().map(PostResponse::new).toList();
+        return recommendationService.recomendar(userId);
     }
-
     // ----------------------------
     // 🔑 PEGAR USER ID DO TOKEN
     // ----------------------------

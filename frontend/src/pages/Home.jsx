@@ -67,34 +67,55 @@ function Home() {
   // BUSCAR TODAS AS IMAGENS DE UM POST
   // ------------------------------
   async function fetchAllImagesForPost(postId) {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/images/${postId}/post/all`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      );
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/images/${postId}/post/all`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    );
 
-      if (!res.ok) return null;
-      const images = await res.json();
-      const urls = [];
+    if (!res.ok) return null;
 
-      for (const img of images) {
-        try {
-          const b = await fetch(
-            `http://localhost:8080/api/images/get/${img.id}`,
-            { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-          );
-          if (!b.ok) continue;
+    const data = await res.json();
 
-          const blob = await b.blob();
-          urls.push(URL.createObjectURL(blob));
-        } catch {}
+    const images =
+      data?.data ??
+      data?.images ??
+      (Array.isArray(data) ? data : []);
+
+    const urls = [];
+
+    for (const img of images) {
+      try {
+        const imgRes = await fetch(
+          `http://localhost:8080/api/images/get/${img.id ?? img}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        );
+
+        if (!imgRes.ok) continue;
+
+        const contentType = imgRes.headers.get("content-type");
+
+        if (contentType?.includes("application/json")) {
+          const json = await imgRes.json();
+          if (json?.data) {
+            urls.push(`data:image/jpeg;base64,${json.data}`);
+          }
+        } else {
+          const blob = await imgRes.blob();
+          const url = URL.createObjectURL(blob);
+          urls.push(url);
+        }
+      } catch (err) {
+        console.log("Erro imagem:", err);
       }
-
-      return urls.length ? urls : null;
-    } catch {
-      return null;
     }
+
+    return urls.length ? urls : null;
+  } catch (err) {
+    console.log("Erro fetch images:", err);
+    return null;
   }
+}
 
   // ------------------------------
   // CARREGAR FEED
@@ -105,41 +126,71 @@ function Home() {
 
     async function carregar() {
       try {
-        let recRes = await fetch(
-          "http://localhost:8080/api/posts/recommendations",
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          }
-        );
+        let recommended = [];
+        let normalFeed = [];
 
-        let recData = await recRes.json();
-        let recommended = recData.data || [];
+        // -------------------------
+        // RECOMENDADOS
+        // -------------------------
+        try {
+          const recRes = await fetch(
+            "http://localhost:8080/api/posts/recommendations",
+            {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            }
+          );
 
-        let feedRes = await fetch("http://localhost:8080/api/feed");
-        let feedData = await feedRes.json();
-        let normalFeed = feedData.data || feedData;
+          const recData = await recRes.json();
+          recommended = recData || [];
+        } catch (err) {
+          console.error("Erro recomendações:", err);
+        }
 
-        // mistura estilo Instagram/TikTok
+        // -------------------------
+        // FEED NORMAL
+        // -------------------------
+        try {
+          const feedRes = await fetch("http://localhost:8080/api/feed");
+          const feedData = await feedRes.json();
+          normalFeed = feedData.data || feedData || [];
+        } catch (err) {
+          console.error("Erro feed:", err);
+        }
+
+        // -------------------------
+        // MERGE (RECOMENDADOS + FEED)
+        // -------------------------
+        const recommendedIds = new Set(recommended.map((p) => p.id));
+
         const finalPosts = [
-          ...recommended.slice(0, 5),
-          ...normalFeed.filter(p => !recommended.find(r => r.id === p.id))
+          ...recommended.slice(0, 5).map((p) => ({
+            ...p,
+            _source: "recommended",
+          })),
+          ...normalFeed
+            .filter((p) => !recommendedIds.has(p.id))
+            .map((p) => ({
+              ...p,
+              _source: "feed",
+            })),
         ];
 
         setPosts(finalPosts);
-        if (!res.ok) throw new Error("Erro ao buscar publicações");
 
-        const data = await res.json();
-        if (!mounted) return;
-
-        setPosts(data || []);
-
-        for (const post of data || []) {
+        // -------------------------
+        // CARREGAMENTO DE IMAGENS + DADOS
+        // -------------------------
+        for (const post of finalPosts) {
           const id = post.id;
+
           const urls = (await fetchAllImagesForPost(id)) || [];
 
           if (urls.length > 0) {
             urls.forEach((u) => createdObjectURLs.push(u));
-            setImageMap((prev) => ({ ...prev, [id]: urls }));
+            setImageMap((prev) => ({
+              ...prev,
+              [id]: urls.length ? urls : ["/placeholder.jpg"],
+            }));
             setCarouselIndex((prev) => ({ ...prev, [id]: 0 }));
           } else {
             try {
@@ -147,10 +198,12 @@ function Home() {
                 `http://localhost:8080/api/images/${id}/post/thumb`,
                 { headers: token ? { Authorization: `Bearer ${token}` } : {} }
               );
+
               if (t.ok) {
                 const blob = await t.blob();
                 const u = URL.createObjectURL(blob);
                 createdObjectURLs.push(u);
+
                 setImageMap((prev) => ({ ...prev, [id]: [u] }));
                 setCarouselIndex((prev) => ({ ...prev, [id]: 0 }));
               } else {
@@ -167,18 +220,26 @@ function Home() {
             }
           }
 
-          // Likes
+          // -------------------------
+          // LIKES
+          // -------------------------
           setLikedMap((prev) => ({
             ...prev,
-            [id]: { count: post.likedTimes ?? 0, liked: false },
+            [id]: {
+              count: post.likedTimes ?? 0,
+              liked: false,
+            },
           }));
 
-          // Comentários
+          // -------------------------
+          // COMMENTS
+          // -------------------------
           try {
             const cRes = await fetch(
               `http://localhost:8080/api/comments/getComments/${post.userId}`,
               { headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
+
             if (cRes.ok) {
               const arr = await cRes.json();
               setCommentsCount((prev) => ({ ...prev, [id]: arr.length }));
@@ -190,19 +251,27 @@ function Home() {
           }
         }
 
-        // Favoritos
+        // -------------------------
+        // FAVORITOS
+        // -------------------------
         if (token) {
           const favsRes = await fetch(
             "http://localhost:8080/api/posts/my-favs",
             { headers: { Authorization: `Bearer ${token}` } }
           );
+
           if (favsRes.ok) {
             const favs = await favsRes.json();
+
+            const favSet = new Set(favs.map((f) => f.id));
+
             setLikedMap((prev) => {
               const novo = { ...prev };
-              favs.forEach((f) => {
-                if (novo[f.id]) novo[f.id].liked = true;
+
+              favSet.forEach((id) => {
+                if (novo[id]) novo[id].liked = true;
               });
+
               return novo;
             });
           }
@@ -283,7 +352,64 @@ function Home() {
       console.error("Erro ao pular questionário:", error);
     }
   };
+  const renderCard = (post) => {
+  const id = post.id;
+  const urls = imageMap[id] || ["/placeholder.jpg"];
+  const idx = carouselIndex[id] ?? 0;
+  const likeInfo = likedMap[id] || { count: 0, liked: false };
+  const commentQty = commentsCount[id] ?? 0;
 
+  return (
+    <div
+      key={id}
+      className="relative bg-white shadow rounded overflow-hidden hover:shadow-lg transition"
+    >
+      {/* IMAGEM */}
+      <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
+        <div className="relative w-full h-full">
+          {urls.map((u, i) => (
+            <img
+              key={i}
+              src={u}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                i === idx ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          ))}
+        </div>
+
+        {post._source === "recommended" && (
+          <div className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded">
+            Recomendado
+          </div>
+        )}
+
+        {post.type && (
+          <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+            {post.type}
+          </div>
+        )}
+      </div>
+
+      {/* INFO */}
+      <div
+        onClick={() => navigate(`/post/${id}`)}
+        className="p-4 cursor-pointer space-y-1"
+      >
+        <p className="font-semibold">{post.description}</p>
+        <p className="text-sm text-gray-600">R$ {post.price}</p>
+        <p className="text-sm text-gray-600">
+          {post.street}, {post.number}
+        </p>
+
+        <div className="flex justify-between text-sm text-gray-500 mt-2">
+          <span>👍 {likeInfo.count}</span>
+          <span>💬 {commentQty}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
   // ------------------------------
   // RENDERIZAÇÃO
   // ------------------------------
@@ -295,137 +421,38 @@ function Home() {
           onSkip={handleSkipQuestionnaire}
         />
       )}
+
       <h2 className="text-2xl font-bold mb-6">Imóveis disponíveis</h2>
 
-      {postsFiltrados.length === 0 ? (
+      {/* =========================
+          🔥 RECOMENDADOS
+      ========================= */}
+      {postsFiltrados.some((p) => p._source === "recommended") && (
+        <>
+          <h3 className="text-xl font-bold mb-4 text-purple-600">
+            Recomendados para você
+          </h3>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            {postsFiltrados
+              .filter((p) => p._source === "recommended")
+              .map((post) => renderCard(post))}
+          </div>
+        </>
+      )}
+
+      {/* =========================
+          🌍 FEED NORMAL
+      ========================= */}
+      <h3 className="text-xl font-bold mb-4">Explorar imóveis</h3>
+
+      {postsFiltrados.filter((p) => p._source !== "recommended").length === 0 ? (
         <p className="text-gray-600">Nenhuma publicação encontrada.</p>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {postsFiltrados.map((post) => {
-            const id = post.id;
-            const urls = imageMap[id] || ["/placeholder.jpg"];
-            const idx = carouselIndex[id] ?? 0;
-            const likeInfo = likedMap[id] || { count: 0, liked: false };
-            const commentQty = commentsCount[id] ?? 0;
-
-            return (
-              <div
-                key={id}
-                className="relative bg-white shadow rounded overflow-hidden hover:shadow-lg transition"
-              >
-                {/* Slider suave */}
-                <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
-                  <div className="relative w-full h-full">
-                    {urls.map((u, i) => (
-                      <img
-                        key={i}
-                        src={u}
-                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
-                          i === idx ? "opacity-100" : "opacity-0"
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Setas e bolinhas */}
-                  {urls.length > 1 && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCarouselIndex((prev) => ({
-                            ...prev,
-                            [id]: (prev[id] - 1 + urls.length) % urls.length,
-                          }));
-                        }}
-                        className="absolute top-1/2 -translate-y-1/2 left-2 bg-black/40 text-white rounded-full px-2 py-1 text-sm"
-                      >
-                        ❮
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCarouselIndex((prev) => ({
-                            ...prev,
-                            [id]: (prev[id] + 1) % urls.length,
-                          }));
-                        }}
-                        className="absolute top-1/2 -translate-y-1/2 right-2 bg-black/40 text-white rounded-full px-2 py-1 text-sm"
-                      >
-                        ❯
-                      </button>
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                        {urls.map((_, i) => (
-                          <div
-                            key={i}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCarouselIndex((prev) => ({
-                                ...prev,
-                                [id]: i,
-                              }));
-                            }}
-                            className={`w-2 h-2 rounded-full cursor-pointer ${
-                              i === idx ? "bg-white" : "bg-white/50"
-                            }`}
-                          ></div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {/* ⭐ Indicador de favorito */}
-                  {likeInfo.liked && (
-                    <div className="absolute top-2 right-2 text-yellow-400 text-xl drop-shadow">
-                      ⭐
-                    </div>
-                  )}
-
-                  {/* 🏷️ Tipo da postagem */}
-                  {post.type && (
-                    <div
-                      className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xx font-semibold ${
-                        post.type.toLowerCase() === "aluguel"
-                          ? "bg-green-500 text-white"
-                          : "bg-blue-500 text-white"
-                      }`}
-                    >
-                      {post.type}
-                    </div>
-                  )}
-                </div>
-
-                {/* Conteúdo abaixo da imagem */}
-                <div
-                  onClick={() => navigate(`/post/${id}`)}
-                  className="p-4 cursor-pointer space-y-1"
-                >
-                  <p className="text-gray-800 font-semibold">
-                    {post.description}
-                  </p>
-                  <p className="text-gray-600 text-sm">Preço: R$ {post.price}</p>
-                  <p className="text-gray-600 text-sm">
-                    {post.street}, {post.number}
-                  </p>
-
-                  {/* Indicadores fora da imagem */}
-                  <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
-                    <span>👍 {likeInfo.count}</span>
-                    <span>💬 {commentQty}</span>
-                  </div>
-
-                  <p className="text-gray-400 text-xs mt-1">
-                    {post.createdAt
-                      ? `Publicado em ${format(
-                          new Date(post.createdAt),
-                          "dd/MM/yyyy"
-                        )}`
-                      : ""}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+          {postsFiltrados
+            .filter((p) => p._source !== "recommended")
+            .map((post) => renderCard(post))}
         </div>
       )}
     </DashboardLayout>
