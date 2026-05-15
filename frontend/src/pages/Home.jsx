@@ -47,9 +47,11 @@ function Home() {
           }
         );
 
-        const completed = await response.json();
+        const data = await response.json();
 
-        if (!completed) {
+        console.log("QUESTIONARIO STATUS:", data);
+
+        if (!data.completed) {
           setShowQuestionnaire(true);
         }
       } catch (error) {
@@ -125,7 +127,6 @@ function Home() {
         setPosts(finalPosts);
         if (!res.ok) throw new Error("Erro ao buscar publicações");
 
-        const data = await res.json();
         if (!mounted) return;
 
         setPosts(data || []);
