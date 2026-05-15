@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.PIEC.ImobLink.DTOs.QuestionnaireRequest;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
@@ -25,9 +26,18 @@ public class RecommendationService {
 
     private final String FASTAPI_URL = "http://127.0.0.1:8000/recommend";
 
-    // ----------------------------
-    // 🔥 REGISTRAR INTERAÇÃO
-    // ----------------------------
+    public void saveQuestionnaire(Long userId, QuestionnaireRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("USER NÃO ENCONTRADO"));
+
+        user.setObjective(request.getObjective());
+        user.setPropertyType(request.getPropertyType());
+        user.setPriceRange(request.getPriceRange());
+
+        user.setQuestionnaireCompleted(true);
+
+        userRepository.save(user);
+    }
     public void registrarInteracao(Long userId, Long postId) {
         System.out.println("USER ID: " + userId);
         System.out.println("POST ID: " + postId);
@@ -57,7 +67,7 @@ public class RecommendationService {
 
         return user.getQuestionnaireCompleted();
     }
-    
+
     public List<Post> recomendar(Long userId) {
 
         List<Post> posts = postRepository.findAll();

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.PIEC.ImobLink.DTOs.PostResponse;
+import com.PIEC.ImobLink.DTOs.QuestionnaireRequest;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
 import com.PIEC.ImobLink.Services.RecommendationService;
@@ -40,6 +41,14 @@ public class RecommendationController {
             "completed",
             recommendationService.questionnaireStatus(userId)
         );
+    }
+    @PostMapping("/questionnaire")
+    public void saveQuestionnaire(
+            @RequestBody QuestionnaireRequest request,
+            Authentication auth
+    ) {
+        Long userId = getUserId(auth);
+        recommendationService.saveQuestionnaire(userId, request);
     }
    
     @GetMapping("/recommendations")
