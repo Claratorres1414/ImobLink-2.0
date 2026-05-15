@@ -87,7 +87,7 @@ function DashboardLayout({ children }) {
   };
 
 return (
-  <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
+  <div className="h-screen flex flex-col bg-gray-100 overflow-y-auto">
     <header className="bg-white shadow-md p-4 flex justify-between items-center relative shrink-0">
       <h1
         className="text-2xl font-bold text-blue-600 cursor-pointer"
@@ -163,7 +163,7 @@ return (
         </nav>
       </aside>
 
-      <main className="flex-1 p-6 space-y-6 overflow-hidden min-h-0">
+      <main className="flex-1 p-6 space-y-6 overflow-y-auto min-h-0">
         {children}
       </main>
     </div>

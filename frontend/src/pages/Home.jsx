@@ -34,34 +34,35 @@ function Home() {
   // VER SE QUESTIONÁRIO FOI RESPONDIDO
   // ------------------------------ 
   useEffect(() => {
-    async function checkQuestionnaireStatus() {
-      if (!token) return;
+  async function checkQuestionnaireStatus() {
+    if (!token) return;
 
-      try {
-        const response = await fetch(
-          "http://localhost:8080/api/posts/questionnaire/status",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        console.log("QUESTIONARIO STATUS:", data);
-
-        if (!data.completed) {
-          setShowQuestionnaire(true);
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/posts/questionnaire/status",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      } catch (error) {
-        console.error("Erro ao verificar questionário:", error);
+      );
+
+      const data = await response.json();
+
+      if (!data.completed) {
+        setShowQuestionnaire(true);
+      } else {
+        setShowQuestionnaire(false);
       }
+    } catch (error) {
+      console.error("Erro ao verificar questionário:", error);
+      setShowQuestionnaire(false);
     }
+  }
 
-    checkQuestionnaireStatus();
-  }, [token]);
-
+  checkQuestionnaireStatus();
+}, [token]);
+  
   // ------------------------------
   // BUSCAR TODAS AS IMAGENS DE UM POST
   // ------------------------------
@@ -127,6 +128,7 @@ function Home() {
         setPosts(finalPosts);
         if (!res.ok) throw new Error("Erro ao buscar publicações");
 
+        const data = await res.json();
         if (!mounted) return;
 
         setPosts(data || []);
