@@ -72,6 +72,10 @@ public class RecommendationService {
 
         List<Post> posts = postRepository.findAll();
         User user = userRepository.findById(userId).orElseThrow();
+        Map<String, Object> userProfile = new HashMap<>();
+        userProfile.put("objective", user.getObjective());
+        userProfile.put("propertyType", user.getPropertyType());
+        userProfile.put("priceRange", user.getPriceRange());
 
         // pega interações do usuário (views)
         Set<Long> interagidos = posts.stream()
@@ -94,6 +98,7 @@ public class RecommendationService {
         payload.put("posts", postsPayload);
         payload.put("user_interactions", interagidos);
         payload.put("user_id", userId);
+        payload.put("user_profile", userProfile);
 
         // chama FastAPI
         RestTemplate restTemplate = new RestTemplate();
