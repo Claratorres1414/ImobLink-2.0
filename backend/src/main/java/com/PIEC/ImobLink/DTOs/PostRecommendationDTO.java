@@ -2,6 +2,8 @@ package com.PIEC.ImobLink.DTOs;
 
 public record PostRecommendationDTO(
         Long id,
+        Long userId,
+        Boolean wasLiked,
         String description,
         double price,
         String street,

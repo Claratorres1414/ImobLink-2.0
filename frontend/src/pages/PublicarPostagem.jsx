@@ -9,7 +9,7 @@ function PublicarPostagem() {
   const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
   const [tipo, setTipo] = useState(""); // ✅ tipo: venda/aluguel
-
+  const [propertyType, setPropertyType] = useState(""); // ✅ tipo do imóvel: casa, apartamento, etc.
   const [imagens, setImagens] = useState([]);
   const [preview, setPreview] = useState([]);
 
@@ -62,7 +62,7 @@ function PublicarPostagem() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!descricao || !preco || !rua || !numero || !bairro || !tipo || imagens.length === 0) {
+    if (!descricao || !preco || !rua || !numero || !bairro || !tipo || !propertyType || imagens.length === 0) {
       setErro("Preencha todos os campos, selecione o tipo e pelo menos 1 imagem.");
       return;
     }
@@ -78,6 +78,7 @@ function PublicarPostagem() {
       number: numero,
       avenue: bairro,
       type: tipo,
+      propertyType: propertyType,
     };
 
     formData.append(
@@ -197,7 +198,29 @@ function PublicarPostagem() {
               </button>
             </div>
           </div>
+          {/* ✅ Dropdown para tipo do imóvel */
+          <div>
+            <label className="block font-semibold mb-2 text-gray-800">
+              Tipo de imóvel
+            </label>
 
+            <div className="grid grid-cols-2 gap-3">
+              {["casa", "apartamento", "terreno", "comercial"].map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setPropertyType(item)}
+                  className={`border rounded px-4 py-2 transition ${
+                    propertyType === item
+                      ? "bg-green-600 text-white border-green-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>}
           {/* ✅ Input múltiplas imagens */}
           <div>
             <label className="block font-semibold mb-1">Imagens do imóvel</label>

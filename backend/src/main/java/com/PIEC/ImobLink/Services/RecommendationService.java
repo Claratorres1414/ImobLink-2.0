@@ -65,24 +65,34 @@ public class RecommendationService {
 
     public List<PostRecommendationDTO> recomendar(Long userId) {
 
-        List<Post> posts = postRepository.findAll();
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("USER NÃO ENCONTRADO"));
 
-        // perfil do usuário
+        List<Post> posts = postRepository.findAll()
+                .stream()
+                .filter(post -> !post.getUser().getId().equals(user.getId()))
+                .toList();
+
         Map<String, Object> userProfile = new HashMap<>();
         userProfile.put("objective", user.getObjective());
         userProfile.put("propertyType", user.getPropertyType());
         userProfile.put("priceRange", user.getPriceRange());
 
-        // posts com interação do usuário
         Set<Long> interagidos = posts.stream()
-                .filter(post -> post.getReacheds() != null && post.getReacheds().contains(user))
-                .map(Post::getId)
-                .collect(Collectors.toSet());
+            .filter(post ->
+                (post.getReacheds() != null && post.getReacheds().contains(user)) ||
 
-        // payload para FastAPI
+                (post.getLikedTimes() != null &&
+                post.getLikedTimes().stream()
+                    .anyMatch(like -> like.getUser().getId().equals(user.getId()))) ||
+
+                (post.getFavedTimes() != null &&
+                post.getFavedTimes().stream()
+                    .anyMatch(fav -> fav.getUser().getId().equals(user.getId())))
+            )
+            .map(Post::getId)
+            .collect(Collectors.toSet());
+
         Map<String, Object> payload = new HashMap<>();
 
         List<Map<String, Object>> postsPayload = posts.stream().map(post -> {
@@ -91,11 +101,12 @@ public class RecommendationService {
             map.put("id", post.getId());
             map.put("description", post.getDescription());
             map.put("type", post.getType());
+            map.put("propertyType", post.getPropertyType());
             map.put("avenue", post.getAvenue());
             map.put("street", post.getStreet());
             map.put("price", post.getPrice());
             map.put("likedTimes",
-                post.getLikedTimes() != null ? post.getLikedTimes().size() : 0);
+                    post.getLikedTimes() != null ? post.getLikedTimes().size() : 0);
             map.put("views", post.getViews());
 
             return map;
@@ -114,14 +125,13 @@ public class RecommendationService {
                 List.class
         );
 
-        // fallback caso FastAPI falhe
-        if (response == null) {
+        if (response == null || response.isEmpty()) {
             return posts.stream()
-                    .map(this::toDTO)
+                    .limit(10)
+                    .map(post -> toDTO(post, user))
                     .toList();
         }
 
-        // mapa id -> score
         Map<Long, Double> scoreMap = new HashMap<>();
 
         for (Map<String, Object> item : response) {
@@ -131,25 +141,32 @@ public class RecommendationService {
         }
 
         return posts.stream()
+                .filter(post -> !interagidos.contains(post.getId()))
                 .sorted((p1, p2) -> Double.compare(
                         scoreMap.getOrDefault(p2.getId(), 0.0),
                         scoreMap.getOrDefault(p1.getId(), 0.0)
                 ))
-                .map(this::toDTO)
+                .limit(10)
+                .map(post -> toDTO(post, user))
                 .toList();
     }
 
-    private PostRecommendationDTO toDTO(Post post) {
-        return new PostRecommendationDTO(
-                post.getId(),
-                post.getDescription(),
-                post.getPrice(),
-                post.getStreet(),
-                post.getAvenue(),
-                post.getNumber(),
-                post.getType(),
-                post.getLikedTimes() != null ? post.getLikedTimes().size() : 0,
-                post.getViews()
-        );
-    }
+    private PostRecommendationDTO toDTO(Post post, User user) {
+    boolean wasLiked = post.getLikedTimes() != null &&
+                       post.getLikedTimes().contains(user);
+
+    return new PostRecommendationDTO(
+        post.getId(),
+        post.getUser().getId(),
+        wasLiked,
+        post.getDescription(),
+        post.getPrice(),
+        post.getStreet(),
+        post.getAvenue(),
+        post.getNumber(),
+        post.getType(),
+        post.getLikedTimes() != null ? post.getLikedTimes().size() : 0,
+        post.getViews()
+    );
+}
 }

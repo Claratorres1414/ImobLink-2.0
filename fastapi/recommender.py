@@ -11,30 +11,7 @@ def build_post_text(post):
         str(post.get("price", "")),
     ])
 
-def get_profile_score(user_profile, post):
-    score = 0.0
 
-    objective = user_profile.get("objective")
-    property_type = user_profile.get("propertyType")
-    price_range = user_profile.get("priceRange")
-
-    # 1. tipo do imóvel (MUITO importante)
-    if property_type and post.get("type") == property_type:
-        score += 3.0
-
-    # 2. objetivo (aluguel/venda)
-    if objective and post.get("type") == objective:
-        score += 2.0
-
-    # 3. preço (já existe lógica boa)
-    price_match = get_price_score(
-        post.get("price", 0),
-        price_range,
-        objective
-    )
-    score += price_match * 4.0  # 🔥 peso alto
-
-    return score
 def build_user_profile(user_profile):
     return " ".join([
         str(user_profile.get("objective", "")),
@@ -52,7 +29,7 @@ def get_price_score(price, price_range, objective):
             "medio": (1501, 3500),
             "alto": (3501, 999999999)
         }
-    else:  # venda
+    else:
         ranges = {
             "baixo": (0, 200000),
             "medio": (200001, 500000),
@@ -67,15 +44,35 @@ def get_price_score(price, price_range, objective):
     return 1.0 if min_price <= price <= max_price else 0.0
 
 
+def get_profile_score(user_profile, post):
+    score = 0.0
+
+    objective = user_profile.get("objective")
+    property_type = user_profile.get("propertyType")
+    price_range = user_profile.get("priceRange")
+
+    # tipo imóvel
+    if property_type and post.get("propertyType") == property_type:
+        score += 3.0
+
+    # aluguel/venda
+    if objective and post.get("type") == objective:
+        score += 2.0
+
+    # preço
+    score += get_price_score(
+        post.get("price", 0),
+        price_range,
+        objective
+    ) * 4.0
+
+    return score
+
+
 def recommend(data):
     posts = data.get("posts", [])
     user_profile = data.get("user_profile", {}) or {}
     user_interactions = set(data.get("user_interactions", []))
-    profile_score = get_profile_score(user_profile, post)
-
-    
-    profile_weight = 1.0 if user_profile.get("objective") else 0.3
-    final_score *= profile_weight
 
     if not posts:
         return []
@@ -96,28 +93,26 @@ def recommend(data):
     recommendations = []
 
     for i, post in enumerate(posts):
+        if post["id"] in user_interactions:
+            continue
+
         similarity_score = similarities[i]
-
-        interaction_boost = 1.5 if post["id"] in user_interactions else 0
-
-        price_boost = get_price_score(
-            post.get("price", 0),
-            user_profile.get("priceRange"),
-            user_profile.get("objective")
-        )
+        profile_score = get_profile_score(user_profile, post)
 
         popularity_score = (
-            float(post.get("views", 0)) * 0.3 +
-            float(post.get("likedTimes", 0)) * 0.7
+            float(post.get("likedTimes", 0)) * 0.7 +
+            float(post.get("favedTimes", 0)) * 1.0
         )
 
         final_score = (
             profile_score * 4 +
             similarity_score * 3 +
-            interaction_boost +
-            price_boost +
             popularity_score
         )
+
+        # reduz força caso usuário não respondeu questionário
+        profile_weight = 1.0 if user_profile.get("objective") else 0.3
+        final_score *= profile_weight
 
         recommendations.append({
             "id": int(post["id"]),

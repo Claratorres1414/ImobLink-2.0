@@ -10,8 +10,10 @@ function Home() {
   const [imageMap, setImageMap] = useState({});
   const [carouselIndex, setCarouselIndex] = useState({});
   const [likedMap, setLikedMap] = useState({});
+  const [favoriteMap, setFavoriteMap] = useState({});
   const [commentsCount, setCommentsCount] = useState({});
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
@@ -26,7 +28,7 @@ function Home() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setUser(data))
+      .then((data) => setUser(data.data || data))
       .catch((err) => console.error("Erro ao buscar usuário:", err));
   }, [token]);
 
@@ -34,35 +36,36 @@ function Home() {
   // VER SE QUESTIONÁRIO FOI RESPONDIDO
   // ------------------------------ 
   useEffect(() => {
-  async function checkQuestionnaireStatus() {
-    if (!token) return;
+    async function checkQuestionnaireStatus() {
+      if (!token) return;
 
-    try {
-      const response = await fetch(
-        "http://localhost:8080/api/posts/questionnaire/status",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      try {
+        const response = await fetch(
+          "http://localhost:8080/api/posts/questionnaire/status",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!data.completed) {
+          setShowQuestionnaire(true);
+          setQuestionnaireCompleted(false);
+        } else {
+          setShowQuestionnaire(false);
+          setQuestionnaireCompleted(true);
         }
-      );
-
-      const data = await response.json();
-
-      if (!data.completed) {
-        setShowQuestionnaire(true);
-      } else {
+      } catch (error) {
+        console.error("Erro ao verificar questionário:", error);
         setShowQuestionnaire(false);
       }
-    } catch (error) {
-      console.error("Erro ao verificar questionário:", error);
-      setShowQuestionnaire(false);
     }
-  }
 
-  checkQuestionnaireStatus();
-}, [token]);
-  
+    checkQuestionnaireStatus();
+  }, [token]);
   // ------------------------------
   // BUSCAR TODAS AS IMAGENS DE UM POST
   // ------------------------------
@@ -125,6 +128,7 @@ function Home() {
     const createdObjectURLs = [];
 
     async function carregar() {
+      if (!user?.id) return;
       try {
         let recommended = [];
         let normalFeed = [];
@@ -140,8 +144,8 @@ function Home() {
             }
           );
 
-          const recData = await recRes.json();
-          recommended = recData || [];
+          const recResponse = await recRes.json();
+            recommended = recResponse.data || recResponse || [];
         } catch (err) {
           console.error("Erro recomendações:", err);
         }
@@ -160,15 +164,25 @@ function Home() {
         // -------------------------
         // MERGE (RECOMENDADOS + FEED)
         // -------------------------
-        const recommendedIds = new Set(recommended.map((p) => p.id));
+        const displayedRecommended = recommended
+          .filter((p) => Number(p.userId) !== Number(user.id))
+          .slice(0, 5);
 
+        const recommendedIds = new Set(
+          displayedRecommended.map((p) => p.id)
+        );
         const finalPosts = [
-          ...recommended.slice(0, 5).map((p) => ({
+          ...displayedRecommended.map((p) => ({
             ...p,
             _source: "recommended",
           })),
+
           ...normalFeed
-            .filter((p) => !recommendedIds.has(p.id))
+            .filter(
+              (p) =>
+                !recommendedIds.has(p.id) &&
+                Number(p.userId) !== Number(user.id)
+            )
             .map((p) => ({
               ...p,
               _source: "feed",
@@ -227,7 +241,7 @@ function Home() {
             ...prev,
             [id]: {
               count: post.likedTimes ?? 0,
-              liked: false,
+              liked: Boolean(post.wasLiked),
             },
           }));
 
@@ -255,21 +269,53 @@ function Home() {
         // FAVORITOS
         // -------------------------
         if (token) {
-          const favsRes = await fetch(
-            "http://localhost:8080/api/posts/my-favs",
-            { headers: { Authorization: `Bearer ${token}` } }
+          // likes
+          const likesRes = await fetch(
+            "http://localhost:8080/api/posts/my-likes",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
           );
 
-          if (favsRes.ok) {
-            const favs = await favsRes.json();
+          if (likesRes.ok) {
+            const response = await likesRes.json();
+            const likes = response.data || response || [];
 
-            const favSet = new Set(favs.map((f) => f.id));
+            const likedSet = new Set(likes.map((p) => p.id));
 
             setLikedMap((prev) => {
               const novo = { ...prev };
 
+              Object.keys(novo).forEach((id) => {
+                novo[id] = {
+                  ...novo[id],
+                  liked: likedSet.has(Number(id)),
+                };
+              });
+
+              return novo;
+            });
+          }
+
+          // favoritos
+          const favsRes = await fetch(
+            "http://localhost:8080/api/posts/my-favs",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (favsRes.ok) {
+            const favsResponse = await favsRes.json();
+            const favs = favsResponse.data || favsResponse || [];
+
+            const favSet = new Set(favs.map((p) => p.id));
+
+           setFavoriteMap(() => {
+              const novo = {};
+
               favSet.forEach((id) => {
-                if (novo[id]) novo[id].liked = true;
+                novo[id] = true;
               });
 
               return novo;
@@ -288,7 +334,7 @@ function Home() {
       Object.values(slideIntervals.current).forEach(clearInterval);
       createdObjectURLs.forEach((u) => URL.revokeObjectURL(u));
     };
-  }, [token]);
+  }, [token, user]);
 
   // ------------------------------
   // AUTOPLAY DO SLIDER
@@ -313,8 +359,7 @@ function Home() {
     };
   }, [imageMap]);
 
-  const postsFiltrados =
-    user && user.name ? posts.filter((p) => p.createdBy !== user.name) : posts;
+  const postsFiltrados = posts;
   const handleQuestionnaireSubmit = async (data) => {
     try {
       await fetch("http://localhost:8080/api/posts/questionnaire", {
@@ -327,6 +372,7 @@ function Home() {
       });
 
       setShowQuestionnaire(false);
+      setQuestionnaireCompleted(true);
     } catch (error) {
       console.error("Erro ao salvar questionário:", error);
     }
@@ -352,6 +398,84 @@ function Home() {
       console.error("Erro ao pular questionário:", error);
     }
   };
+  async function toggleFavorite(postId) {
+    const favoritado = favoriteMap[postId];
+
+    const endpoint = favoritado
+      ? `http://localhost:8080/api/posts/unfav/${postId}`
+      : `http://localhost:8080/api/posts/fav/${postId}`;
+
+    const method = favoritado ? "DELETE" : "POST";
+
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setFavoriteMap((prev) => ({
+          ...prev,
+          [postId]: !favoritado,
+        }));
+
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  _source: "feed",
+                }
+              : post
+          )
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  async function toggleLike(postId) {
+    const liked = likedMap[postId]?.liked;
+
+    const endpoint = liked
+      ? `http://localhost:8080/api/posts/unlike/${postId}`
+      : `http://localhost:8080/api/posts/like/${postId}`;
+
+    const method = liked ? "DELETE" : "POST";
+
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setLikedMap((prev) => ({
+          ...prev,
+          [postId]: {
+            liked: !liked,
+            count: liked
+              ? prev[postId].count - 1
+              : prev[postId].count + 1,
+          },
+        }));
+
+        // remove recomendação quando interagir
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  _source: "feed",
+                }
+              : post
+          )
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
   const renderCard = (post) => {
   const id = post.id;
   const urls = imageMap[id] || ["/placeholder.jpg"];
@@ -402,9 +526,62 @@ function Home() {
           {post.street}, {post.number}
         </p>
 
-        <div className="flex justify-between text-sm text-gray-500 mt-2">
-          <span>👍 {likeInfo.count}</span>
-          <span>💬 {commentQty}</span>
+        <div className="flex justify-between items-center mt-3">
+          <div className="flex gap-3">
+            <div className="flex items-center gap-1 text-gray-500">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLike(id);
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill={likeInfo.liked ? "red" : "none"}
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.8}
+                  stroke="red"
+                  className="w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 
+                    4.5 0 116.364 6.364L12 21.364l-7.682-7.682a4.5 
+                    4.5 0 010-6.364z"
+                  />
+                </svg>
+              </button>
+
+              <span className="text-sm">{likeInfo.count}</span>
+            </div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(id);
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill={favoriteMap[id] ? "#facc15" : "none"}
+                viewBox="0 0 24 24"
+                strokeWidth={1.8}
+                stroke="#facc15"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M11.48 3.499a.562.562 0 011.04 0l2.07 4.195a.563.563 0 00.424.307l4.63.673a.563.563 0 01.312.96l-3.35 3.27a.563.563 0 00-.162.498l.79 4.6a.563.563 0 01-.817.593l-4.137-2.176a.563.563 0 00-.524 0l-4.137 2.176a.563.563 0 01-.817-.593l.79-4.6a.563.562 0 00-.162-.498l-3.35-3.27a.563.563 0 01.312-.96l4.63-.673a.563.563 0 00.424-.307l2.07-4.195z"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <span className="text-sm text-gray-500">
+            💬 {commentQty}
+          </span>
         </div>
       </div>
     </div>
@@ -446,7 +623,7 @@ function Home() {
       ========================= */}
       <h3 className="text-xl font-bold mb-4">Explorar imóveis</h3>
 
-      {postsFiltrados.filter((p) => p._source !== "recommended").length === 0 ? (
+      {questionnaireCompleted && postsFiltrados.filter((p) => p._source !== "recommended").length === 0 ? (
         <p className="text-gray-600">Nenhuma publicação encontrada.</p>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
