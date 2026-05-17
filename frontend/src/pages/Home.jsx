@@ -145,10 +145,16 @@ function Home() {
             }
           );
 
-          const recResponse = await recRes.json();
+          if (recRes.ok) {
+            const recResponse = await recRes.json();
             recommended = recResponse.data || recResponse || [];
+          } else {
+            console.log("Recomendações indisponíveis. Carregando feed normal.");
+            recommended = [];
+          }
         } catch (err) {
-          console.error("Erro recomendações:", err);
+          console.log("FastAPI offline. Exibindo apenas feed normal.");
+          recommended = [];
         }
 
         // -------------------------

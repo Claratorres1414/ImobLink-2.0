@@ -120,13 +120,16 @@ public class RecommendationService {
 
         RestTemplate restTemplate = new RestTemplate();
 
-        List<Map<String, Object>> response = restTemplate.postForObject(
-                FASTAPI_URL,
-                payload,
-                List.class
-        );
+        List<Map<String, Object>> response;
 
-        if (response == null || response.isEmpty()) {
+        try {
+            response = restTemplate.postForObject(
+                    FASTAPI_URL,
+                    payload,
+                    List.class
+            );
+        } catch (Exception e) {
+            System.out.println("FastAPI indisponível: " + e.getMessage());
             return posts.stream()
                     .limit(10)
                     .map(post -> toDTO(post, user))
