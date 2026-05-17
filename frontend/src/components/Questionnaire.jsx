@@ -37,7 +37,7 @@ function prevStep() {
             onChange={handleChange}
             className="border p-2 rounded"
           >
-            <option value="">Objetivo</option>
+            <option value="">Tipo de anúncio</option>
             <option value="venda">Venda</option>
             <option value="aluguel">Aluguel</option>
           </select>

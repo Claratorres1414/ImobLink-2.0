@@ -10,6 +10,7 @@ import EditarPostagem from "./pages/EditarPostagem";
 import PostagemDetalhada from "./pages/PostagemDetalhada";
 import UserProfile from "./pages/UserProfile";
 import Busca from "./pages/Busca";
+import QuestionnairePage from "./pages/QuestionnairePage";
 
 // Chat pages
 import ChatPage from "./pages/ChatPage";
@@ -31,6 +32,14 @@ function App() {
 
         {/* Rotas protegidas (renderam as páginas — as páginas devem conter DashboardLayout se preciso) */}
         <Route
+          path="/questionnaire"
+          element={
+            <RotaProtegida>
+              <QuestionnairePage />
+            </RotaProtegida>
+          }
+        />
+        <Route
           path="/home"
           element={
             <RotaProtegida>
@@ -38,6 +47,7 @@ function App() {
             </RotaProtegida>
           }
         />
+        
 
         <Route
           path="/perfil"

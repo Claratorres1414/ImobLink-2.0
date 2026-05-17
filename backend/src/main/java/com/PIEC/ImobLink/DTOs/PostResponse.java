@@ -23,6 +23,7 @@ public class PostResponse {
     private String createdBy;
     private String number;
     private String type;
+    private String propertyType;
     private int favedTimes;
     private int likedTimes;
     private int views;
@@ -43,6 +44,7 @@ public class PostResponse {
         this.avenue = post.getAvenue();
         this.number = post.getNumber();
         this.type = post.getType();
+        this.propertyType = post.getPropertyType();
         this.favedTimes = post.getFavedTimes().size();
         this.likedTimes = post.getLikedTimes().size();
         this.views = post.getViews();

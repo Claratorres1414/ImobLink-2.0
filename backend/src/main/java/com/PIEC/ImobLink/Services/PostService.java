@@ -103,8 +103,9 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse createPost(List<MultipartFile> images, String description, double price, String street,
-                                   String avenue, String number, String type, Authentication auth) throws IOException {
+    public PostResponse createPost(List<MultipartFile> images, String description,
+        double price, String street, String avenue, String number,
+        String type, String propertyType, Authentication auth) throws IOException {
         User user = requireUserService.requireUser(auth);
 
         if (images.size() > 10 || images.isEmpty()) {
@@ -119,6 +120,7 @@ public class PostService {
         post.setUser(user);
         post.setNumber(number);
         post.setType(type);
+        post.setPropertyType(propertyType);
         post.setWasUpdated(false);
 
         for (MultipartFile image : images) {

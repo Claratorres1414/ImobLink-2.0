@@ -64,7 +64,7 @@ public class RecommendationService {
     }
 
     public List<PostRecommendationDTO> recomendar(Long userId) {
-
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("USER NÃO ENCONTRADO"));
 
@@ -80,7 +80,9 @@ public class RecommendationService {
 
         Set<Long> interagidos = posts.stream()
             .filter(post ->
-                (post.getReacheds() != null && post.getReacheds().contains(user)) ||
+                (post.getReacheds() != null &&
+                post.getReacheds().stream()
+                    .anyMatch(u -> u.getId().equals(user.getId()))) ||
 
                 (post.getLikedTimes() != null &&
                 post.getLikedTimes().stream()
@@ -92,7 +94,6 @@ public class RecommendationService {
             )
             .map(Post::getId)
             .collect(Collectors.toSet());
-
         Map<String, Object> payload = new HashMap<>();
 
         List<Map<String, Object>> postsPayload = posts.stream().map(post -> {
@@ -141,6 +142,7 @@ public class RecommendationService {
         }
 
         return posts.stream()
+                
                 .filter(post -> !interagidos.contains(post.getId()))
                 .sorted((p1, p2) -> Double.compare(
                         scoreMap.getOrDefault(p2.getId(), 0.0),
@@ -152,21 +154,23 @@ public class RecommendationService {
     }
 
     private PostRecommendationDTO toDTO(Post post, User user) {
-    boolean wasLiked = post.getLikedTimes() != null &&
-                       post.getLikedTimes().contains(user);
+        boolean wasLiked = post.getLikedTimes() != null &&
+            post.getLikedTimes()
+                .stream()
+                .anyMatch(like -> like.getUser().getId().equals(user.getId()));
 
-    return new PostRecommendationDTO(
-        post.getId(),
-        post.getUser().getId(),
-        wasLiked,
-        post.getDescription(),
-        post.getPrice(),
-        post.getStreet(),
-        post.getAvenue(),
-        post.getNumber(),
-        post.getType(),
-        post.getLikedTimes() != null ? post.getLikedTimes().size() : 0,
-        post.getViews()
-    );
-}
+        return new PostRecommendationDTO(
+            post.getId(),
+            post.getUser().getId(),
+            wasLiked,
+            post.getDescription(),
+            post.getPrice(),
+            post.getStreet(),
+            post.getAvenue(),
+            post.getNumber(),
+            post.getType(),
+            post.getLikedTimes() != null ? post.getLikedTimes().size() : 0,
+            post.getViews()
+        );
+    }
 }

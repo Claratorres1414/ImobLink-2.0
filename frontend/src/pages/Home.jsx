@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import Questionnaire from "../components/Questionnaire";
+
 
 function Home() {
   const [posts, setPosts] = useState([]);
@@ -11,8 +11,9 @@ function Home() {
   const [carouselIndex, setCarouselIndex] = useState({});
   const [likedMap, setLikedMap] = useState({});
   const [favoriteMap, setFavoriteMap] = useState({});
+  const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [commentsCount, setCommentsCount] = useState({});
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+ 
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -36,36 +37,36 @@ function Home() {
   // VER SE QUESTIONÁRIO FOI RESPONDIDO
   // ------------------------------ 
   useEffect(() => {
-    async function checkQuestionnaireStatus() {
-      if (!token) return;
+  async function checkQuestionnaireStatus() {
+    if (!token) return;
 
-      try {
-        const response = await fetch(
-          "http://localhost:8080/api/posts/questionnaire/status",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (!data.completed) {
-          setShowQuestionnaire(true);
-          setQuestionnaireCompleted(false);
-        } else {
-          setShowQuestionnaire(false);
-          setQuestionnaireCompleted(true);
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/posts/questionnaire/status",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      } catch (error) {
-        console.error("Erro ao verificar questionário:", error);
-        setShowQuestionnaire(false);
-      }
-    }
+      );
 
-    checkQuestionnaireStatus();
-  }, [token]);
+      const data = await response.json();
+
+      if (!data.completed) {
+        navigate("/questionnaire");
+        return;
+      }
+
+      setQuestionnaireCompleted(true);
+    } catch (error) {
+      console.error("Erro ao verificar questionário:", error);
+    } finally {
+      setCheckingQuestionnaire(false);
+    }
+  }
+
+  checkQuestionnaireStatus();
+}, [token, navigate]);
   // ------------------------------
   // BUSCAR TODAS AS IMAGENS DE UM POST
   // ------------------------------
@@ -164,13 +165,20 @@ function Home() {
         // -------------------------
         // MERGE (RECOMENDADOS + FEED)
         // -------------------------
-        const displayedRecommended = recommended
-          .filter((p) => Number(p.userId) !== Number(user.id))
-          .slice(0, 5);
+        const displayedRecommended = questionnaireCompleted
+          ? recommended
+              .filter(
+                (p) =>
+                  Number(p.userId) !== Number(user.id) &&
+                  !Boolean(p.wasLiked)
+              )
+              .slice(0, 5)
+          : [];
 
         const recommendedIds = new Set(
           displayedRecommended.map((p) => p.id)
         );
+
         const finalPosts = [
           ...displayedRecommended.map((p) => ({
             ...p,
@@ -180,8 +188,8 @@ function Home() {
           ...normalFeed
             .filter(
               (p) =>
-                !recommendedIds.has(p.id) &&
-                Number(p.userId) !== Number(user.id)
+                Number(p.userId) !== Number(user.id) &&
+                !recommendedIds.has(p.id)
             )
             .map((p) => ({
               ...p,
@@ -241,7 +249,7 @@ function Home() {
             ...prev,
             [id]: {
               count: post.likedTimes ?? 0,
-              liked: Boolean(post.wasLiked),
+              liked: prev[id]?.liked ?? Boolean(post.wasLiked),
             },
           }));
 
@@ -360,44 +368,6 @@ function Home() {
   }, [imageMap]);
 
   const postsFiltrados = posts;
-  const handleQuestionnaireSubmit = async (data) => {
-    try {
-      await fetch("http://localhost:8080/api/posts/questionnaire", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      setShowQuestionnaire(false);
-      setQuestionnaireCompleted(true);
-    } catch (error) {
-      console.error("Erro ao salvar questionário:", error);
-    }
-  };
-
-  const handleSkipQuestionnaire = async () => {
-    try {
-      await fetch("http://localhost:8080/api/posts/questionnaire", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          objective: null,
-          propertyType: null,
-          priceRange: null,
-        }),
-      });
-
-      setShowQuestionnaire(false);
-    } catch (error) {
-      console.error("Erro ao pular questionário:", error);
-    }
-  };
   async function toggleFavorite(postId) {
     const favoritado = favoriteMap[postId];
 
@@ -483,6 +453,9 @@ function Home() {
   const likeInfo = likedMap[id] || { count: 0, liked: false };
   const commentQty = commentsCount[id] ?? 0;
 
+  if (checkingQuestionnaire) {
+    return <div>Carregando...</div>;
+  }
   return (
     <div
       key={id}
@@ -529,54 +502,11 @@ function Home() {
         <div className="flex justify-between items-center mt-3">
           <div className="flex gap-3">
             <div className="flex items-center gap-1 text-gray-500">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleLike(id);
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill={likeInfo.liked ? "red" : "none"}
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.8}
-                  stroke="red"
-                  className="w-6 h-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 
-                    4.5 0 116.364 6.364L12 21.364l-7.682-7.682a4.5 
-                    4.5 0 010-6.364z"
-                  />
-                </svg>
-              </button>
-
-              <span className="text-sm">{likeInfo.count}</span>
+              <span className="text-xl">👍</span>
+              <span className="text-sm">
+                {post.likedTimes ?? post.likes ?? post.likedCount ?? 0}
+              </span>
             </div>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFavorite(id);
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill={favoriteMap[id] ? "#facc15" : "none"}
-                viewBox="0 0 24 24"
-                strokeWidth={1.8}
-                stroke="#facc15"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M11.48 3.499a.562.562 0 011.04 0l2.07 4.195a.563.563 0 00.424.307l4.63.673a.563.563 0 01.312.96l-3.35 3.27a.563.563 0 00-.162.498l.79 4.6a.563.563 0 01-.817.593l-4.137-2.176a.563.563 0 00-.524 0l-4.137 2.176a.563.563 0 01-.817-.593l.79-4.6a.563.562 0 00-.162-.498l-3.35-3.27a.563.563 0 01.312-.96l4.63-.673a.563.563 0 00.424-.307l2.07-4.195z"
-                />
-              </svg>
-            </button>
           </div>
 
           <span className="text-sm text-gray-500">
@@ -592,19 +522,13 @@ function Home() {
   // ------------------------------
   return (
     <DashboardLayout>
-      {showQuestionnaire && (
-        <Questionnaire
-          onSubmit={handleQuestionnaireSubmit}
-          onSkip={handleSkipQuestionnaire}
-        />
-      )}
-
       <h2 className="text-2xl font-bold mb-6">Imóveis disponíveis</h2>
 
       {/* =========================
           🔥 RECOMENDADOS
       ========================= */}
-      {postsFiltrados.some((p) => p._source === "recommended") && (
+      {questionnaireCompleted &&
+        postsFiltrados.some((p) => p._source === "recommended") && (
         <>
           <h3 className="text-xl font-bold mb-4 text-purple-600">
             Recomendados para você

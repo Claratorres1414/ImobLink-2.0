@@ -70,11 +70,13 @@ def get_profile_score(user_profile, post):
 
 
 def recommend(data):
+    
     posts = data.get("posts", [])
     user_profile = data.get("user_profile", {}) or {}
     user_interactions = set(data.get("user_interactions", []))
-
-    if not posts:
+    print("USER INTERACTIONS:", user_interactions)
+    print("POST IDS:", [post["id"] for post in posts])
+    if not posts:   
         return []
 
     user_text = build_user_profile(user_profile)

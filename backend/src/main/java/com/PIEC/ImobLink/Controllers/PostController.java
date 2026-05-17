@@ -49,7 +49,7 @@ public class PostController {
         List<MultipartFile> imagesList = Arrays.asList(images);
         return ResponseUtil.created(
                 "Post criado com sucesso",
-                postService.createPost(imagesList, data.getDescription(), data.getPrice(), data.getStreet(), data.getAvenue(), data.getNumber(), data.getType(), auth)
+                postService.createPost(imagesList, data.getDescription(), data.getPrice(), data.getStreet(), data.getAvenue(), data.getNumber(), data.getType(), data.getPropertyType(), auth)
         );
     }
 

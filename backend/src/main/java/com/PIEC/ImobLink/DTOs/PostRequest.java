@@ -10,4 +10,5 @@ public class PostRequest {
     private String avenue;
     private String number;
     private String type;
+    private String propertyType;
 }
