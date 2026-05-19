@@ -107,10 +107,7 @@ public class PostService {
   //Corrigir conflito de parâmetros
     @Transactional
     public PostResponse createPost(List<MultipartFile> images, String description, double price, String street,
-                                   String avenue, String number, String type, List<String> tags, Authentication auth) throws IOException {
-    public PostResponse createPost(List<MultipartFile> images, String description,
-        double price, String street, String avenue, String number,
-        String type, String propertyType, Authentication auth) throws IOException {
+                                   String avenue, String number, String type, String propertyType, List<String> tags, Authentication auth) throws IOException {
         User user = requireUserService.requireUser(auth);
 
         if (images.size() > 10 || images.isEmpty()) {
