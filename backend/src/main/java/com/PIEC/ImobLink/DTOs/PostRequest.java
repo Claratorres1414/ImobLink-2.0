@@ -12,4 +12,5 @@ public class PostRequest {
     private String number;
     private String type;
     private List<String> tags;
+    private String propertyType;
 }

@@ -1,0 +1,2 @@
+ALTER TABLE posts
+ADD COLUMN IF NOT EXISTS property_type VARCHAR(50);

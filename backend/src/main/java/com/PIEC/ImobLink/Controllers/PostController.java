@@ -49,6 +49,7 @@ public class PostController {
         List<MultipartFile> imagesList = Arrays.asList(images);
         return ResponseUtil.created(
                 "Post criado com sucesso",
+          //Ajustar get faltante
                 postService.createPost(
                         imagesList,
                         data.getDescription(),
@@ -60,6 +61,7 @@ public class PostController {
                         data.getTags(),
                         auth
                 )
+                postService.createPost(imagesList, data.getDescription(), data.getPrice(), data.getStreet(), data.getAvenue(), data.getNumber(), data.getType(), data.getPropertyType(), auth)
         );
     }
 

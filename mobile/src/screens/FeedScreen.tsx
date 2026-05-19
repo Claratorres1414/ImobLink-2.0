@@ -8,6 +8,7 @@ import { buildBase64Image } from "../utils/image";
 import { useNavigation } from "@react-navigation/native";
 import {RootStackParamList} from "../navigation/types";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
+import Tabbar from "../components/Tabbar";
 
 type FeedNavigationProp =
     NativeStackNavigationProp<
@@ -125,8 +126,9 @@ export default function FeedScreen() {
     }
 
     return (
-        <View style={{ flex:1, padding:16 }}>
+        <View style={{ flex:1 }}>
             <FlatList
+                contentContainerStyle={{ padding: 16, paddingBottom: 16 }}
                 data={posts}
                 keyExtractor={(item) => String(item.id)}
                 renderItem={({ item }) => (
@@ -148,6 +150,8 @@ export default function FeedScreen() {
                 maxToRenderPerBatch={5}
                 windowSize={5}
             />
+
+            <Tabbar onAddPress={() => navigation.navigate("CreateNewPost")} />
         </View>
     );
 }

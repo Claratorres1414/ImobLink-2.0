@@ -9,4 +9,6 @@ export type RootStackParamList = {
     PostDetails: {
         post: any;
     }
+
+    CreateNewPost: undefined;
 }

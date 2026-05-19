@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 
+
 export default function ConversasPage() {
   const [contatos, setContatos] = useState([]);
   const [busca, setBusca] = useState("");

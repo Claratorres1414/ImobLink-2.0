@@ -15,3 +15,11 @@ export async function favPost(postId: number) {
 export async function unfavPost(postId: number) {
     return api.delete(`/posts/unfav/${postId}`);
 }
+
+export async function createPost(postForm: FormData) {
+    return api.post("/posts/create", postForm, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        },
+    });
+}

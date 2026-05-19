@@ -11,6 +11,8 @@ from fastapi import FastAPI, Body, Request
 from pydantic import BaseModel
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List, Optional
+from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -28,11 +30,23 @@ class Post(BaseModel):
     description: str
     type: str
     avenue: str
+    price: Optional[float] = 0
+    street: Optional[str] = ""
+    likedTimes: Optional[int] = 0
+    views: Optional[int] = 0
+
+
+class UserProfile(BaseModel):
+    objective: Optional[str] = None
+    propertyType: Optional[str] = None
+    priceRange: Optional[str] = None
+
 
 class RecommendationRequest(BaseModel):
     user_id: int
     posts: List[Post]
     user_interactions: List[int]
+    user_profile: Optional[UserProfile] = None
 
 def salvar_temporariamente(file: UploadFile):
     filename = f"temp_{uuid.uuid4().hex}_{file.filename}"

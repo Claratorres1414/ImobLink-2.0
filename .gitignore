@@ -1,6 +1,8 @@
-# Node
-node_modules/
-frontend/node_modules/
+# Bloqueia node_modules em qualquer profundidade
+**/node_modules/
+# Bloqueia as cópias de conflito criadas pela nuvem
+* 2.*
+* 2/
 # IDEs
 .idea/
 *.iml

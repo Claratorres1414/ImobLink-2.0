@@ -349,7 +349,15 @@ function PostagemDetalhada() {
                   : "bg-blue-500 text-white"
               }`}
             >
-              {post.type}
+              <div className="absolute top-3 left-3 flex gap-2">
+                <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs">
+                  {post.type}
+                </span>
+
+                <span className="bg-gray-700 text-white px-3 py-1 rounded-full text-xs">
+                  {post.propertyType}
+                </span>
+              </div>
             </div>
           )}
 
@@ -489,6 +497,12 @@ function PostagemDetalhada() {
               </div>
             );
           })()}
+          <p><strong>Tipo de Imóvel:</strong> {post.propertyType}</p>
+          <p><strong>Rua:</strong> {post.street}</p>
+          {post.number && (
+            <p><strong>Número:</strong> {post.number}</p>
+          )}
+          <p><strong>Bairro:</strong> {post.avenue}</p>
         </div>
 
         {/* COMENTÁRIOS */}

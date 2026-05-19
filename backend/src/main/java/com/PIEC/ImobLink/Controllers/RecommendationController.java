@@ -1,15 +1,21 @@
 package com.PIEC.ImobLink.Controllers;
 
-import com.PIEC.ImobLink.DTOs.PostResponse;
-import com.PIEC.ImobLink.Entitys.Post;
-import com.PIEC.ImobLink.Repositorys.UserRepository;
-import com.PIEC.ImobLink.Services.RecommendationService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.PIEC.ImobLink.DTOs.PostRecommendationDTO;
+import com.PIEC.ImobLink.DTOs.QuestionnaireRequest;
+import com.PIEC.ImobLink.Repositorys.UserRepository;
+import com.PIEC.ImobLink.Services.RecommendationService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -18,10 +24,7 @@ public class RecommendationController {
 
     private final RecommendationService recommendationService;
     private final UserRepository userRepository;
-    
-    // ----------------------------
-    // 👆 REGISTRAR INTERAÇÃO
-    // ----------------------------
+
     @PostMapping("/interact")
     public void interact(@RequestBody Map<String, Long> body, Authentication auth) {
         Long userId = getUserId(auth);
@@ -29,19 +32,30 @@ public class RecommendationController {
         
         recommendationService.registrarInteracao(userId, postId);
     }
-
-    // ----------------------------
-    // 🤖 BUSCAR RECOMENDAÇÕES
-    // ----------------------------
-    @GetMapping("/recommendations")
-    public List<PostResponse> getRecommendations(Authentication auth) {
+    @GetMapping("/questionnaire/status")
+    public Map<String, Boolean> questionnaireStatus(Authentication auth) {
         Long userId = getUserId(auth);
 
-        List<Post> posts = recommendationService.recomendar(userId);
-
-        return posts.stream().map(PostResponse::new).toList();
+        return Map.of(
+            "completed",
+            recommendationService.questionnaireStatus(userId)
+        );
     }
+    @PostMapping("/questionnaire")
+    public void saveQuestionnaire(
+            @RequestBody QuestionnaireRequest request,
+            Authentication auth
+    ) {
+        Long userId = getUserId(auth);
+        recommendationService.saveQuestionnaire(userId, request);
+    }
+   
+    @GetMapping("/recommendations")
+    public List<PostRecommendationDTO> getRecommendations(Authentication auth) {
+        Long userId = getUserId(auth);
 
+        return recommendationService.recomendar(userId);
+    }
     // ----------------------------
     // 🔑 PEGAR USER ID DO TOKEN
     // ----------------------------
