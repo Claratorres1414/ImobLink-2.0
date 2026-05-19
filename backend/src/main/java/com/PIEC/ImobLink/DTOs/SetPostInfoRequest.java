@@ -3,6 +3,7 @@ package com.PIEC.ImobLink.DTOs;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.List;
 
 @Getter
 @Setter
@@ -19,4 +20,6 @@ public class SetPostInfoRequest {
     private String number;
     @Schema(example = "venda")
     private String type;
+    @Schema(example = "[\"Mobiliada\", \"Moderna\", \"Garagem\"]")
+    private List<String> tags;
 }

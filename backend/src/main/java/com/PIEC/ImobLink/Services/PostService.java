@@ -36,6 +36,7 @@ import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
 
 import Role.Role;
 import lombok.RequiredArgsConstructor;
+import com.PIEC.ImobLink.Entitys.Tag;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +51,7 @@ public class PostService {
     private final LikesLimitedHeap likesHeap;
     private final ImageRepository imageRepository;
     private final UserRepository userRepository;
+    private final TagService tagService;
     private boolean initializedV = false;
     private boolean initializedF = false;
     private boolean initializedL = false;
@@ -101,8 +103,11 @@ public class PostService {
         fillHeap.accept(posts);
         return true;
     }
-
+    
+  //Corrigir conflito de parâmetros
     @Transactional
+    public PostResponse createPost(List<MultipartFile> images, String description, double price, String street,
+                                   String avenue, String number, String type, List<String> tags, Authentication auth) throws IOException {
     public PostResponse createPost(List<MultipartFile> images, String description,
         double price, String street, String avenue, String number,
         String type, String propertyType, Authentication auth) throws IOException {
@@ -122,6 +127,8 @@ public class PostService {
         post.setType(type);
         post.setPropertyType(propertyType);
         post.setWasUpdated(false);
+        List<Tag> postTags = tagService.getOrCreateTags(tags);
+        post.setTags(postTags);
 
         for (MultipartFile image : images) {
             Images savedImage = imageService.saveImage(image, auth);
@@ -189,6 +196,10 @@ public class PostService {
         }
         if (newInfoPost.getType() != null) {
             post.setType(newInfoPost.getType());
+        }
+        if (newInfoPost.getTags() != null) {
+            List<Tag> postTags = tagService.getOrCreateTags(newInfoPost.getTags());
+            post.setTags(postTags);
         }
 
         post.setWasUpdated(true);
@@ -500,6 +511,21 @@ public class PostService {
         // filtrar posts recomendados
         return allPosts.stream()
                 .filter(p -> ids.contains(p.getId()))
+                .toList();
+    }
+
+    public List<PostResponse> searchPostByTag(String tag, Authentication auth) {
+        requireUserService.requireUser(auth);
+
+        String normalizedTag = tagService.normalizeTagName(tag);
+
+        if (normalizedTag.isBlank()) {
+            throw new IllegalArgumentException("Tag inválida");
+        }
+
+        return postRepository.findByTagNormalizedName(normalizedTag)
+                .stream()
+                .map(PostResponse::new)
                 .toList();
     }
 }

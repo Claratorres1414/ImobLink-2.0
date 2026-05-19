@@ -86,6 +86,14 @@ function DashboardLayout({ children }) {
     }
   };
 
+  
+  //Resolver conflito de return
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      <header className="bg-white shadow-md p-4 flex justify-between items-center relative">
+        <h1
+          className="text-2xl font-bold text-blue-600 cursor-pointer"
+          onClick={() => navigate("/home")}
 return (
   <div className="h-screen flex flex-col bg-gray-100 overflow-y-auto">
     
@@ -101,6 +109,47 @@ return (
           ImobLink
         </h1>
 
+
+//Ajustar para solução de conflito
+        <div className="flex items-center gap-4 relative" ref={menuRef}>
+          <input
+            type="text"
+            placeholder="Buscar..."
+            className="border p-2 rounded"
+            onKeyDown={handleSearchKeyDown}
+          />
+
+          <div className="relative">
+            <img
+              src={fotoPerfil}
+              alt="Perfil"
+              onClick={() => setMenuAberto((prev) => !prev)}
+              className="w-10 h-10 rounded-full cursor-pointer border-2 border-blue-600 hover:scale-105 transition"
+            />
+
+            {menuAberto && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50">
+                <button
+                  onClick={irParaPerfil}
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                >
+                  Meu Perfil
+                </button>
+                <button
+                  onClick={irParaConfiguracoes}
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                >
+                  Configurações
+                </button>
+                <button
+                  onClick={sair}
+                  className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600 border-t"
+                >
+                  Sair
+                </button>
+              </div>
+            )}
+          </div>
         <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
           Feed + Recomendações
         </span>
@@ -148,7 +197,37 @@ return (
             </div>
           )}
         </div>
+      </header>
+
+      <div className="flex flex-1">
+        <aside className="w-64 bg-white shadow-md p-4 flex flex-col justify-between md:flex">
+          <nav className="space-y-4">
+            <a
+              href="/home"
+              className="block text-blue-700 font-semibold hover:text-blue-800 transition"
+            >
+              Imóveis
+            </a>
+            <a
+              href="/meus-anuncios"
+              className="block text-gray-700 hover:text-blue-600 transition"
+            >
+              Meus Anúncios
+            </a>
+
+            <a
+              href="/conversas"
+              className="block text-gray-700 hover:text-blue-600 transition"
+            >
+              Conversas
+            </a>
+          </nav>
+        </aside>
+
+        <main className="flex-1 p-6 space-y-6">{children}</main>
       </div>
+
+//Ajustar para resolução de conflito
     </header>
 
     {/* BODY */}
@@ -191,8 +270,7 @@ return (
         {children}
       </main>
     </div>
-  </div>
-);
+  );
 }
 
 export default DashboardLayout;

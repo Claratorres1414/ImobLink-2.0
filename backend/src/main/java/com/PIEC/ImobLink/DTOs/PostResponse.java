@@ -33,6 +33,7 @@ public class PostResponse {
     private boolean wasLiked;
     private Boolean wasUpdated;
     private List<CommentResponse> comments = new ArrayList<>();
+    private List<TagResponse> tags = new ArrayList<>();
 
     public PostResponse(Post post) {
         this.id = post.getId();
@@ -58,6 +59,14 @@ public class PostResponse {
         }
         this.createdBy = post.getUser().getName();
         this.userId = post.getUser().getId();
+
+        if (post.getTags() != null) {
+            this.tags = post.getTags()
+                    .stream()
+                    .map(TagResponse::new)
+                    .toList();
+        }
+
     }
 
     public void addComment(Comment comment) {

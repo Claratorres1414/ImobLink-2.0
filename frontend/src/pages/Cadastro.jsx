@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { FaUserPlus } from "react-icons/fa";
+import { formatarCPF, formatarTelefone, limparMascara } from "../utils/formatters";
 
 function Cadastro() {
   const navigate = useNavigate();
@@ -31,8 +32,8 @@ function Cadastro() {
         body: JSON.stringify({
           name: nome,
           email,
-          cpf,
-          phoneNumber: telefone,
+          cpf: limparMascara(cpf),
+          phoneNumber: limparMascara(telefone),
           password: senha,
           bio: "",
         }),
@@ -74,7 +75,7 @@ function Cadastro() {
     console.log("Resposta do backend:", dados);
 
     setNome(dados.nome || "");
-    setCpf(dados.cpf || "");
+    setCpf(formatarCPF(dados.cpf || ""));
 
   } catch (err) {
     console.error("Erro ao se comunicar com o backend:", err);
@@ -117,14 +118,16 @@ function Cadastro() {
               placeholder="CPF"
               className="w-full border p-2 rounded"
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
+              maxLength={14}
+              onChange={(e) => setCpf(formatarCPF(e.target.value))}
             />
             <input
               type="tel"
               placeholder="Telefone"
               className="w-full border p-2 rounded"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              maxLength={15}
+              onChange={(e) => setTelefone(formatarTelefone(e.target.value))}
             />
             <input
               type="password"
