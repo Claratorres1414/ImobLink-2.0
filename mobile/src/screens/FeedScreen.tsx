@@ -151,7 +151,27 @@ export default function FeedScreen() {
                 windowSize={5}
             />
 
-            <Tabbar onAddPress={() => navigation.navigate("CreateNewPost")} />
+            <Tabbar onAddPress={() => navigation.navigate("CreateNewPost")}
+                    onTabPress={(tab) => {
+                        switch (tab) {
+                            case 'home':
+                                return;
+
+                            /*case 'search':
+                                navigation.navigate('SearchScreen');
+                                break;
+
+                            case 'chat':
+                                navigation.navigate('ChatScreen');
+                                break;
+
+                             */
+                            case 'profile':
+                                navigation.replace('MyProfile');
+                                break;
+                        }
+                    }}
+            />
         </View>
     );
 }

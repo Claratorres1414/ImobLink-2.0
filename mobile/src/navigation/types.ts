@@ -11,4 +11,6 @@ export type RootStackParamList = {
     }
 
     CreateNewPost: undefined;
+
+    MyProfile: undefined;
 }
