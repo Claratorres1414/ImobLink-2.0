@@ -10,6 +10,7 @@ import { Phone, Mail } from 'lucide-react-native';
 import {getUserInfo} from "../apiServices/userService";
 import {getMyPosts} from "../apiServices/postService";
 import {mapPostFromApi} from "../mappers/postMapper";
+import MiniPostCardSlider from "../components/MiniPostCardSlider";
 
 type MyProfileNavigationProp =
     NativeStackNavigationProp<
@@ -122,6 +123,14 @@ export default function MyProfileScreen() {
                             Editar perfil
                         </Text>
                     </TouchableOpacity>
+                    <View style={styles.postsContainer}>
+                        {myPosts.length > 0 && (
+                            <>
+                                <Text style={styles.postsTypeText}>meus posts</Text>
+                                <MiniPostCardSlider posts={myPosts} />
+                            </>
+                        )}
+                    </View>
                 </SafeAreaView>
                 <Tabbar
                         activeTab={"profile"}
@@ -238,5 +247,16 @@ const styles = StyleSheet.create({
     editProfileText: {
         color: "#E9E9E9",
         fontWeight: "400",
+    },
+    postsContainer: {
+        marginTop: 15,
+    },
+    postsTypeText: {
+        marginLeft: 28,
+        marginBottom: 12,
+        fontFamily: "Inter-SemiBold",
+        fontSize: 15,
+        fontWeight: 200,
+        color: "#7D92D4",
     },
 });
