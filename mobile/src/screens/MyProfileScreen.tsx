@@ -3,12 +3,12 @@ import {RootStackParamList} from "../navigation/types";
 
 import Tabbar from "../components/Tabbar";
 import {useNavigation} from "@react-navigation/native";
-import {Image, StyleSheet, Text, TouchableOpacity, View} from "react-native";
-import React, {use, useEffect, useState} from "react";
-import {SafeAreaView} from "react-native-safe-area-context";
+import {Image, ScrollView, StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import React, {useEffect, useState} from "react";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 import { Phone, Mail } from 'lucide-react-native';
 import {getUserInfo} from "../apiServices/userService";
-import {getMyPosts} from "../apiServices/postService";
+import {getMyFavs, getMyPosts} from "../apiServices/postService";
 import {mapPostFromApi} from "../mappers/postMapper";
 import MiniPostCardSlider from "../components/MiniPostCardSlider";
 
@@ -20,9 +20,11 @@ type MyProfileNavigationProp =
 
 export default function MyProfileScreen() {
     const navigation = useNavigation<MyProfileNavigationProp>();
+    const insets = useSafeAreaInsets();
 
     const [user, setUser] = useState<any>(null);
     const [myPosts, setMyPosts] = useState<any[]>([]);
+    const [myFavs, setMyFavs] = useState<any[]>([]);
     const [profileImage, setProfileImage] =
         useState<string | null>(null);
 
@@ -55,86 +57,116 @@ export default function MyProfileScreen() {
         }
     }
 
+    async function loadMyFavs() {
+        try {
+            const data = await getMyFavs();
+            const mapped = Array.isArray(data.data)
+                ? data.data.map(mapPostFromApi)
+                : [];
+
+            setMyFavs(mapped)
+        } catch (error) {
+            console.log(
+                "Erro ao carregar posts favoritos do usuário:",
+                error
+            )
+        }
+    }
+
     useEffect(() => {
         loadUserInfo();
         loadMyPosts();
+        loadMyFavs();
     }, []);
 
-    return  <View style={{ flex:1 }}>
-                <SafeAreaView style={{ flex:1 }}>
-                    <View style={styles.userInfo}>
-                        <Image
-                            source={
-                                profileImage
-                                    ? { uri: profileImage }
-                                    : require("../assets/default_profile.jpg")
-                            }
-                            style={styles.avatar}
-                        />
+    return  <View style={{ flex:1, paddingTop: insets.top }}>
+                <View style={{ flex:1 }}>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 20 }}
 
-                        <View style={styles.infoColumn}>
-                            <Text style={styles.username}>
-                                {user?.name || "User"}
-                            </Text>
+                    >
+                        <View style={styles.userInfo}>
+                            <Image
+                                source={
+                                    profileImage
+                                        ? { uri: profileImage }
+                                        : require("../assets/default_profile.jpg")
+                                }
+                                style={styles.avatar}
+                            />
 
-                            <View style={styles.infoBox}>
-                                <TouchableOpacity style={styles.infoItem}>
-                                    <Text style={styles.infoNumbers}>
-                                        {myPosts?.length || 0}
-                                    </Text>
-                                    <Text style={styles.infoText}>posts</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.infoItem}>
-                                    <Text style={styles.infoNumbers}>
-                                        {user?.followers || 0}
-                                    </Text>
-                                    <Text style={styles.infoText}>seguidores</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.infoItem}>
-                                    <Text style={styles.infoNumbers}>
-                                        {user?.followings || 0}
-                                    </Text>
-                                    <Text style={styles.infoText}>seguindo</Text>
-                                </TouchableOpacity>
+                            <View style={styles.infoColumn}>
+                                <Text style={styles.username}>
+                                    {user?.name || "User"}
+                                </Text>
+
+                                <View style={styles.infoBox}>
+                                    <TouchableOpacity style={styles.infoItem}>
+                                        <Text style={styles.infoNumbers}>
+                                            {myPosts?.length || 0}
+                                        </Text>
+                                        <Text style={styles.infoText}>posts</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.infoItem}>
+                                        <Text style={styles.infoNumbers}>
+                                            {user?.followers || 0}
+                                        </Text>
+                                        <Text style={styles.infoText}>seguidores</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.infoItem}>
+                                        <Text style={styles.infoNumbers}>
+                                            {user?.followings || 0}
+                                        </Text>
+                                        <Text style={styles.infoText}>seguindo</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         </View>
-                    </View>
-                    <View style={styles.detailsBox}>
-                        <View style={styles.detailRow}>
-                            <Phone size={16} color="#7D92D4" fill="#7D92D4"/>
-                            <Text style={styles.detailText}>
-                                {user?.phoneNumber || "+55 (81) 99999-9999"}
+                        <View style={styles.detailsBox}>
+                            <View style={styles.detailRow}>
+                                <Phone size={16} color="#7D92D4" fill="#7D92D4"/>
+                                <Text style={styles.detailText}>
+                                    {user?.phoneNumber || "+55 (81) 99999-9999"}
+                                </Text>
+                            </View>
+
+                            <View style={styles.detailRow}>
+                                <Mail size={16} color="#7D92D4"/>
+                                <Text style={styles.detailText}>
+                                    {user?.email || "email@email.com"}
+                                </Text>
+                            </View>
+
+                            <Text style={styles.bioText}>
+                                {user?.bio || "Corretor de imóveis trabalhando no ramo a mais de 25 anos"}
                             </Text>
                         </View>
-
-                        <View style={styles.detailRow}>
-                            <Mail size={16} color="#7D92D4"/>
-                            <Text style={styles.detailText}>
-                                {user?.email || "email@email.com"}
+                        <TouchableOpacity style={styles.editProfileButton}>
+                            <Text style={styles.editProfileText}>
+                                Editar perfil
                             </Text>
+                        </TouchableOpacity>
+                        <View style={styles.postsContainer}>
+                            {myPosts.length > 0 && (
+                                <>
+                                    <Text style={styles.postsTypeText}>meus posts</Text>
+                                    <MiniPostCardSlider posts={myPosts} />
+                                </>
+                            )}
                         </View>
-
-                        <Text style={styles.bioText}>
-                            {user?.bio || "Corretor de imóveis trabalhando no ramo a mais de 25 anos"}
-                        </Text>
-                    </View>
-                    <TouchableOpacity style={styles.editProfileButton}>
-                        <Text style={styles.editProfileText}>
-                            Editar perfil
-                        </Text>
-                    </TouchableOpacity>
-                    <View style={styles.postsContainer}>
-                        {myPosts.length > 0 && (
-                            <>
-                                <Text style={styles.postsTypeText}>meus posts</Text>
-                                <MiniPostCardSlider posts={myPosts} />
-                            </>
-                        )}
-                    </View>
-                </SafeAreaView>
+                        <View style={styles.postsContainer}>
+                            {myFavs.length > 0 && (
+                                <>
+                                    <Text style={styles.postsTypeText}>meus favoritos</Text>
+                                    <MiniPostCardSlider posts={myFavs} />
+                                </>
+                            )}
+                        </View>
+                    </ScrollView>
+                </View>
                 <Tabbar
                         activeTab={"profile"}
-                        style={{marginTop: 100}}
                         onAddPress={() => navigation.navigate("CreateNewPost")}
                         onTabPress={(tab) => {
                             switch (tab) {
@@ -208,8 +240,8 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     detailsBox: {
-        marginTop: -25,
-        padding: 27,
+        paddingHorizontal: 27,
+        paddingBottom: 12,
     },
     detailRow: {
         flexDirection: "row",
@@ -234,7 +266,6 @@ const styles = StyleSheet.create({
         width: "auto",
         height: 28,
 
-        marginTop: -8,
         marginHorizontal: 21,
 
         borderRadius: 7,
