@@ -174,10 +174,7 @@ export default function PostDetailScreen({route}: Props) {
                 activeOpacity={0.7}
                 onPress={() => {
                     setTimeout(() => {
-                        navigation.reset({
-                            index: 0,
-                            routes: [{name: "Feed"}],
-                        });
+                        navigation.goBack()
                     }, 100);
                 }}
             >

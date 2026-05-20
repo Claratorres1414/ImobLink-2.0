@@ -58,10 +58,10 @@ public class PostController {
                         data.getAvenue(),
                         data.getNumber(),
                         data.getType(),
+                        data.getPropertyType(),
                         data.getTags(),
                         auth
                 )
-                postService.createPost(imagesList, data.getDescription(), data.getPrice(), data.getStreet(), data.getAvenue(), data.getNumber(), data.getType(), data.getPropertyType(), auth)
         );
     }
 

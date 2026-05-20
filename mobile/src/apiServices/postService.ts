@@ -23,3 +23,13 @@ export async function createPost(postForm: FormData) {
         },
     });
 }
+
+export async function getMyPosts() {
+    let response = await api.get("/posts/my-posts");
+    return response.data;
+}
+
+export async function getMyFavs() {
+    let response = await api.get("/posts/my-favs");
+    return response.data
+}
