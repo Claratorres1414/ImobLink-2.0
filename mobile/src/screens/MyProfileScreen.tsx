@@ -6,6 +6,7 @@ import {useNavigation} from "@react-navigation/native";
 import {Image, StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import React, {useState} from "react";
 import {SafeAreaView} from "react-native-safe-area-context";
+import { Phone, Mail } from 'lucide-react-native';
 
 type MyProfileNavigationProp =
     NativeStackNavigationProp<
@@ -56,6 +57,30 @@ export default function MyProfileScreen() {
                             </View>
                         </View>
                     </View>
+                    <View style={styles.detailsBox}>
+                        <View style={styles.detailRow}>
+                            <Phone size={16} color="#7D92D4" fill="#7D92D4"/>
+                            <Text style={styles.detailText}>
+                                {postUser?.phoneNumber || "+55 (81) 99999-9999"}
+                            </Text>
+                        </View>
+
+                        <View style={styles.detailRow}>
+                            <Mail size={16} color="#7D92D4"/>
+                            <Text style={styles.detailText}>
+                                {postUser?.email || "email@email.com"}
+                            </Text>
+                        </View>
+
+                        <Text style={styles.bioText}>
+                            {postUser?.bio || "Corretor de imóveis trabalhando no ramo a mais de 25 anos"}
+                        </Text>
+                    </View>
+                    <TouchableOpacity style={styles.editProfileButton}>
+                        <Text style={styles.editProfileText}>
+                            Editar perfil
+                        </Text>
+                    </TouchableOpacity>
                 </SafeAreaView>
                 <Tabbar
                         activeTab={"profile"}
@@ -85,21 +110,6 @@ export default function MyProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#fff",
-    },
-
-    header: {
-        marginTop: 10,
-        marginHorizontal: 24,
-
-        height: 74,
-
-        flexDirection: "row",
-        alignItems: "flex-start",
-    },
-
     userInfo: {
         flexDirection: "row",
         alignItems: "flex-start",
@@ -117,7 +127,7 @@ const styles = StyleSheet.create({
     },
     infoColumn: {
         flex: 1,
-        marginLeft: 24,       // distância entre avatar e coluna de info
+        marginLeft: 24,
         alignItems: "flex-start",
     },
     username: {
@@ -125,7 +135,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: "700",
         color: "#7D92D4",
-        marginBottom: 5,      // distância entre nome e campos de info
+        marginBottom: 5,
     },
     infoBox: {
         flexDirection: "row",
@@ -146,5 +156,46 @@ const styles = StyleSheet.create({
         fontFamily: "Inter-SemiBold",
         fontSize: 12,
         fontWeight: "600",
+    },
+    detailsBox: {
+        marginTop: -25,
+        padding: 27,
+    },
+    detailRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 8,
+    },
+    detailText: {
+        fontFamily: "Inter-SemiBold",
+        fontSize: 15,
+        fontWeight: 200,
+        color: "#7D92D4",
+    },
+    bioText: {
+        fontFamily: "Inter-SemiBold",
+        fontSize: 15,
+        fontWeight: 200,
+        color: "#7D92D4",
+        marginTop: 4,
+    },
+    editProfileButton: {
+        width: "auto",
+        height: 28,
+
+        marginTop: -8,
+        marginHorizontal: 21,
+
+        borderRadius: 7,
+
+        justifyContent: "center",
+        alignItems: "center",
+
+        backgroundColor: "#333D52",
+    },
+    editProfileText: {
+        color: "#E9E9E9",
+        fontWeight: "400",
     },
 });
