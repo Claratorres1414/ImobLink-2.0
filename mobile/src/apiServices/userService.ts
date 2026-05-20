@@ -17,3 +17,20 @@ export async function getUserAccount(id: number) {
         throw error;
     }
 }
+
+export async function getUserInfo () {
+    try {
+        const response = await api.get(
+            `/user/account`
+        );
+
+        return response.data;
+    } catch (error) {
+        console.log(
+            "Erro ao buscar informações do usuário:",
+            error
+        );
+
+        throw error;
+    }
+}

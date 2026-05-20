@@ -4,9 +4,10 @@ import {RootStackParamList} from "../navigation/types";
 import Tabbar from "../components/Tabbar";
 import {useNavigation} from "@react-navigation/native";
 import {Image, StyleSheet, Text, TouchableOpacity, View} from "react-native";
-import React, {useState} from "react";
+import React, {use, useEffect, useState} from "react";
 import {SafeAreaView} from "react-native-safe-area-context";
 import { Phone, Mail } from 'lucide-react-native';
+import {getUserInfo} from "../apiServices/userService";
 
 type MyProfileNavigationProp =
     NativeStackNavigationProp<
@@ -17,12 +18,27 @@ type MyProfileNavigationProp =
 export default function MyProfileScreen() {
     const navigation = useNavigation<MyProfileNavigationProp>();
 
-    const [images, setImages] = useState<string[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [postDetails, setPostDetails] = useState<any>(null);
+    const [user, setUser] = useState<any>(null);
     const [postUser, setPostUser] = useState<any>(null);
     const [profileImage, setProfileImage] =
         useState<string | null>(null);
+
+    async function loadUserInfo() {
+        try {
+            const data = await getUserInfo();
+
+            setUser(data.data);
+        } catch (error) {
+            console.log(
+                "Erro ao carregar usuário:",
+                error
+            );
+        }
+    }
+
+    useEffect(() => {
+        loadUserInfo();
+    }, []);
 
     return  <View style={{ flex:1 }}>
                 <SafeAreaView style={{ flex:1 }}>
@@ -38,20 +54,26 @@ export default function MyProfileScreen() {
 
                         <View style={styles.infoColumn}>
                             <Text style={styles.username}>
-                                {postUser?.name || "User"}
+                                {user?.name || "User"}
                             </Text>
 
                             <View style={styles.infoBox}>
                                 <TouchableOpacity style={styles.infoItem}>
-                                    <Text style={styles.infoNumbers}>10</Text>
+                                    <Text style={styles.infoNumbers}>
+                                        0
+                                    </Text>
                                     <Text style={styles.infoText}>posts</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.infoItem}>
-                                    <Text style={styles.infoNumbers}>10</Text>
+                                    <Text style={styles.infoNumbers}>
+                                        {user?.followers || 0}
+                                    </Text>
                                     <Text style={styles.infoText}>seguidores</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.infoItem}>
-                                    <Text style={styles.infoNumbers}>10</Text>
+                                    <Text style={styles.infoNumbers}>
+                                        {user?.followings || 0}
+                                    </Text>
                                     <Text style={styles.infoText}>seguindo</Text>
                                 </TouchableOpacity>
                             </View>
@@ -61,19 +83,19 @@ export default function MyProfileScreen() {
                         <View style={styles.detailRow}>
                             <Phone size={16} color="#7D92D4" fill="#7D92D4"/>
                             <Text style={styles.detailText}>
-                                {postUser?.phoneNumber || "+55 (81) 99999-9999"}
+                                {user?.phoneNumber || "+55 (81) 99999-9999"}
                             </Text>
                         </View>
 
                         <View style={styles.detailRow}>
                             <Mail size={16} color="#7D92D4"/>
                             <Text style={styles.detailText}>
-                                {postUser?.email || "email@email.com"}
+                                {user?.email || "email@email.com"}
                             </Text>
                         </View>
 
                         <Text style={styles.bioText}>
-                            {postUser?.bio || "Corretor de imóveis trabalhando no ramo a mais de 25 anos"}
+                            {user?.bio || "Corretor de imóveis trabalhando no ramo a mais de 25 anos"}
                         </Text>
                     </View>
                     <TouchableOpacity style={styles.editProfileButton}>
