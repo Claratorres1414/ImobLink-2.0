@@ -23,3 +23,8 @@ export async function createPost(postForm: FormData) {
         },
     });
 }
+
+export async function getMyPosts() {
+    let response = await api.get("/posts/my-posts");
+    return response.data;
+}

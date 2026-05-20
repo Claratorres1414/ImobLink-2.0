@@ -8,6 +8,8 @@ import React, {use, useEffect, useState} from "react";
 import {SafeAreaView} from "react-native-safe-area-context";
 import { Phone, Mail } from 'lucide-react-native';
 import {getUserInfo} from "../apiServices/userService";
+import {getMyPosts} from "../apiServices/postService";
+import {mapPostFromApi} from "../mappers/postMapper";
 
 type MyProfileNavigationProp =
     NativeStackNavigationProp<
@@ -19,7 +21,7 @@ export default function MyProfileScreen() {
     const navigation = useNavigation<MyProfileNavigationProp>();
 
     const [user, setUser] = useState<any>(null);
-    const [postUser, setPostUser] = useState<any>(null);
+    const [myPosts, setMyPosts] = useState<any[]>([]);
     const [profileImage, setProfileImage] =
         useState<string | null>(null);
 
@@ -36,8 +38,25 @@ export default function MyProfileScreen() {
         }
     }
 
+    async function loadMyPosts() {
+        try {
+            const data = await getMyPosts();
+            const mapped = Array.isArray(data.data)
+                ? data.data.map(mapPostFromApi)
+                : [];
+
+            setMyPosts(mapped)
+        } catch (error) {
+            console.log(
+                "Erro ao carregar posts do usuário:",
+                error
+            )
+        }
+    }
+
     useEffect(() => {
         loadUserInfo();
+        loadMyPosts();
     }, []);
 
     return  <View style={{ flex:1 }}>
@@ -60,7 +79,7 @@ export default function MyProfileScreen() {
                             <View style={styles.infoBox}>
                                 <TouchableOpacity style={styles.infoItem}>
                                     <Text style={styles.infoNumbers}>
-                                        0
+                                        {myPosts?.length || 0}
                                     </Text>
                                     <Text style={styles.infoText}>posts</Text>
                                 </TouchableOpacity>
