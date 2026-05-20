@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import { FlatList, StyleSheet, View, ViewToken } from "react-native";
 import MiniPostCard from "./MiniPostCard";
 import { useNavigation } from "@react-navigation/native";
@@ -21,6 +21,11 @@ export default function MiniPostCardSlider({ posts }: Props) {
     const navigation = useNavigation<NavigationProp>();
     const [images, setImages] = useState<Record<number, string[]>>({});
     const loadedIds = useRef<Set<number>>(new Set());
+
+    useEffect(() => {
+        loadedIds.current.clear();
+        setImages({});
+    }, [posts]);
 
     const pairs = posts.reduce<any[][]>((acc, post, i) => {
         if (i % 2 === 0) acc.push([post]);
@@ -69,6 +74,7 @@ export default function MiniPostCardSlider({ posts }: Props) {
 
     return (
         <FlatList
+            key={posts.map(p => p.id).join(',')}
             data={pairs}
             keyExtractor={(_, index) => String(index)}
             horizontal

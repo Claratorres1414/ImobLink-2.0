@@ -2,9 +2,9 @@ import {NativeStackNavigationProp} from "@react-navigation/native-stack";
 import {RootStackParamList} from "../navigation/types";
 
 import Tabbar from "../components/Tabbar";
-import {useNavigation} from "@react-navigation/native";
+import {useFocusEffect, useNavigation} from "@react-navigation/native";
 import {Image, ScrollView, StyleSheet, Text, TouchableOpacity, View} from "react-native";
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 import { Phone, Mail } from 'lucide-react-native';
 import {getUserInfo} from "../apiServices/userService";
@@ -73,11 +73,13 @@ export default function MyProfileScreen() {
         }
     }
 
-    useEffect(() => {
-        loadUserInfo();
-        loadMyPosts();
-        loadMyFavs();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadUserInfo();
+            loadMyPosts();
+            loadMyFavs();
+        }, [])
+    );
 
     return  <View style={{ flex:1, paddingTop: insets.top }}>
                 <View style={{ flex:1 }}>
