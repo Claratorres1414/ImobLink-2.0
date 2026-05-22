@@ -78,22 +78,16 @@ public class RecommendationService {
         userProfile.put("propertyType", user.getPropertyType());
         userProfile.put("priceRange", user.getPriceRange());
 
-        Set<Long> interagidos = posts.stream()
-            .filter(post ->
-                (post.getReacheds() != null &&
-                post.getReacheds().stream()
-                    .anyMatch(u -> u.getId().equals(user.getId()))) ||
-
-                (post.getLikedTimes() != null &&
+                // Filtra APENAS os posts que o usuário já deu LIKE
+        Set<Long> curtidos = posts.stream()
+            .filter(post -> post.getLikedTimes() != null &&
                 post.getLikedTimes().stream()
-                    .anyMatch(like -> like.getUser().getId().equals(user.getId()))) ||
-
-                (post.getFavedTimes() != null &&
-                post.getFavedTimes().stream()
-                    .anyMatch(fav -> fav.getUser().getId().equals(user.getId())))
+                    .anyMatch(like -> like.getUser().getId().equals(user.getId()))
             )
             .map(Post::getId)
             .collect(Collectors.toSet());
+
+        // ... (o restante do código do payload do FastAPI continua igual)
         Map<String, Object> payload = new HashMap<>();
 
         List<Map<String, Object>> postsPayload = posts.stream().map(post -> {
@@ -115,7 +109,7 @@ public class RecommendationService {
 
         payload.put("user_id", userId);
         payload.put("posts", postsPayload);
-        payload.put("user_interactions", interagidos);
+        payload.put("user_interactions", curtidos);
         payload.put("user_profile", userProfile);
 
         RestTemplate restTemplate = new RestTemplate();
@@ -145,15 +139,15 @@ public class RecommendationService {
         }
 
         return posts.stream()
-                
-                .filter(post -> !interagidos.contains(post.getId()))
-                .sorted((p1, p2) -> Double.compare(
-                        scoreMap.getOrDefault(p2.getId(), 0.0),
-                        scoreMap.getOrDefault(p1.getId(), 0.0)
-                ))
-                .limit(10)
-                .map(post -> toDTO(post, user))
-                .toList();
+            // Remove dos recomendados APENAS se estiver na lista de curtidos
+            .filter(post -> !curtidos.contains(post.getId()))
+            .sorted((p1, p2) -> Double.compare(
+                    scoreMap.getOrDefault(p2.getId(), 0.0),
+                    scoreMap.getOrDefault(p1.getId(), 0.0)
+            ))
+            .limit(10)
+            .map(post -> toDTO(post, user))
+            .toList();
     }
 
     private PostRecommendationDTO toDTO(Post post, User user) {

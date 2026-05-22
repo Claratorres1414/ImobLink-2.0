@@ -21,7 +21,10 @@ def build_user_profile(user_profile):
 
 
 def get_price_score(price, price_range, objective):
-    price = float(price)
+    try:
+        price = float(price)
+    except (ValueError, TypeError):
+        price = 0.0
 
     if objective == "aluguel":
         ranges = {
@@ -51,15 +54,15 @@ def get_profile_score(user_profile, post):
     property_type = user_profile.get("propertyType")
     price_range = user_profile.get("priceRange")
 
-    # tipo imóvel
+    # Tipo de imóvel (Casa, Ap, etc.)
     if property_type and post.get("propertyType") == property_type:
         score += 3.0
 
-    # aluguel/venda
+    # Objetivo (Aluguel/Venda)
     if objective and post.get("type") == objective:
         score += 2.0
 
-    # preço
+    # Faixa de preço
     score += get_price_score(
         post.get("price", 0),
         price_range,
@@ -70,12 +73,14 @@ def get_profile_score(user_profile, post):
 
 
 def recommend(data):
-    
     posts = data.get("posts", [])
     user_profile = data.get("user_profile", {}) or {}
+    
+    # Agora recebendo APENAS os IDs com LIKE vindos do Java
     user_interactions = set(data.get("user_interactions", []))
-    print("USER INTERACTIONS:", user_interactions)
-    print("POST IDS:", [post["id"] for post in posts])
+    
+    print("POSTS EXCLUÍDOS POR LIKE:", user_interactions)
+    
     if not posts:   
         return []
 
@@ -95,15 +100,17 @@ def recommend(data):
     recommendations = []
 
     for i, post in enumerate(posts):
+        # Se o post está na lista de curtidos, ele sai dos recomendados aqui
         if post["id"] in user_interactions:
             continue
 
         similarity_score = similarities[i]
         profile_score = get_profile_score(user_profile, post)
 
+        # AJUSTE: Trocado 'favedTimes' por 'views', que é o que o Java realmente envia no payload
         popularity_score = (
-            float(post.get("likedTimes", 0)) * 0.7 +
-            float(post.get("favedTimes", 0)) * 1.0
+            float(post.get("likedTimes", 0)) * 1.0 +
+            float(post.get("views", 0)) * 0.2
         )
 
         final_score = (
@@ -112,7 +119,7 @@ def recommend(data):
             popularity_score
         )
 
-        # reduz força caso usuário não respondeu questionário
+        # Reduz a força caso o usuário não tenha respondido o questionário
         profile_weight = 1.0 if user_profile.get("objective") else 0.3
         final_score *= profile_weight
 

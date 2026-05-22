@@ -23,6 +23,7 @@ function DashboardLayout({ children }) {
     setMenuAberto(false);
   };
 
+  // Fecha o menu de perfil ao clicar fora dele
   useEffect(() => {
     function handleClickFora(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -33,6 +34,7 @@ function DashboardLayout({ children }) {
     return () => document.removeEventListener("mousedown", handleClickFora);
   }, []);
 
+  // Busca os dados e avatar do usuário logado
   useEffect(() => {
     if (!token) return;
 
@@ -86,36 +88,31 @@ function DashboardLayout({ children }) {
     }
   };
 
-  
-  //Resolver conflito de return
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      <header className="bg-white shadow-md p-4 flex justify-between items-center relative">
-        <h1
-          className="text-2xl font-bold text-blue-600 cursor-pointer"
-          onClick={() => navigate("/home")}
-return (
-  <div className="h-screen flex flex-col bg-gray-100 overflow-y-auto">
-    
-    {/* HEADER */}
-    <header className="bg-white shadow-md p-4 flex justify-between items-center shrink-0">
+    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
       
-      {/* LOGO */}
-      <div className="flex items-center gap-3">
-        <h1
-          onClick={() => navigate("/home")}
-          className="text-2xl font-bold text-blue-600 cursor-pointer"
-        >
-          ImobLink
-        </h1>
+      {/* 1. HEADER (Topo fixo) */}
+      <header className="bg-white shadow-md p-4 flex justify-between items-center shrink-0 z-10">
+        
+        {/* LOGO & BADGE */}
+        <div className="flex items-center gap-3">
+          <h1
+            onClick={() => navigate("/home")}
+            className="text-2xl font-bold text-blue-600 cursor-pointer"
+          >
+            ImobLink
+          </h1>
+          <span className="hidden sm:inline-block text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+            Feed + Recomendações
+          </span>
+        </div>
 
-
-//Ajustar para solução de conflito
+        {/* SEARCH + PROFILE DROPDOWN */}
         <div className="flex items-center gap-4 relative" ref={menuRef}>
           <input
             type="text"
-            placeholder="Buscar..."
-            className="border p-2 rounded"
+            placeholder="Buscar imóveis..."
+            className="border p-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-40 sm:w-60"
             onKeyDown={handleSearchKeyDown}
           />
 
@@ -124,151 +121,75 @@ return (
               src={fotoPerfil}
               alt="Perfil"
               onClick={() => setMenuAberto((prev) => !prev)}
-              className="w-10 h-10 rounded-full cursor-pointer border-2 border-blue-600 hover:scale-105 transition"
+              className="w-10 h-10 rounded-full cursor-pointer border-2 border-blue-600 hover:scale-105 transition object-cover"
             />
 
             {menuAberto && (
               <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50">
                 <button
                   onClick={irParaPerfil}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
                 >
                   Meu Perfil
                 </button>
                 <button
                   onClick={irParaConfiguracoes}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
                 >
                   Configurações
                 </button>
                 <button
                   onClick={sair}
-                  className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600 border-t"
+                  className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600 border-t text-sm font-semibold"
                 >
                   Sair
                 </button>
               </div>
             )}
           </div>
-        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-          Feed + Recomendações
-        </span>
-      </div>
-
-      {/* SEARCH + PROFILE */}
-      <div className="flex items-center gap-4 relative" ref={menuRef}>
-        <input
-          type="text"
-          placeholder="Buscar imóveis..."
-          className="border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          onKeyDown={handleSearchKeyDown}
-        />
-
-        <div className="relative">
-          <img
-            src={fotoPerfil}
-            alt="Perfil"
-            onClick={() => setMenuAberto((prev) => !prev)}
-            className="w-10 h-10 rounded-full cursor-pointer border-2 border-blue-600 hover:scale-105 transition"
-          />
-
-          {menuAberto && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50">
-              <button
-                onClick={irParaPerfil}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-              >
-                Meu Perfil
-              </button>
-
-              <button
-                onClick={irParaConfiguracoes}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-              >
-                Configurações
-              </button>
-
-              <button
-                onClick={sair}
-                className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600 border-t"
-              >
-                Sair
-              </button>
-            </div>
-          )}
         </div>
       </header>
 
-      <div className="flex flex-1">
-        <aside className="w-64 bg-white shadow-md p-4 flex flex-col justify-between md:flex">
-          <nav className="space-y-4">
+      {/* 2. CORPO DO DASHBOARD (Ocupa o resto da tela) */}
+      <div className="flex flex-1 overflow-hidden min-h-0">
+
+        {/* SIDEBAR (Barra Lateral Esquerda) */}
+        <aside className="w-64 bg-white shadow-md p-4 flex flex-col justify-between shrink-0 overflow-y-auto hidden md:flex">
+          <nav className="space-y-2">
             <a
               href="/home"
-              className="block text-blue-700 font-semibold hover:text-blue-800 transition"
+              className="block px-3 py-2 rounded-lg text-blue-700 font-semibold hover:bg-blue-50 transition"
             >
-              Imóveis
+              🏠 Imóveis
             </a>
+
             <a
               href="/meus-anuncios"
-              className="block text-gray-700 hover:text-blue-600 transition"
+              className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
             >
-              Meus Anúncios
+              📢 Meus Anúncios
             </a>
 
             <a
               href="/conversas"
-              className="block text-gray-700 hover:text-blue-600 transition"
+              className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
             >
-              Conversas
+              💬 Conversas
             </a>
           </nav>
+
+          {/* TEXTO DE SUPORTE */}
+          <div className="text-xs text-gray-400 mt-6 pt-4 border-t border-gray-100">
+            O feed mistura recomendações personalizadas e posts gerais.
+          </div>
         </aside>
 
-        <main className="flex-1 p-6 space-y-6">{children}</main>
+        {/* CONTEÚDO PRINCIPAL (Onde entram os cards da Home) */}
+        <main className="flex-1 p-6 space-y-6 overflow-y-auto min-h-0">
+          {children}
+        </main>
+        
       </div>
-
-//Ajustar para resolução de conflito
-    </header>
-
-    {/* BODY */}
-    <div className="flex flex-1 overflow-hidden min-h-0">
-
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-white shadow-md p-4 flex flex-col justify-between shrink-0 overflow-y-auto">
-        <nav className="space-y-2">
-
-          <a
-            href="/home"
-            className="block px-3 py-2 rounded-lg text-blue-700 font-semibold hover:bg-blue-50"
-          >
-            🏠 Imóveis
-          </a>
-
-          <a
-            href="/meus-anuncios"
-            className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
-          >
-            📢 Meus Anúncios
-          </a>
-
-          <a
-            href="/conversas"
-            className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
-          >
-            💬 Conversas
-          </a>
-        </nav>
-
-        {/* INFO FEED */}
-        <div className="text-xs text-gray-400 mt-6">
-          O feed mistura recomendações personalizadas e posts gerais
-        </div>
-      </aside>
-
-      {/* MAIN CONTENT */}
-      <main className="flex-1 p-6 space-y-6 overflow-y-auto min-h-0">
-        {children}
-      </main>
     </div>
   );
 }
