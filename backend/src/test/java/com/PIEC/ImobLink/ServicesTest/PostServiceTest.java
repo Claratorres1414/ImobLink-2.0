@@ -11,6 +11,7 @@ import com.PIEC.ImobLink.Repositorys.*;
 import com.PIEC.ImobLink.Services.ImageService;
 import com.PIEC.ImobLink.Services.PostService;
 import com.PIEC.ImobLink.Services.RequireUserService;
+import com.PIEC.ImobLink.Services.TagService;
 import com.PIEC.ImobLink.Util.FavsLimitedHeap;
 import com.PIEC.ImobLink.Util.LikesLimitedHeap;
 import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
@@ -40,6 +41,7 @@ public class PostServiceTest {
     @Mock private PostRepository postRepository;
     @Mock private RequireUserService requireUserService;
     @Mock private ImageService imageService;
+    @Mock private TagService tagService;
     @Mock private FavsRepository favsRepository;
     @Mock private LikesRepository likesRepository;
     @Mock private ViewsLimitedHeap viewsHeap;
@@ -72,6 +74,11 @@ public class PostServiceTest {
         tags = new ArrayList<>();
         tagsString = new ArrayList<>();
 
+        tagsString.add("tag1");
+        Tag tag = new Tag();
+        tag.setName("tag1");
+        tags.add(tag);
+
         post = new Post();
         post.setType("aluguel");
         post.setPropertyType("casa");
@@ -99,6 +106,9 @@ public class PostServiceTest {
     void shouldCreateANewPost() throws IOException {
         when(requireUserService.requireUser(any()))
                 .thenReturn(user);
+
+        when(tagService.getOrCreateTags(anyList()))
+                .thenReturn(tags);
 
         when(imageService.saveImage(any(), any()))
                 .thenReturn(image);
