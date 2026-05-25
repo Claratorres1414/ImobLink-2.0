@@ -5,6 +5,7 @@ import com.PIEC.ImobLink.DTOs.PostResponse;
 import com.PIEC.ImobLink.DTOs.SetPostInfoRequest;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
+import com.PIEC.ImobLink.Entitys.Tag;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.*;
 import com.PIEC.ImobLink.Services.ImageService;
@@ -54,6 +55,8 @@ public class PostServiceTest {
     Post post;
     List<MultipartFile> images;
     Images image;
+    List<Tag> tags;
+    List<String> tagsString;
 
     @BeforeEach
     void setUp() {
@@ -66,8 +69,13 @@ public class PostServiceTest {
         user.setCpf("123456789");
         user.setRole(Role.USER);
 
+        tags = new ArrayList<>();
+        tagsString = new ArrayList<>();
+
         post = new Post();
         post.setType("aluguel");
+        post.setPropertyType("casa");
+        post.setTags(tags);
         post.setDescription("aaaaaaaaa");
         post.setAvenue("aa");
         post.setNumber("1545");
@@ -98,7 +106,7 @@ public class PostServiceTest {
         when(postRepository.save(any(Post.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        PostResponse response = postService.createPost(images, post.getDescription(), post.getPrice(), post.getStreet(), post.getAvenue(), post.getNumber(), post.getType(), auth);
+        PostResponse response = postService.createPost(images, post.getDescription(), post.getPrice(), post.getStreet(), post.getAvenue(), post.getNumber(), post.getType(), post.getPropertyType(), tagsString, auth);
 
         assertNotNull(response);
         assertEquals(response.getUserId(), user.getId());
@@ -115,7 +123,7 @@ public class PostServiceTest {
         Authentication authFake = new UsernamePasswordAuthenticationToken(user.getEmail(), "a");
 
         assertThrows(UsernameNotFoundException.class,
-                () -> postService.createPost(images, post.getDescription(), post.getPrice(), post.getStreet(), post.getAvenue(), post.getNumber(), post.getType(), authFake));
+                () -> postService.createPost(images, post.getDescription(), post.getPrice(), post.getStreet(), post.getAvenue(), post.getNumber(), post.getType(), post.getPropertyType(), tagsString, authFake));
     }
 
     @Test
@@ -126,7 +134,7 @@ public class PostServiceTest {
         List<MultipartFile> imagesFake = new ArrayList<>();
 
         assertThrows(IllegalArgumentException.class,
-                () -> postService.createPost(imagesFake, post.getDescription(), post.getPrice(), post.getStreet(), post.getAvenue(), post.getNumber(), post.getType(), auth));
+                () -> postService.createPost(imagesFake, post.getDescription(), post.getPrice(), post.getStreet(), post.getAvenue(), post.getNumber(), post.getType(), post.getPropertyType(), tagsString, auth));
     }
 
     @Test
