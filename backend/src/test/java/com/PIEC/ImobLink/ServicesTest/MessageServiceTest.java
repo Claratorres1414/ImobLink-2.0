@@ -80,7 +80,7 @@ public class MessageServiceTest {
         when(messageRepository.save(any(Message.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        messageService.sendMessage("aaa", user2.getId(), auth);
+        messageService.sendMessage("aaa", null, user2.getId(), auth);
 
         verify(userRepository, times(1)).findById(anyLong());
         verify(messageRepository, times(1)).save(any(Message.class));
@@ -94,7 +94,7 @@ public class MessageServiceTest {
         Authentication authFake = new UsernamePasswordAuthenticationToken("aaaaaaa", user1.getPassword());
 
         assertThrows(UsernameNotFoundException.class,
-                () -> messageService.sendMessage("aaa", user2.getId(), authFake));
+                () -> messageService.sendMessage("aaa",null,  user2.getId(), authFake));
     }
 
     @Test
@@ -105,7 +105,7 @@ public class MessageServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(UsernameNotFoundException.class,
-                () -> messageService.sendMessage("aaa", 5L, auth));
+                () -> messageService.sendMessage("aaa",null, 5L, auth));
     }
 
     @Test
@@ -135,14 +135,14 @@ public class MessageServiceTest {
     void shouldEditMessageFromUserToUser() {
         when(requireUserService.requireUser(any()))
                 .thenReturn(user1);
-        when(messageRepository.findMessageById(anyLong()))
-                .thenReturn(message);
+        when(messageRepository.findById(anyLong()))
+                .thenReturn(Optional.of(message));
         when(messageRepository.save(any(Message.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         messageService.editMessage(message.getId(), "aaaaa", auth);
 
-        verify(messageRepository, times(1)).findMessageById(anyLong());
+        verify(messageRepository, times(1)).findById(anyLong());
         verify(messageRepository, times(1)).save(any(Message.class));
     }
 
@@ -161,10 +161,12 @@ public class MessageServiceTest {
     void shouldDeleteMessageFromUserToUser() {
         when(requireUserService.requireUser(any()))
                 .thenReturn(user1);
+        when(messageRepository.findById(anyLong()))
+                .thenReturn(Optional.of(message));
 
         messageService.deleteMessage(message.getId(), auth);
 
-        verify(messageRepository, times(1)).deleteById(anyLong());
+        verify(messageRepository, times(1)).delete(any(Message.class));
     }
 
     @Test
