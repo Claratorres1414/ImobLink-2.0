@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -252,7 +253,7 @@ class TagServiceTest {
                     .thenReturn(Optional.of(piscina));
 
             List<Tag> result = tagService.getOrCreateTags(
-                    List.of(
+                    Arrays.asList(
                             null,
                             "",
                             "   ",
