@@ -72,14 +72,12 @@ public class TagService {
             return new ArrayList<>();
         }
 
-        Set<String> uniqueNames = new LinkedHashSet<>(rawNames);
-
-        return new ArrayList<>(
-                uniqueNames.stream()
-                        .filter(name -> name != null && !name.trim().isBlank())
-                        .map(this::getOrCreateTag)
-                        .toList()
-        );
+        return rawNames.stream()
+                .filter(name -> name != null && !name.trim().isBlank())
+                .map(this::normalizeTagName)
+                .distinct()
+                .map(this::getOrCreateTag)
+                .toList();
     }
 
     public List<TagResponse> searchTags(String query) {
