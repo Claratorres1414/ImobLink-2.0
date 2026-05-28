@@ -22,7 +22,7 @@ import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/user")
 @RequiredArgsConstructor
 @Tag(name = "User", description = "Operações relacionadas ao perfil do usuário")
 @SecurityRequirement(name = "BearerAuth")

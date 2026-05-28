@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/feed")
+@RequestMapping("/feed")
 @RequiredArgsConstructor
 @Tag(name = "Feed", description = "Carregar posts")
 public class FeedController {

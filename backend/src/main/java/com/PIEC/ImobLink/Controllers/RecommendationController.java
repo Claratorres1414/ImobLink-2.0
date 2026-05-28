@@ -18,7 +18,7 @@ import com.PIEC.ImobLink.Services.RecommendationService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/posts")
 @RequiredArgsConstructor
 public class RecommendationController {
 
