@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/messages")
+@RequestMapping("/messages")
 @RequiredArgsConstructor
 @Tag(name = "Messages", description = "Enviar mensagens e listar contatos")
 @SecurityRequirement(name = "BearerAuth")

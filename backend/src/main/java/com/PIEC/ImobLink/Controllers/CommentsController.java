@@ -17,7 +17,7 @@ import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/comments")
+@RequestMapping("/comments")
 @RequiredArgsConstructor
 @Tag(name = "Comments", description = "Realizar comentários em posts e perfis")
 @SecurityRequirement(name = "BearerAuth")

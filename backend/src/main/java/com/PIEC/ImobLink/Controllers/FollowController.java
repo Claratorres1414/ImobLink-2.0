@@ -16,7 +16,7 @@ import com.PIEC.ImobLink.Entitys.Follow;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/follow")
+@RequestMapping("/follow")
 @RequiredArgsConstructor
 @Tag(name = "Follow", description = "Seguir perfis e listar perfis seguidos")
 @SecurityRequirement(name = "BearerAuth")

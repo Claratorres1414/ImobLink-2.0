@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/admin")
 @RequiredArgsConstructor
 @Tag(name = "Admin", description = "Operações que só podem ser realizadas por ADMIN's e SUPERADMIN")
 @SecurityRequirement(name = "BearerAuth")

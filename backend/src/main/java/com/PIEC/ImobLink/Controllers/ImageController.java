@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/images")
+@RequestMapping("/images")
 @RequiredArgsConstructor
 @Tag(name = "Images", description = "Operações relacionadas a carregamento, save e busca de imagens")
 public class ImageController {

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/tags")
+@RequestMapping("/tags")
 @RequiredArgsConstructor
 @Tag(name = "Tags", description = "Operações relacionadas a tags de publicações")
 @SecurityRequirement(name = "BearerAuth")
