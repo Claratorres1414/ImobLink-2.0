@@ -48,9 +48,11 @@ dependencies {
 }
 
 flyway {
-	url = 'jdbc:postgresql://localhost:5432/imoblink_db'
-	user = 'imoblink'    // substitua se não for esse
-	password = 'imoblink'
+	url = System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432/imoblink_db"
+
+	user = System.getenv("MIGRATOR_DB_USER") ?: "imoblink_migrator"
+	password = System.getenv("MIGRATOR_DB_PASSWORD") ?: "migrator_password"
+
 	schemas = ['public']
 	driver = 'org.postgresql.Driver'
 }
