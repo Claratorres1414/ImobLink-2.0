@@ -6,8 +6,8 @@ services:
     container_name: imoblink_cont
     restart: always
     environment:
-      POSTGRES_USER: imoblink
-      POSTGRES_PASSWORD: imoblink
+      POSTGRES_USER: ${POSTGRES_SUPERUSER}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
       POSTGRES_DB: imoblink_db
     ports:
       - "5432:5432"
