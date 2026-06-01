@@ -20,6 +20,9 @@ public class Images {
     private String filename;
     private String filepath;
     private String contentType;
+    
+    @Column(name = "cloudinary_public_id")
+    private String cloudinaryPublicId;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
