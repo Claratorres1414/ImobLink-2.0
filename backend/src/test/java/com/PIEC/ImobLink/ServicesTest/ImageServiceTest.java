@@ -5,6 +5,7 @@ import com.PIEC.ImobLink.DTOs.ImageResponse;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
+import com.PIEC.ImobLink.DTOs.Images.StoredFile;
 import com.PIEC.ImobLink.Exceptions.ResourceNotFoundException;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
@@ -65,7 +66,10 @@ public class ImageServiceTest {
         when(file.getContentType())
                 .thenReturn("image/jpeg");
         when(fileStorageService.saveImage(any(), anyLong()))
-                .thenReturn("fake/path/fake.jpeg");
+                .thenReturn(new StoredFile(
+                        "fake/path/fake.jpeg",
+                        null
+                ));
         when(imageRepository.save(any(Images.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -105,7 +109,10 @@ public class ImageServiceTest {
         when(requireUserService.requireUser(any()))
                 .thenReturn(user);
         when(fileStorageService.saveUserProfileImage(any(), anyLong()))
-                .thenReturn("fake/path/fake.jpeg");
+                .thenReturn(new StoredFile(
+                        "fake/path/fake.jpeg",
+                        null
+                ));
         when(file.getContentType())
                 .thenReturn("image/jpeg");
         when(imageRepository.save(any(Images.class)))
@@ -127,8 +134,10 @@ public class ImageServiceTest {
                 .thenReturn(user);
 
         when(fileStorageService.saveUserProfileImage(any(), anyLong()))
-                .thenReturn("fake/path/fake.jpeg");
-
+                .thenReturn(new StoredFile(
+                        "fake/path/fake.jpeg",
+                        null
+                ));
         when(file.getContentType())
                 .thenReturn("image/jpeg");
 

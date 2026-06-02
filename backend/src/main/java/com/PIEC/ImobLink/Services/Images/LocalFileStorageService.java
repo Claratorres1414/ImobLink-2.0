@@ -1,5 +1,6 @@
 package com.PIEC.ImobLink.Services.Images;
 
+import com.PIEC.ImobLink.DTOs.Images.StoredFile;
 import com.PIEC.ImobLink.Exceptions.FileStorageException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -15,15 +16,15 @@ import java.util.UUID;
 public class LocalFileStorageService implements FileStorageService {
 
     @Override
-    public String saveImage(MultipartFile file, Long userId) {
+    public StoredFile saveImage(MultipartFile file, Long userId) {
         String folder = "uploads/users/" + userId;
-        return writeFile(file, folder);
+        return new StoredFile(writeFile(file, folder), null);
     }
 
     @Override
-    public String saveUserProfileImage(MultipartFile file, Long userId) {
+    public StoredFile saveUserProfileImage(MultipartFile file, Long userId) {
         String folder = "uploads/users/" + userId + "/profile";
-        return writeFile(file, folder);
+        return new StoredFile(writeFile(file, folder), null);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.Services.Images;
 
 import com.cloudinary.Cloudinary;
+import com.PIEC.ImobLink.DTOs.Images.StoredFile;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -19,7 +20,7 @@ public class CloudinaryStorageService implements FileStorageService {
     private final Cloudinary cloudinary;
 
     @Override
-    public String saveImage(MultipartFile file, Long userId) {
+    public StoredFile saveImage(MultipartFile file, Long userId) {
         try {
             Map<?, ?> result = cloudinary.uploader().upload(
                     file.getBytes(),
@@ -28,14 +29,14 @@ public class CloudinaryStorageService implements FileStorageService {
                     )
             );
 
-            return result.get("secure_url").toString();
+            return new StoredFile(result.get("secure_url").toString(), result.get("public_id").toString());
         } catch (IOException e) {
             throw new RuntimeException("Erro ao enviar imagem para o Cloudinary", e);
         }
     }
 
     @Override
-    public String saveUserProfileImage(MultipartFile file, Long userId) {
+    public StoredFile saveUserProfileImage(MultipartFile file, Long userId) {
         try {
             Map<?, ?> result = cloudinary.uploader().upload(
                     file.getBytes(),
@@ -44,7 +45,7 @@ public class CloudinaryStorageService implements FileStorageService {
                     )
             );
 
-            return result.get("secure_url").toString();
+            return new StoredFile(result.get("secure_url").toString(), result.get("public_id").toString());
         } catch (IOException e) {
             throw new RuntimeException("Erro ao enviar imagem de perfil para o Cloudinary", e);
         }
