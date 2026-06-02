@@ -8,6 +8,7 @@ import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Entitys.Favs;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
+import com.PIEC.ImobLink.Services.Images.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

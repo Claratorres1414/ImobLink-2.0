@@ -1,4 +1,4 @@
-package com.PIEC.ImobLink.Services;
+package com.PIEC.ImobLink.Services.Images;
 
 import com.PIEC.ImobLink.Exceptions.FileStorageException;
 import org.springframework.context.annotation.Profile;

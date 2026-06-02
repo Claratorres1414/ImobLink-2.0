@@ -1,4 +1,4 @@
-package com.PIEC.ImobLink.Services;
+package com.PIEC.ImobLink.Services.Images;
 
 import com.PIEC.ImobLink.DTOs.ImageResponse;
 import com.PIEC.ImobLink.Entitys.Images;
@@ -8,6 +8,7 @@ import com.PIEC.ImobLink.Exceptions.ResourceNotFoundException;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
+import com.PIEC.ImobLink.Services.RequireUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;

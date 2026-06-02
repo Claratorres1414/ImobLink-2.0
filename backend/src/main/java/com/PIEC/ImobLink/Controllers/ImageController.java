@@ -4,7 +4,7 @@ import com.PIEC.ImobLink.DTOs.ImageResponse;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Response.ApiResponse;
 import com.PIEC.ImobLink.Response.ResponseUtil;
-import com.PIEC.ImobLink.Services.ImageService;
+import com.PIEC.ImobLink.Services.Images.ImageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,4 +1,4 @@
-package com.PIEC.ImobLink.Services;
+package com.PIEC.ImobLink.Services.Images;
 
 import org.springframework.web.multipart.MultipartFile;
 
