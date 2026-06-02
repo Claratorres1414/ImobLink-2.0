@@ -1,6 +1,7 @@
-package com.PIEC.ImobLink.Services;
+package com.PIEC.ImobLink.Services.Images;
 
 import com.PIEC.ImobLink.DTOs.ImageResponse;
+import com.PIEC.ImobLink.DTOs.Images.StoredFile;
 import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.User;
@@ -8,6 +9,7 @@ import com.PIEC.ImobLink.Exceptions.ResourceNotFoundException;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
 import com.PIEC.ImobLink.Repositorys.PostRepository;
 import com.PIEC.ImobLink.Repositorys.UserRepository;
+import com.PIEC.ImobLink.Services.RequireUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -27,14 +29,14 @@ public class ImageService {
 
     public Images saveImage(MultipartFile file, Authentication auth) {
         User user = requireUserService.requireUser(auth);
-        String filePath = fileStorageService.saveImage(file, user.getId());
-        return imageRepository.save(buildImageEntity(file, filePath, user));
+        StoredFile storedFile = fileStorageService.saveImage(file, user.getId());
+        return imageRepository.save(buildImageEntity(file, storedFile.url(), storedFile.publicId(), user));
     }
 
     public Images saveProfileImage(MultipartFile file, Authentication auth) {
         User user = requireUserService.requireUser(auth);
-        String filePath = fileStorageService.saveUserProfileImage(file, user.getId());
-        Images image = imageRepository.save(buildImageEntity(file, filePath, user));
+        StoredFile storedFile = fileStorageService.saveUserProfileImage(file, user.getId());
+        Images image = imageRepository.save(buildImageEntity(file, storedFile.url(), storedFile.publicId(), user));
 
         user.setImageProfileId(image.getId());
         userRepository.save(user);
@@ -75,11 +77,12 @@ public class ImageService {
         return fileStorageService.readFile(image.getFilepath());
     }
 
-    private Images buildImageEntity(MultipartFile file, String filepath, User user) {
+    private Images buildImageEntity(MultipartFile file, String filepath, String publicId, User user) {
         Images image = new Images();
         image.setFilename(Paths.get(filepath).getFileName().toString());
         image.setFilepath(filepath);
         image.setContentType(file.getContentType());
+        image.setCloudinaryPublicId(publicId);
         image.setUser(user);
         return image;
     }

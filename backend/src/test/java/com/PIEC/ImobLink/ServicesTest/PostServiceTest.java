@@ -8,7 +8,7 @@ import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.Tag;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.*;
-import com.PIEC.ImobLink.Services.ImageService;
+import com.PIEC.ImobLink.Services.Images.ImageService;
 import com.PIEC.ImobLink.Services.PostService;
 import com.PIEC.ImobLink.Services.RequireUserService;
 import com.PIEC.ImobLink.Services.TagService;

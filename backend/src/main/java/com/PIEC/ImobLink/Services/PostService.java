@@ -10,6 +10,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.PIEC.ImobLink.Services.Images.FileStorageService;
+import com.PIEC.ImobLink.Services.Images.ImageService;
+import lombok.SneakyThrows;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -37,6 +41,7 @@ import com.PIEC.ImobLink.Util.ViewsLimitedHeap;
 import Role.Role;
 import lombok.RequiredArgsConstructor;
 import com.PIEC.ImobLink.Entitys.Tag;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +57,7 @@ public class PostService {
     private final ImageRepository imageRepository;
     private final UserRepository userRepository;
     private final TagService tagService;
+    private final FileStorageService fileStorageService;
     private boolean initializedV = false;
     private boolean initializedF = false;
     private boolean initializedL = false;
@@ -205,12 +211,16 @@ public class PostService {
         return new PostResponse(post);
     }
 
+    @SneakyThrows
     public void deletePost(Long id, Authentication auth) throws AccessDeniedException {
         User user = requireUserService.requireUser(auth);
         Post post = get(id);
         assertCanManagePost(post, user);
 
         postRepository.delete(post);
+        for (Images image : post.getImages()) {
+            fileStorageService.delete(image);
+        }
         if (viewsHeap.remove(id)) {
             initializedV = false;
         }
@@ -222,12 +232,15 @@ public class PostService {
         }
     }
 
-    public void removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) throws AccessDeniedException {
+    public void removeImageByPostIdAndImageId(Long postId, Long imageId, Authentication auth) throws IOException {
         User user = requireUserService.requireUser(auth);
         Post post = postRepository.getPostById(postId);
+        Images image = imageRepository.findById(imageId)
+                        .orElseThrow();
         assertCanManagePost(post, user);
         if (post.getImages().size() > 1) {
             post.removeImage(imageId);
+            fileStorageService.delete(image);
             imageRepository.deleteById(imageId);
             return;
         }

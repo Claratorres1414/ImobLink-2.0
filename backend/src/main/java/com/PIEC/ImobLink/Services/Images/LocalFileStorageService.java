@@ -1,6 +1,9 @@
-package com.PIEC.ImobLink.Services;
+package com.PIEC.ImobLink.Services.Images;
 
+import com.PIEC.ImobLink.DTOs.Images.StoredFile;
+import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Exceptions.FileStorageException;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -9,19 +12,20 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.UUID;
 
+@Profile("dev")
 @Service
 public class LocalFileStorageService implements FileStorageService {
 
     @Override
-    public String saveImage(MultipartFile file, Long userId) {
+    public StoredFile saveImage(MultipartFile file, Long userId) {
         String folder = "uploads/users/" + userId;
-        return writeFile(file, folder);
+        return new StoredFile(writeFile(file, folder), null);
     }
 
     @Override
-    public String saveUserProfileImage(MultipartFile file, Long userId) {
+    public StoredFile saveUserProfileImage(MultipartFile file, Long userId) {
         String folder = "uploads/users/" + userId + "/profile";
-        return writeFile(file, folder);
+        return new StoredFile(writeFile(file, folder), null);
     }
 
     @Override
@@ -31,6 +35,13 @@ public class LocalFileStorageService implements FileStorageService {
         } catch (IOException e) {
             throw new FileStorageException("Erro ao ler arquivo: " + filePath, e);
         }
+    }
+
+    @Override
+    public void delete(Images image) throws IOException {
+        Files.deleteIfExists(
+                Paths.get(image.getFilepath())
+        );
     }
 
     private String writeFile(MultipartFile file, String folder) {
