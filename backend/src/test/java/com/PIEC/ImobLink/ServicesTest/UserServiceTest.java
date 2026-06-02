@@ -21,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
@@ -250,7 +251,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void shouldDeleteUserProfile() throws AccessDeniedException {
+    void shouldDeleteUserProfile() throws IOException {
         when(requireUserService.requireUser(any()))
                 .thenReturn(user);
         when(passwordEncoder.matches(anyString(), anyString()))

@@ -1,5 +1,6 @@
 package com.PIEC.ImobLink.Services.Images;
 
+import com.PIEC.ImobLink.Entitys.Images;
 import com.cloudinary.Cloudinary;
 import com.PIEC.ImobLink.DTOs.Images.StoredFile;
 import com.cloudinary.utils.ObjectUtils;
@@ -58,5 +59,18 @@ public class CloudinaryStorageService implements FileStorageService {
         }  catch (IOException e) {
             throw new RuntimeException("Erro ao ler imagem do Cloudinary", e);
         }
+    }
+
+    @Override
+    public void delete(Images image) throws IOException {
+
+        if (image.getCloudinaryPublicId() == null) {
+            return;
+        }
+
+        cloudinary.uploader().destroy(
+                image.getCloudinaryPublicId(),
+                Map.of()
+        );
     }
 }

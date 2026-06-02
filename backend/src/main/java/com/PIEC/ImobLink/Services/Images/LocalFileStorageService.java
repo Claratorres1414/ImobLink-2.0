@@ -1,6 +1,7 @@
 package com.PIEC.ImobLink.Services.Images;
 
 import com.PIEC.ImobLink.DTOs.Images.StoredFile;
+import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Exceptions.FileStorageException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,13 @@ public class LocalFileStorageService implements FileStorageService {
         } catch (IOException e) {
             throw new FileStorageException("Erro ao ler arquivo: " + filePath, e);
         }
+    }
+
+    @Override
+    public void delete(Images image) throws IOException {
+        Files.deleteIfExists(
+                Paths.get(image.getFilepath())
+        );
     }
 
     private String writeFile(MultipartFile file, String folder) {

@@ -6,8 +6,10 @@ import com.PIEC.ImobLink.DTOs.SetInfoRequest;
 import com.PIEC.ImobLink.DTOs.SetPasswordRequest;
 import com.PIEC.ImobLink.DTOs.UserDetails;
 import com.PIEC.ImobLink.Entitys.Favs;
+import com.PIEC.ImobLink.Entitys.Images;
 import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Repositorys.ImageRepository;
+import com.PIEC.ImobLink.Services.Images.FileStorageService;
 import com.PIEC.ImobLink.Services.Images.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -31,6 +33,7 @@ public class UserService {
     private final ImageService imageService;
     private final ImageRepository imageRepository;
     private final RequireUserService requireUserService;
+    private final FileStorageService fileStorageService;
 
     public Boolean promoteUser(String email) {
         User user = userRepository.findByEmail(email)
@@ -94,6 +97,11 @@ public class UserService {
         User user = requireUserService.requireUser(auth);
 
         if(newProfileImage != null) {
+            if (user.getImageProfileId() != null) {
+                Images oldImage = imageRepository.findById(user.getImageProfileId())
+                        .orElseThrow();
+                fileStorageService.delete(oldImage);
+            }
             String imagePath = imageService.saveProfileImage(newProfileImage, auth).getFilepath();
             user.setImageProfilePath(imagePath);
             userRepository.save(user);
@@ -116,10 +124,15 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteProfile(DeleteProfileRequest delRequest, Authentication auth) throws AccessDeniedException {
+    public void deleteProfile(DeleteProfileRequest delRequest, Authentication auth) throws IOException {
         User user = requireUserService.requireUser(auth);
 
         if(delRequest.getPassword() != null && passwordEncoder.matches(delRequest.getPassword(), user.getPassword())) {
+            if (user.getImageProfileId() != null) {
+                Images profileImage = imageRepository.findById(user.getImageProfileId())
+                        .orElseThrow();
+                fileStorageService.delete(profileImage);
+            }
             imageRepository.deleteByUserId(user.getId());
             for (Post post : user.getViewedPosts()) {
                 post.getReacheds().remove(user);

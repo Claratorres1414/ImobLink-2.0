@@ -169,7 +169,7 @@ public class PostController {
             description = "Permite remover uma imagem da sua publicação"
     )
     @DeleteMapping("/deleteImage/{id}/{imageId}")
-    public ResponseEntity<ApiResponse<Void>> deleteImage(@PathVariable Long id, @PathVariable Long imageId, Authentication auth) throws AccessDeniedException {
+    public ResponseEntity<ApiResponse<Void>> deleteImage(@PathVariable Long id, @PathVariable Long imageId, Authentication auth) throws IOException {
         postService.removeImageByPostIdAndImageId(id, imageId, auth);
         return ResponseUtil.noContent(
                 "Imagem removida com sucesso"

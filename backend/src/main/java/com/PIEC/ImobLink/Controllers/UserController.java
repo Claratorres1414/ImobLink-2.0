@@ -136,7 +136,7 @@ public class UserController {
             description = "Permite deletar sua conta da plataforma"
     )
     @DeleteMapping("/deleteProfile")
-    public ResponseEntity<ApiResponse<Void>> deleteProfile(@RequestBody DeleteProfileRequest delRequest, Authentication auth) throws AccessDeniedException {
+    public ResponseEntity<ApiResponse<Void>> deleteProfile(@RequestBody DeleteProfileRequest delRequest, Authentication auth) throws IOException {
         userService.deleteProfile(delRequest, auth);
         return ResponseUtil.noContent(
                 "Perfil deletado com sucesso"
