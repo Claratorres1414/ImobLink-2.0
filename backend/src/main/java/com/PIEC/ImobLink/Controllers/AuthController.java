@@ -57,4 +57,9 @@ public class AuthController {
                 authenticationService.loginAdm(request)
         );
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("UP");
+    }
 }
