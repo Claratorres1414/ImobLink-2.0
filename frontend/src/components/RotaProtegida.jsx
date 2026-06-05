@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function RotaProtegida({ children }) {
   const [autenticado, setAutenticado] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
       navigate("/");
       return;
     }
 
-    fetch("http://localhost:8080/api/user/account", {
+    fetch("${API_URL}/user/account", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -25,7 +26,7 @@ function RotaProtegida({ children }) {
         }
       })
       .catch(() => {
-        localStorage.removeItem("token");
+        localStorage.removeItem(TOKEN_KEY);
         navigate("/");
       });
   }, []);

@@ -1,13 +1,14 @@
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 export default function ChatPage() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   const postId = searchParams.get("postId");
 
   const [mensagens, setMensagens] = useState([]);
@@ -64,7 +65,7 @@ export default function ChatPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/images/get/${imageId}`,
+        `${API_URL}/images/get/${imageId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -89,7 +90,7 @@ export default function ChatPage() {
   async function buscarMeuId() {
     if (!token) return;
     try {
-      const res = await fetch("http://localhost:8080/api/user/account", {
+      const res = await fetch("${API_URL}/user/account", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Erro ao buscar usuário logado");
@@ -104,7 +105,7 @@ export default function ChatPage() {
   async function carregarUsuarioAlvo() {
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/user/getAccount/${id}`, {
+      const res = await fetch(`${API_URL}/user/getAccount/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Erro ao buscar usuário alvo");
@@ -123,7 +124,7 @@ export default function ChatPage() {
   async function carregarMensagens() {
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/messages/loadChat/${id}`, {
+      const res = await fetch(`${API_URL}/messages/loadChat/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Erro ao carregar mensagens");
@@ -139,7 +140,7 @@ export default function ChatPage() {
     if (!token || !postIdAtual) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/api/posts/getOne/${postIdAtual}`, {
+      const res = await fetch(`${API_URL}/posts/getOne/${postIdAtual}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -163,7 +164,7 @@ export default function ChatPage() {
         postId: anexarPostNaProximaMensagem ? postRelacionado?.id || null : null,
       };
 
-      const res = await fetch(`http://localhost:8080/api/messages/send/${id}`, {
+      const res = await fetch(`${API_URL}/messages/send/${id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -198,7 +199,7 @@ export default function ChatPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/messages/delete/${mensagemParaExcluir}`,
+        `${API_URL}/messages/delete/${mensagemParaExcluir}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -229,7 +230,7 @@ export default function ChatPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/messages/edit/${messageId}?content=${encodeURIComponent(textoEdicao)}`,
+        `${API_URL}/messages/edit/${messageId}?content=${encodeURIComponent(textoEdicao)}`,
         {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },

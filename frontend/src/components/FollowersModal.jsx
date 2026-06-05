@@ -1,4 +1,5 @@
 import React from "react";
+import { API_URL } from "../config/constants";
 
 /**
  * Props:
@@ -30,7 +31,7 @@ export default function FollowersModal({ type = "followers", users = [], onClose
               {users.map((u, idx) => (
                 <li key={u?.id ?? idx} className="p-4 flex items-center gap-4 hover:bg-gray-50">
                   <img
-                    src={u?.imageProfileId ? `http://localhost:8080/api/images/get/${u.imageProfileId}` : "/imagemperfil.jpg"}
+                    src={u?.imageProfileId ? `${API_URL}/images/get/${u.imageProfileId}` : "/imagemperfil.jpg"}
                     alt={u?.name || u?.email}
                     className="w-12 h-12 rounded-full object-cover border"
                     onError={(e) => (e.currentTarget.src = "/imagemperfil.jpg")}

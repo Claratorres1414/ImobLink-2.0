@@ -4,10 +4,11 @@ import DashboardLayout from "../components/DashboardLayout";
 import Comentarios from "../components/Comentarios";
 import { formatarPreco, formatarTelefone, formatarEndereco } from "../utils/formatters";
 import PostTags from "../components/PostTags";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function PostagemDetalhada() {
   const { id } = useParams();
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   const navigate = useNavigate();
 
   const [post, setPost] = useState(null);
@@ -31,7 +32,7 @@ function PostagemDetalhada() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/images/get/${imageId}`,
+        `${API_URL}/images/get/${imageId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -56,7 +57,7 @@ function PostagemDetalhada() {
   async function carregarAutor(userId) {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/user/getAccount/${userId}`,
+        `${API_URL}/user/getAccount/${userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -81,7 +82,7 @@ function PostagemDetalhada() {
   async function carregarImagens(postId) {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/images/${postId}/post/all`,
+        `${API_URL}/images/${postId}/post/all`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -98,7 +99,7 @@ function PostagemDetalhada() {
         for (const img of lista) {
           try {
             const f = await fetch(
-              `http://localhost:8080/api/images/get/${img.id}`,
+              `${API_URL}/images/get/${img.id}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
             if (!f.ok) continue;
@@ -126,7 +127,7 @@ function PostagemDetalhada() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/images/${postId}/post/thumb`,
+        `${API_URL}/images/${postId}/post/thumb`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -155,7 +156,7 @@ function PostagemDetalhada() {
   async function carregarComentarios(postId) {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/comments/getComments/post/${postId}`,
+        `${API_URL}/comments/getComments/post/${postId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -175,7 +176,7 @@ function PostagemDetalhada() {
 
           try {
             const r = await fetch(
-              `http://localhost:8080/api/user/getAccount/${c.authorId}`,
+              `${API_URL}/user/getAccount/${c.authorId}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -201,8 +202,8 @@ function PostagemDetalhada() {
 
   async function toggleFavorito() {
     const endpoint = favoritado
-      ? `http://localhost:8080/api/posts/unfav/${post.id}`
-      : `http://localhost:8080/api/posts/fav/${post.id}`;
+      ? `${API_URL}/posts/unfav/${post.id}`
+      : `${API_URL}/posts/fav/${post.id}`;
     const method = favoritado ? "DELETE" : "POST";
 
     try {
@@ -219,8 +220,8 @@ function PostagemDetalhada() {
 
   async function toggleLike() {
     const endpoint = liked
-      ? `http://localhost:8080/api/posts/unlike/${post.id}`
-      : `http://localhost:8080/api/posts/like/${post.id}`;
+      ? `${API_URL}/posts/unlike/${post.id}`
+      : `${API_URL}/posts/like/${post.id}`;
 
     const method = liked ? "DELETE" : "POST";
 
@@ -242,7 +243,7 @@ function PostagemDetalhada() {
   useEffect(() => {
     async function carregar() {
       try {
-        const userRes = await fetch("http://localhost:8080/api/user/account", {
+        const userRes = await fetch("${API_URL}/user/account", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -253,7 +254,7 @@ function PostagemDetalhada() {
         }
 
         const res = await fetch(
-          `http://localhost:8080/api/posts/getOne/${id}`,
+          `${API_URL}/posts/getOne/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -276,7 +277,7 @@ function PostagemDetalhada() {
         }
 
         const favRes = await fetch(
-          "http://localhost:8080/api/posts/my-favs",
+          "${API_URL}/posts/my-favs",
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -532,7 +533,7 @@ function PostagemDetalhada() {
                   if (!novoComentario.trim()) return;
 
                   const res = await fetch(
-                    `http://localhost:8080/api/comments/comment/post/${post.id}`,
+                    `${API_URL}/comments/comment/post/${post.id}`,
                     {
                       method: "POST",
                       headers: {

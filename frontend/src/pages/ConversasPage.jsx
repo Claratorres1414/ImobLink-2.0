@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 
 export default function ConversasPage() {
@@ -10,14 +11,14 @@ export default function ConversasPage() {
   const [mostrarBloqueados, setMostrarBloqueados] = useState(false);
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   const [meuId, setMeuId] = useState(null);
 
   useEffect(() => {
     async function carregarMeuId() {
       if (!token) return;
       try {
-        const res = await fetch("http://localhost:8080/api/user/account", {
+        const res = await fetch("${API_URL}/user/account", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const resposta = await res.json();
@@ -32,7 +33,7 @@ export default function ConversasPage() {
 
   async function carregarContatosBackend() {
     try {
-      const res = await fetch("http://localhost:8080/api/messages/chats", {
+      const res = await fetch("${API_URL}/messages/chats", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -50,7 +51,7 @@ export default function ConversasPage() {
           try {
             if (chat.imageProfileId) {
               const resImg = await fetch(
-                `http://localhost:8080/api/images/get/${chat.imageProfileId}`,
+                `${API_URL}/images/get/${chat.imageProfileId}`,
                 {
                   headers: { Authorization: `Bearer ${token}` },
                 }

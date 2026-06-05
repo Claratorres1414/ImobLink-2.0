@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { formatarTelefone, limparMascara } from "../utils/formatters";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function EditarPerfil() {
   const [dadosUsuario, setDadosUsuario] = useState({});
@@ -15,14 +16,14 @@ function EditarPerfil() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
       navigate("/");
       return;
     }
 
     // Carrega dados do usuário
-    fetch("http://localhost:8080/api/user/account", {
+    fetch("${API_URL}/user/account", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (res) => {
@@ -39,7 +40,7 @@ setNovoTelefone(formatarTelefone(data.phoneNumber || ""));
 
 // Busca imagem se existir
 if (data.imageProfileId) {
-  fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
+  fetch(`${API_URL}/images/get/${data.imageProfileId}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
     .then(async (res) => {
@@ -76,7 +77,7 @@ if (data.imageProfileId) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://localhost:8080/api/user/setInfo", {
+      const res = await fetch("${API_URL}/user/setInfo", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -109,7 +110,7 @@ if (data.imageProfileId) {
     formData.append("image", novaImagem);
 
     try {
-      const res = await fetch("http://localhost:8080/api/user/setImageProfile", {
+      const res = await fetch("${API_URL}/user/setImageProfile", {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -132,7 +133,7 @@ if (data.imageProfileId) {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://localhost:8080/api/user/setPassword", {
+      const res = await fetch("${API_URL}/user/setPassword", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +165,7 @@ if (data.imageProfileId) {
     if (!senhaAtual) return alert("Digite sua senha atual para confirmar.");
 
     try {
-      const res = await fetch("http://localhost:8080/api/user/deleteProfile", {
+      const res = await fetch("${API_URL}/user/deleteProfile", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -175,7 +176,7 @@ if (data.imageProfileId) {
 
       if (res.ok) {
         alert("Conta excluída com sucesso.");
-        localStorage.removeItem("token");
+        localStorage.removeItem(TOKEN_KEY);
         navigate("/");
       } else {
         alert("Erro ao excluir conta.");
@@ -290,7 +291,7 @@ if (data.imageProfileId) {
       const token = localStorage.getItem("token");
 
       try {
-        const res = await fetch("http://localhost:8080/api/user/deleteProfile", {
+        const res = await fetch("${API_URL}/user/deleteProfile", {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
@@ -301,7 +302,7 @@ if (data.imageProfileId) {
 
         if (res.ok) {
           alert("Conta excluída com sucesso.");
-          localStorage.removeItem("token");
+          localStorage.removeItem(TOKEN_KEY);
           navigate("/");
         } else {
           alert("Erro ao excluir a conta.");

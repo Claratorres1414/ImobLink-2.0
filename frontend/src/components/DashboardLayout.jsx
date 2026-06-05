@@ -1,15 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function DashboardLayout({ children }) {
   const navigate = useNavigate();
   const [menuAberto, setMenuAberto] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState("/imagemperfil.jpg");
   const menuRef = useRef(null);
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
 
   const sair = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem(TOKEN_KEY);
     navigate("/");
   };
 
@@ -38,7 +39,7 @@ function DashboardLayout({ children }) {
   useEffect(() => {
     if (!token) return;
 
-    fetch("http://localhost:8080/api/user/account", {
+    fetch("${API_URL}/user/account", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (res) => {
@@ -49,7 +50,7 @@ function DashboardLayout({ children }) {
         if (data.imageProfileId) {
           try {
             const resImg = await fetch(
-              `http://localhost:8080/api/images/get/${data.imageProfileId}`,
+              `${API_URL}/images/get/${data.imageProfileId}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
             if (resImg.ok) {

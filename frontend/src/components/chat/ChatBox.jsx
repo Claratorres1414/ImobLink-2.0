@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL } from "../../config/constants";
 
 export default function ChatBox({ token, userId }) {
 
@@ -10,7 +11,7 @@ export default function ChatBox({ token, userId }) {
   }, [userId]);
 
   async function carregarMensagens() {
-    const res = await fetch(`http://localhost:8080/api/messages/loadChat/${userId}`, {
+    const res = await fetch(`${API_URL}/messages/loadChat/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -23,7 +24,7 @@ export default function ChatBox({ token, userId }) {
   async function enviarMensagem() {
     if (input.trim().length === 0) return;
 
-    await fetch(`http://localhost:8080/api/messages/send/${userId}?content=${input}`, {
+    await fetch(`${API_URL}/messages/send/${userId}?content=${input}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });

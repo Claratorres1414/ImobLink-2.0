@@ -1,33 +1,34 @@
 import { useEffect, useState } from "react";
+import { API_URL, TOKEN_KEY } from "../../config/constants";
 
 export default function ChatList({ onSelectChat }) {
   const [conversations, setConversations] = useState([]);
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
 
-  console.log("🟡 ChatList carregou!");
+  console.log("ChatList carregou!");
 
   useEffect(() => {
-    console.log("🔄 Chamando backend...");
+    console.log("Chamando backend...");
 
-    fetch("http://localhost:8080/api/messages/loadChat/1", {
+    fetch("${API_URL}/messages/loadChat/1", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
       .then(async (res) => {
-        console.log("📌 Status da API:", res.status);
+        console.log("Status da API:", res.status);
 
         if (!res.ok) {
           throw new Error("Erro ao carregar conversas");
         }
 
         const data = await res.json();
-        console.log("🟢 Resposta da API:", data);
+        console.log("Resposta da API:", data);
 
         setConversations(data);
       })
       .catch((err) => {
-        console.error("❌ Erro FETCH:", err);
+        console.error("Erro FETCH:", err);
       });
   }, []);
 
@@ -46,7 +47,7 @@ export default function ChatList({ onSelectChat }) {
           className="p-3 border-b cursor-pointer hover:bg-gray-100 transition"
           onClick={() => onSelectChat(conv)}
         >
-          👉 Conversa com ID: <strong>{conv.senderId}</strong>
+          Conversa com ID: <strong>{conv.senderId}</strong>
           <br />
           Última mensagem: <span className="text-gray-600">{conv.content}</span>
         </div>

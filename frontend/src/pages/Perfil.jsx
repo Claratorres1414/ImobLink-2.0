@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { Pencil } from "lucide-react";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function Perfil() {
   const [dadosUsuario, setDadosUsuario] = useState({});
@@ -14,7 +15,7 @@ function Perfil() {
   const [avatarMap, setAvatarMap] = useState({}); // Map para armazenar Blob URLs dos avatares
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
 
   // Carregar dados do usuário logado
   useEffect(() => {
@@ -23,7 +24,7 @@ function Perfil() {
       return;
     }
 
-    fetch("http://localhost:8080/api/user/account", {
+    fetch("${API_URL}/user/account", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (res) => {
@@ -33,7 +34,7 @@ function Perfil() {
         setDadosUsuario(data);
 
         if (data.imageProfileId) {
-          fetch(`http://localhost:8080/api/images/get/${data.imageProfileId}`, {
+          fetch(`${API_URL}/images/get/${data.imageProfileId}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
             .then(async (res) => {
@@ -64,10 +65,10 @@ function Perfil() {
   useEffect(() => {
     async function fetchFollowData() {
       try {
-        const followersRes = await fetch("http://localhost:8080/api/follow/getFollowers", {
+        const followersRes = await fetch("${API_URL}/follow/getFollowers", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const followingsRes = await fetch("http://localhost:8080/api/follow/getFollowings", {
+        const followingsRes = await fetch("${API_URL}/follow/getFollowings", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -91,7 +92,7 @@ function Perfil() {
   useEffect(() => {
     async function carregarFavoritos() {
       try {
-        const res = await fetch("http://localhost:8080/api/posts/my-favs", {
+        const res = await fetch("${API_URL}/posts/my-favs", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Erro ao buscar favoritos");
@@ -103,7 +104,7 @@ function Perfil() {
         for (const post of data) {
           try {
             const imgRes = await fetch(
-              `http://localhost:8080/api/images/${post.id}/post/thumb`,
+              `${API_URL}/images/${post.id}/post/thumb`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -145,7 +146,7 @@ function Perfil() {
       for (const u of users) {
         if (u.imageProfileId) {
           try {
-            const res = await fetch(`http://localhost:8080/api/images/get/${u.imageProfileId}`, {
+            const res = await fetch(`${API_URL}/images/get/${u.imageProfileId}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (res.ok) {

@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function TagSelector({ tagsSelecionadas, setTagsSelecionadas }) {
 const [texto, setTexto] = useState("");
 const [sugestoes, setSugestoes] = useState([]);
-const token = localStorage.getItem("token");
+const token = localStorage.getItem(TOKEN_KEY);
 
 useEffect(() => {
     async function buscarSugestoes() {
     try {
         const url = texto.trim()
-        ? `http://localhost:8080/api/tags/search?query=${encodeURIComponent(texto)}`
-        : "http://localhost:8080/api/tags/suggestions";
+        ? `${API_URL}/tags/search?query=${encodeURIComponent(texto)}`
+        : "${API_URL}/tags/suggestions";
 
         const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },

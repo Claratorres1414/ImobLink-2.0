@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 import { formatarPreco, formatarEndereco } from "../utils/formatters";
 import PostTags from "../components/PostTags";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function MeusAnuncios() {
   const [posts, setPosts] = useState([]);
@@ -20,13 +21,13 @@ function MeusAnuncios() {
     comentarios: [],
   });
 
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   const navigate = useNavigate();
 
 async function fetchAllImagesForPost(postId) {
   try {
     const res = await fetch(
-      `http://localhost:8080/api/images/${postId}/post/all`,
+      `${API_URL}/images/${postId}/post/all`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -38,7 +39,7 @@ async function fetchAllImagesForPost(postId) {
       for (const img of images) {
         try {
           const fetchImg = await fetch(
-            `http://localhost:8080/api/images/get/${img.id}`,
+            `${API_URL}/images/get/${img.id}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
@@ -66,7 +67,7 @@ async function fetchAllImagesForPost(postId) {
   // fallback para thumb
   try {
     const thumbRes = await fetch(
-      `http://localhost:8080/api/images/${postId}/post/thumb`,
+      `${API_URL}/images/${postId}/post/thumb`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -91,7 +92,7 @@ async function fetchAllImagesForPost(postId) {
   async function fetchUserAvatar(userId) {
     if (!userId) return "https://cdn-icons-png.flaticon.com/512/149/149071.png";
     try {
-      const res = await fetch(`http://localhost:8080/api/images/get/${userId}`, {
+      const res = await fetch(`${API_URL}/images/get/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -110,7 +111,7 @@ async function fetchAllImagesForPost(postId) {
 
     async function carregar() {
       try {
-        const res = await fetch("http://localhost:8080/api/posts/my-posts", {
+        const res = await fetch("${API_URL}/posts/my-posts", {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         });
@@ -136,7 +137,7 @@ async function fetchAllImagesForPost(postId) {
 
           try {
             const cRes = await fetch(
-              `http://localhost:8080/api/comments/getComments/post/${post.id}`,
+              `${API_URL}/comments/getComments/post/${post.id}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -201,7 +202,7 @@ async function fetchAllImagesForPost(postId) {
 
   async function handleExcluir(id) {
     if (!window.confirm("Excluir este anúncio?")) return;
-    const res = await fetch(`http://localhost:8080/api/posts/delete/${id}`, {
+    const res = await fetch(`${API_URL}/posts/delete/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -216,7 +217,7 @@ async function fetchAllImagesForPost(postId) {
 async function abrirComentarios(postId) {
   try {
     const res = await fetch(
-      `http://localhost:8080/api/comments/getComments/post/${postId}`,
+      `${API_URL}/comments/getComments/post/${postId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -233,7 +234,7 @@ async function abrirComentarios(postId) {
       try {
         // BUSCA O USUÁRIO PRIMEIRO
         const resUser = await fetch(
-          `http://localhost:8080/api/user/getAccount/${c.authorId}`,
+          `${API_URL}/user/getAccount/${c.authorId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -244,7 +245,7 @@ async function abrirComentarios(postId) {
 
           if (imgProfileId) {
             const resImg = await fetch(
-              `http://localhost:8080/api/images/get/${imgProfileId}`,
+              `${API_URL}/images/get/${imgProfileId}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
 

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 import TagSelector from "../components/TagSelector"
 import { formatarPrecoInput, precoInputParaNumero } from "../utils/formatters";
+import { API_URL, MICROSERVICES_URL, TOKEN_KEY } from "../config/constants";
 
 function PublicarPostagem() {
   const [descricao, setDescricao] = useState("");
@@ -21,7 +22,7 @@ function PublicarPostagem() {
   const [loadingLegenda, setLoadingLegenda] = useState(false);
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
 
   const gerarLegenda = async () => {
     if (imagens.length === 0) {
@@ -36,7 +37,7 @@ function PublicarPostagem() {
     formData.append("file", imagens[0]);
 
     try {
-      const resposta = await fetch("http://localhost:8080/integracao/legenda", {
+      const resposta = await fetch("${MICROSERVICES_URL}/integracao/legenda", {
         method: "POST",
         body: formData,
       });
@@ -93,7 +94,7 @@ function PublicarPostagem() {
 
     try {
       
-    const resposta = await fetch("http://localhost:8080/api/posts/create", {
+    const resposta = await fetch("${API_URL}/posts/create", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

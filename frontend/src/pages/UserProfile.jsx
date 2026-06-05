@@ -2,10 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 import Comentarios from "../components/Comentarios";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 export default function UserProfile() {
   const { id } = useParams(); // id do usuário (rota: /user/:id)
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   const navigate = useNavigate();
 
   const [currentUser, setCurrentUser] = useState(null); // dados do logado
@@ -26,8 +27,6 @@ export default function UserProfile() {
   const [novoComentario, setNovoComentario] = useState("");
   const [showComentarioBox, setShowComentarioBox] = useState(false);
 
-  const API = "http://localhost:8080";
-
   
   // buscar foto de perfil
   
@@ -35,9 +34,9 @@ async function buscarFotoPerfil(imageId) {
   if (!imageId) return "/imagemperfil.jpg";
 
   const tentativas = [
-    `${API}/api/images/get/${imageId}`,
-    `${API}/api/images/${imageId}/profile`,
-    `${API}/api/images/profile/${imageId}`,
+    `${API_URL}/images/get/${imageId}`,
+    `${API_URL}/images/${imageId}/profile`,
+    `${API_URL}/images/profile/${imageId}`,
   ];
 
   for (let url of tentativas) {
@@ -70,7 +69,7 @@ async function buscarFotoPerfil(imageId) {
     if (!token) return;
     (async () => {
       try {
-        const res = await fetch(`${API}/api/user/account`, {
+        const res = await fetch(`${API_URL}/user/account`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -93,7 +92,7 @@ async function buscarFotoPerfil(imageId) {
 
     async function carregarUser() {
       try {
-        const res = await fetch(`${API}/api/user/getAccount/${id}`, {
+        const res = await fetch(`${API_URL}/user/getAccount/${id}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!res.ok) throw new Error("Erro ao buscar usuário");
@@ -118,12 +117,12 @@ async function buscarFotoPerfil(imageId) {
 
   async function carregarFollowersAndFollowings() {
     try {
-      const fRes = await fetch(`${API}/api/follow/getFollowers/${id}`, {
+      const fRes = await fetch(`${API_URL}/follow/getFollowers/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const respostaFollowers = fRes && fRes.ok ? await fRes.json() : { data: [] };
       const followersArr = Array.isArray(respostaFollowers.data) ? respostaFollowers.data : [];
-      const gRes = await fetch(`${API}/api/follow/getFollowings/${id}`, {
+      const gRes = await fetch(`${API_URL}/follow/getFollowings/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const respostaFollowings = gRes && gRes.ok ? await gRes.json() : { data: [] };
@@ -146,7 +145,7 @@ async function buscarFotoPerfil(imageId) {
       setCounts({ followers: followersWithImgs.length, following: followingsWithImgs.length });
 
       if (token) {
-        const myFollowingsRes = await fetch(`${API}/api/follow/getFollowings`, {
+        const myFollowingsRes = await fetch(`${API_URL}/follow/getFollowings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (myFollowingsRes.ok) {
@@ -174,7 +173,7 @@ async function buscarFotoPerfil(imageId) {
 
     async function carregarPosts() {
       try {
-        const res = await fetch(`${API}/api/feed`);
+        const res = await fetch(`${API_URL}/feed`);
         if (!res.ok) throw new Error("Erro ao buscar feed");
         const resposta = await res.json();
         const all = Array.isArray(resposta.data) ? resposta.data : [];
@@ -185,7 +184,7 @@ async function buscarFotoPerfil(imageId) {
 
         for (const p of meus) {
           try {
-            const t = await fetch(`${API}/api/images/${p.id}/post/thumb`, {
+            const t = await fetch(`${API_URL}/images/${p.id}/post/thumb`, {
               headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
           if (t.ok) {
@@ -231,7 +230,7 @@ async function buscarFotoPerfil(imageId) {
   async function handleFollow() {
     if (!token) return navigate("/login");
     try {
-      const res = await fetch(`${API}/api/follow/${id}`, {
+      const res = await fetch(`${API_URL}/follow/${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -244,7 +243,7 @@ async function buscarFotoPerfil(imageId) {
   async function handleUnfollow() {
     if (!token) return navigate("/login");
     try {
-      const res = await fetch(`${API}/api/follow/unfollow/${id}`, {
+      const res = await fetch(`${API_URL}/follow/unfollow/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -259,7 +258,7 @@ async function buscarFotoPerfil(imageId) {
 
 async function carregarComentarios(userId) {
   try {
-    const res = await fetch(`${API}/api/comments/getComments/${userId}`, {
+    const res = await fetch(`${API_URL}/comments/getComments/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return;
@@ -274,7 +273,7 @@ async function carregarComentarios(userId) {
         let autor = { name: "Usuário" };
 
         try {
-          const r = await fetch(`${API}/api/user/getAccount/${c.authorId}`, {
+          const r = await fetch(`${API_URL}/user/getAccount/${c.authorId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -300,7 +299,7 @@ async function carregarComentarios(userId) {
 
   async function enviarComentario(userId) {
     if (!novoComentario.trim()) return;
-    const res = await fetch(`${API}/api/comments/comment/${userId}`, {
+    const res = await fetch(`${API_URL}/comments/comment/${userId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

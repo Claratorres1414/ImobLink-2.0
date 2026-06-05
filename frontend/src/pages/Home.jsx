@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { formatarPreco, formatarEndereco } from "../utils/formatters";
 import PostTags from "../components/PostTags";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function Home() {
   const [posts, setPosts] = useState([]);
@@ -17,13 +18,13 @@ function Home() {
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   const slideIntervals = useRef({});
 
   // 1. FUNÇÃO ASSÍNCRONA PARA BUSCAR IMAGENS DE UM POST
   async function fetchAllImagesForPost(postId) {
     try {
-      const res = await fetch(`http://localhost:8080/api/images/${postId}/post/all`, {
+      const res = await fetch(`${API_URL}/images/${postId}/post/all`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -71,7 +72,7 @@ function Home() {
         setCheckingQuestionnaire(true);
 
         // PASSO A: Buscar dados da conta do usuário
-        const userRes = await fetch("http://localhost:8080/api/user/account", {
+        const userRes = await fetch("${API_URL}/user/account", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!userRes.ok) throw new Error("Erro ao buscar usuário");
@@ -119,7 +120,7 @@ function Home() {
 
         // Buscar Feed Geral
         try {
-          const feedRes = await fetch("http://localhost:8080/api/feed");
+          const feedRes = await fetch("${API_URL}/feed");
           if (feedRes.ok) {
             const feedData = await feedRes.json();
             normalFeed = feedData.data || feedData || [];
@@ -162,7 +163,7 @@ function Home() {
             }
           } else {
             try {
-              const t = await fetch(`http://localhost:8080/api/images/${id}/post/thumb`, {
+              const t = await fetch(`${API_URL}/images/${id}/post/thumb`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
               if (t.ok && mounted) {
@@ -203,7 +204,7 @@ function Home() {
           }
 
           try {
-            const cRes = await fetch(`http://localhost:8080/api/comments/getComments/post/${post.id}`, {
+            const cRes = await fetch(`${API_URL}/comments/getComments/post/${post.id}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (cRes.ok && mounted) {
@@ -234,7 +235,7 @@ function Home() {
             });
           }
 
-          const favsRes = await fetch("http://localhost:8080/api/posts/my-favs", {
+          const favsRes = await fetch("${API_URL}/posts/my-favs", {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (favsRes.ok && mounted) {

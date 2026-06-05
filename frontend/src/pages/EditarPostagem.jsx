@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 import TagSelector from "../components/TagSelector";
 import { formatarPrecoInput, precoInputParaNumero } from "../utils/formatters";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function EditarPostagem() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
 
   const [descricao, setDescricao] = useState("");
   const [preco, setPreco] = useState("");
@@ -18,15 +19,12 @@ function EditarPostagem() {
   const [tags, setTags] = useState([]);
 
   const [imagensPost, setImagensPost] = useState([]);
-
-  const API = "http://localhost:8080";
-
   
   // Carregar dados do post
   
   const carregarPostagem = async () => {
     try {
-      const res = await fetch(`${API}/api/posts/getOne/${id}`, {
+      const res = await fetch(`${API_URL}/posts/getOne/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Postagem não encontrada");
@@ -43,7 +41,7 @@ function EditarPostagem() {
       setTags(Array.isArray(data.tags) ? data.tags.map((tag) => tag.name) : []);
 
       // Carregar todas as imagens do post
-      const imgsRes = await fetch(`${API}/api/images/${id}/post/all`, {
+      const imgsRes = await fetch(`${API_URL}/images/${id}/post/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (imgsRes.ok) {
@@ -54,7 +52,7 @@ function EditarPostagem() {
       const imgsComUrl = await Promise.all(
         imgsData.map(async (img) => {
           try {
-            const resImg = await fetch(`${API}/api/images/get/${img.id}`, {
+            const resImg = await fetch(`${API_URL}/images/get/${img.id}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!resImg.ok) return { id: img.id, url: "/placeholder.jpg" };
@@ -104,7 +102,7 @@ function EditarPostagem() {
     }
 
     try {
-      const res = await fetch(`${API}/api/posts/deleteImage/${id}/${imageId}`, {
+      const res = await fetch(`${API_URL}/posts/deleteImage/${id}/${imageId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -124,7 +122,7 @@ function EditarPostagem() {
   
   const salvarAlteracoes = async () => {
     try {
-      const res = await fetch(`${API}/api/posts/edit/${id}`, {
+      const res = await fetch(`${API_URL}/posts/edit/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

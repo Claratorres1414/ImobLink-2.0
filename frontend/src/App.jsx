@@ -11,6 +11,7 @@ import PostagemDetalhada from "./pages/PostagemDetalhada";
 import UserProfile from "./pages/UserProfile";
 import Busca from "./pages/Busca";
 import QuestionnairePage from "./pages/QuestionnairePage";
+import { TOKEN_KEY } from "./config/constants";
 
 // Chat pages
 import ChatPage from "./pages/ChatPage";
@@ -18,7 +19,7 @@ import ConversasPage from "./pages/ConversasPage";
 
 // Proteção de rotas
 function RotaProtegida({ children }) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   return token ? children : <Navigate to="/login" replace />;
 }
 

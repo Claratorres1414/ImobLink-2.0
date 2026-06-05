@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { FaUserShield } from "react-icons/fa";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 function Login() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ function Login() {
     }
 
     try {
-      const resposta = await fetch("http://localhost:8080/api/auth/login", {
+      const resposta = await fetch("${API_URL}/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,7 +44,7 @@ function Login() {
           return;
         }
 
-        localStorage.setItem("token", tokenRecebido);
+        localStorage.setItem(TOKEN_KEY, tokenRecebido);
         navigate("/home");
       } else {
         setErro("Email ou senha inválidos.");

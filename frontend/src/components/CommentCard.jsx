@@ -1,4 +1,5 @@
 import React from "react";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 export default function CommentCard({ comentario, token, onDelete }) {
   const { id, autorNome, autorImagem, content, createdAt } = comentario;
@@ -7,7 +8,7 @@ export default function CommentCard({ comentario, token, onDelete }) {
     if (!window.confirm("Deseja realmente deletar este comentário?")) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/api/comments/deleteComment/${comentario.id}`, {
+      const res = await fetch(`${API_URL}/comments/deleteComment/${comentario.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { formatarPreco, formatarEndereco } from "../utils/formatters";
 import PostTags from "../components/PostTags";
 import { formatarPrecoInput } from "../utils/formatters";
+import { API_URL, TOKEN_KEY } from "../config/constants";
 
 // Componente para o card de usuário
 function UserCard({ u, token }) {
@@ -16,9 +17,9 @@ function UserCard({ u, token }) {
     if (!u.imageProfileId) return;
 
     const tentativas = [
-      `http://localhost:8080/api/images/get/${u.imageProfileId}`,
-      `http://localhost:8080/api/images/${u.imageProfileId}/profile`,
-      `http://localhost:8080/api/images/profile/${u.imageProfileId}`,
+      `${API_URL}/images/get/${u.imageProfileId}`,
+      `${API_URL}/images/${u.imageProfileId}/profile`,
+      `${API_URL}/images/profile/${u.imageProfileId}`,
     ];
 
 async function fetchImage() {
@@ -89,7 +90,7 @@ function Busca() {
   const [ordenacao, setOrdenacao] = useState("recentes");
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(TOKEN_KEY);
   const slideIntervals = useRef({});
   const location = useLocation();
   const query = new URLSearchParams(location.search).get("query") || "";
@@ -100,7 +101,7 @@ function Busca() {
   
   useEffect(() => {
     if (!token) return;
-    fetch("http://localhost:8080/api/user/account", {
+    fetch("${API_URL}/user/account", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -116,7 +117,7 @@ function Busca() {
 
     async function fetchUsuarios() {
       try {
-        const res = await fetch("http://localhost:8080/api/user/getAll", {
+        const res = await fetch("${API_URL}/user/getAll", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Erro ao buscar usuários");
@@ -140,7 +141,7 @@ function Busca() {
   useEffect(() => {
   async function carregarTags() {
     try {
-      const res = await fetch("http://localhost:8080/api/tags/suggestions", {
+      const res = await fetch("${API_URL}/tags/suggestions", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -168,7 +169,7 @@ function Busca() {
 
     async function fetchPosts() {
       try {
-        const resPosts = await fetch("http://localhost:8080/api/feed", {
+        const resPosts = await fetch("${API_URL}/feed", {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!resPosts.ok) throw new Error("Erro ao buscar posts");
@@ -198,7 +199,7 @@ function Busca() {
           // Carregar imagens do post
           try {
             const resImages = await fetch(
-              `http://localhost:8080/api/images/${id}/post/all`,
+              `${API_URL}/images/${id}/post/all`,
               { headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
 
@@ -210,7 +211,7 @@ function Busca() {
             for (const img of images) {
               try {
                 const b = await fetch(
-                  `http://localhost:8080/api/images/get/${img.id}`,
+                  `${API_URL}/images/get/${img.id}`,
                   { headers: token ? { Authorization: `Bearer ${token}` } : {} }
                 );
                 if (!b.ok) continue;
@@ -238,7 +239,7 @@ function Busca() {
             } else {
               try {
                 const thumbRes = await fetch(
-                  `http://localhost:8080/api/images/${id}/post/thumb`,
+                  `${API_URL}/images/${id}/post/thumb`,
                   { headers: token ? { Authorization: `Bearer ${token}` } : {} }
                 );
 
@@ -296,7 +297,7 @@ function Busca() {
           // Comentários
           try {
             const cRes = await fetch(
-              `http://localhost:8080/api/comments/getComments/post/${post.id}`,
+              `${API_URL}/comments/getComments/post/${post.id}`,
               { headers: token ? { Authorization: `Bearer ${token}` } : {} }
             );
             if (cRes.ok) {
@@ -313,7 +314,7 @@ function Busca() {
 
         // Favoritos
         if (token) {
-          const favsRes = await fetch("http://localhost:8080/api/posts/my-favs", {
+          const favsRes = await fetch("${API_URL}/posts/my-favs", {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (favsRes.ok) {

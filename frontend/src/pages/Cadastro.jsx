@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { FaUserPlus } from "react-icons/fa";
 import { formatarCPF, formatarTelefone, limparMascara } from "../utils/formatters";
+import { API_URL, MICROSERVICES_URL, TOKEN_KEY } from "../config/constants";
 
 function Cadastro() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ function Cadastro() {
     }
 
     try {
-      const resposta = await fetch("http://localhost:8080/api/auth/register", {
+      const resposta = await fetch("${API_URL}/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -64,7 +65,7 @@ function Cadastro() {
 
   try {
     console.log("Enviando para o backend Spring Boot...");
-    const resposta = await fetch("http://localhost:8080/integracao/ocr", {
+    const resposta = await fetch("${MICROSERVICES_URL}/integracao/ocr", {
       method: "POST",
       body: formData,
     });
