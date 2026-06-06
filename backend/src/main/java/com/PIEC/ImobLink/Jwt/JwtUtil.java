@@ -2,6 +2,7 @@ package com.PIEC.ImobLink.Jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -12,16 +13,14 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
-    private final String SECRET = "1g7d8a9s0d8f7g6h5j4k3l2m1n0b9v8c";
+    @Value("${jwt.secret}")
+    private String SECRET;
     private final long expirationMillis = 1000 * 60 * 60 * 2; // 2 horas
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
     }
 
-    // ==========================
-    // NOVO MÉTODO - GERA TOKEN COMPLETO
-    // ==========================
     public String generateToken(String email, String role, String name) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
@@ -34,11 +33,6 @@ public class JwtUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
-    }
-
-    // Mantém o antigo para compatibilidade, se ainda for usado
-    public String generateToken(String email) {
-        return generateToken(email, "USER", "Usuário");
     }
 
     public String extractEmail(String token) {

@@ -1,0 +1,30 @@
+# Cache e arquivos de compilação locais do Gradle
+.gradle/
+build/
+
+# Configurações da IDE (IntelliJ, Eclipse, VS Code)
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+
+# Arquivos de logs do Spring
+*.log
+logs/
+
+# Arquivos de configuração locais e sensíveis (Segurança!)
+.env
+.env.*
+!.env.example
+
+# Arquivos do Docker que não precisam ir para dentro do container da API
+docker-compose.yml
+.dockerignore
+Dockerfile
+postgres_data/
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db

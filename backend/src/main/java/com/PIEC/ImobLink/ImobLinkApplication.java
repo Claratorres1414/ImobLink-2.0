@@ -11,9 +11,7 @@ public class ImobLinkApplication {
 
 		SpringApplication app =
 				new SpringApplication(ImobLinkApplication.class);
-
 		app.addInitializers(new EnvInitializer());
-
 		app.run(args);
 	}
 }
