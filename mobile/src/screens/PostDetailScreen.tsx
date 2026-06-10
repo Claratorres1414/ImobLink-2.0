@@ -17,6 +17,7 @@ import {
     favPost,
     unfavPost
 } from "../apiServices/postService";
+import FollowButton from "../components/FollowButton";
 
 const { width } = Dimensions.get("window");
 
@@ -197,12 +198,7 @@ export default function PostDetailScreen({route}: Props) {
                         {postUser?.name || "User"}
                     </Text>
                 </View>
-
-                <TouchableOpacity style={styles.followButton}>
-                    <Text style={styles.followText}>
-                        Seguir
-                    </Text>
-                </TouchableOpacity>
+                <FollowButton/>
             </View>
             <View>
                 <ScrollView
@@ -369,27 +365,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "600",
         color: "#7D92D4",
-    },
-
-    followButton: {
-        marginLeft: "auto",
-
-        marginTop: 7,
-
-        width: 70,
-        height: 32,
-
-        borderRadius: 7,
-
-        justifyContent: "center",
-        alignItems: "center",
-
-        backgroundColor: "#FF8C42",
-    },
-
-    followText: {
-        color: "#E9E9E9",
-        fontWeight: "600",
     },
     image: {
         width,
