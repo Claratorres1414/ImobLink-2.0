@@ -17,6 +17,8 @@ import {
     favPost,
     unfavPost
 } from "../apiServices/postService";
+import FollowButton from "../components/FollowButton";
+import {useAuthStore} from "../store/authStore";
 
 const { width } = Dimensions.get("window");
 
@@ -38,6 +40,9 @@ export default function PostDetailScreen({route}: Props) {
         useNavigation<NavigationProps>();
 
     const {post} = route.params;
+
+    const currentUserId =
+        useAuthStore((state) => state.userId);
 
     const [images, setImages] = useState<string[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -197,12 +202,12 @@ export default function PostDetailScreen({route}: Props) {
                         {postUser?.name || "User"}
                     </Text>
                 </View>
-
-                <TouchableOpacity style={styles.followButton}>
-                    <Text style={styles.followText}>
-                        Seguir
-                    </Text>
-                </TouchableOpacity>
+                {
+                    postUser &&
+                    postUser.id !== currentUserId && (
+                        <FollowButton userId={postUser?.id || null}/>
+                    )
+                }
             </View>
             <View>
                 <ScrollView
@@ -369,27 +374,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "600",
         color: "#7D92D4",
-    },
-
-    followButton: {
-        marginLeft: "auto",
-
-        marginTop: 7,
-
-        width: 70,
-        height: 32,
-
-        borderRadius: 7,
-
-        justifyContent: "center",
-        alignItems: "center",
-
-        backgroundColor: "#FF8C42",
-    },
-
-    followText: {
-        color: "#E9E9E9",
-        fontWeight: "600",
     },
     image: {
         width,

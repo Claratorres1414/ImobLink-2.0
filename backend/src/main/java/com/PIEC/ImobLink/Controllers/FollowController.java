@@ -94,4 +94,12 @@ public class FollowController {
                 followService.getFollowingsById(userId)
         );
     }
+
+    @GetMapping("/check/{userId}")
+    public ResponseEntity<ApiResponse<Boolean>> checkFollow(@PathVariable Long userId, Authentication auth) {
+        return ResponseUtil.ok(
+                "Verificado com sucesso",
+                followService.check(userId, auth)
+        );
+    }
 }
