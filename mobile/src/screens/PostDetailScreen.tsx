@@ -198,7 +198,7 @@ export default function PostDetailScreen({route}: Props) {
                         {postUser?.name || "User"}
                     </Text>
                 </View>
-                <FollowButton/>
+                <FollowButton userId={postUser?.id || null}/>
             </View>
             <View>
                 <ScrollView

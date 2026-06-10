@@ -7,3 +7,7 @@ export async function followUser(userId: number) {
 export async function unfollowUser(userId: number) {
     return api.delete(`/follow/unfollow/${userId}`);
 }
+
+export async function checkFollow(userId: number) {
+    return api.post(`/follow/check/${userId}`);
+}

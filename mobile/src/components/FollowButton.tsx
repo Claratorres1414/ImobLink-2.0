@@ -1,9 +1,28 @@
 import {StyleSheet, Text, TouchableOpacity} from "react-native";
+import {useEffect, useState} from "react";
+import {checkFollow} from "../apiServices/followService";
 
-export default function FollowButton() {
+type Props = {
+    userId: number;
+}
+
+export default function FollowButton({ userId }: Props) {
+    const [following, setFollowing] = useState(false);
+
+    async function checkFollowing() {
+        const response = await checkFollow(userId)
+        setFollowing(response.data)
+    }
+
+    useEffect(() => {
+        checkFollowing()
+    }, []);
+
+    const buttonText = following ? "Seguindo" : "Seguir";
+
     return (
         <TouchableOpacity style={styles.followButton}>
-            <Text style={styles.followText}>Seguir</Text>
+            <Text style={styles.followText}>{buttonText}</Text>
         </TouchableOpacity>
     )
 }
