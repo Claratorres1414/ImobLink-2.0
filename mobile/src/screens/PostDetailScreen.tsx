@@ -18,6 +18,7 @@ import {
     unfavPost
 } from "../apiServices/postService";
 import FollowButton from "../components/FollowButton";
+import {useAuthStore} from "../store/authStore";
 
 const { width } = Dimensions.get("window");
 
@@ -39,6 +40,9 @@ export default function PostDetailScreen({route}: Props) {
         useNavigation<NavigationProps>();
 
     const {post} = route.params;
+
+    const currentUserId =
+        useAuthStore((state) => state.userId);
 
     const [images, setImages] = useState<string[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -198,7 +202,12 @@ export default function PostDetailScreen({route}: Props) {
                         {postUser?.name || "User"}
                     </Text>
                 </View>
-                <FollowButton userId={postUser?.id || null}/>
+                {
+                    postUser &&
+                    postUser.id !== currentUserId && (
+                        <FollowButton userId={postUser?.id || null}/>
+                    )
+                }
             </View>
             <View>
                 <ScrollView
