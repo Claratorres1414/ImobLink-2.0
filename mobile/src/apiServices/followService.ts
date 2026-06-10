@@ -9,5 +9,5 @@ export async function unfollowUser(userId: number) {
 }
 
 export async function checkFollow(userId: number) {
-    return api.post(`/follow/check/${userId}`);
+    return api.get(`/follow/check/${userId}`);
 }

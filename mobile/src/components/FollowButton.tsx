@@ -11,19 +11,19 @@ export default function FollowButton({ userId }: Props) {
 
     async function checkFollowing() {
         const response = await checkFollow(userId)
-        setFollowing(response.data)
+        setFollowing(response.data.data)
     }
 
     useEffect(() => {
         checkFollowing()
-    }, []);
+    }, [userId]);
 
     const buttonText = following ? "Seguindo" : "Seguir";
 
     async function handleFollow() {
         const previousFollowed = following;
 
-        setFollowing(!previousFollowed)
+        setFollowing(!previousFollowed);
 
         try {
             if (previousFollowed) {
@@ -32,10 +32,8 @@ export default function FollowButton({ userId }: Props) {
                 await followUser(userId);
             }
         } catch (error) {
-            console.log(
-                "Erro ao seguir/desseguir um usuário:",
-                error
-            );
+            setFollowing(previousFollowed);
+            console.log(error);
         }
     }
 
