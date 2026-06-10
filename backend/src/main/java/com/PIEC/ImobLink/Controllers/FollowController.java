@@ -28,10 +28,10 @@ public class FollowController {
             description = "Permite seguir o perfil de outro usuário"
     )
     @PostMapping("/{followingId}")
-    public ResponseEntity<ApiResponse<Follow>> followUser(@PathVariable Long followingId, Authentication auth) {
-        return ResponseUtil.ok(
-                "OK",
-                followService.follow(auth, followingId)
+    public ResponseEntity<ApiResponse<Void>> followUser(@PathVariable Long followingId, Authentication auth) {
+        followService.follow(auth, followingId);
+        return ResponseUtil.noContent(
+                "OK"
         );
     }
 
