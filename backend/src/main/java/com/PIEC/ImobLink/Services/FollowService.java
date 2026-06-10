@@ -103,4 +103,10 @@ public class FollowService {
                 .map(UserDetails::new)
                 .toList();
     }
+
+    public Boolean check(Long targetId, Authentication auth) {
+        User user = requireUserService.requireUser(auth);
+
+        return followRepository.existsByFollowerAndFollowingId(user, targetId);
+    }
 }
