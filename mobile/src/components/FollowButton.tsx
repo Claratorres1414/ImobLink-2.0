@@ -1,6 +1,6 @@
 import {StyleSheet, Text, TouchableOpacity} from "react-native";
 import {useEffect, useState} from "react";
-import {checkFollow} from "../apiServices/followService";
+import {checkFollow, followUser, unfollowUser} from "../apiServices/followService";
 
 type Props = {
     userId: number;
@@ -20,8 +20,31 @@ export default function FollowButton({ userId }: Props) {
 
     const buttonText = following ? "Seguindo" : "Seguir";
 
+    async function handleFollow() {
+        const previousFollowed = following;
+
+        setFollowing(!previousFollowed)
+
+        try {
+            if (previousFollowed) {
+                await unfollowUser(userId);
+            } else {
+                await followUser(userId);
+            }
+        } catch (error) {
+            console.log(
+                "Erro ao seguir/desseguir um usuário:",
+                error
+            );
+        }
+    }
+
     return (
-        <TouchableOpacity style={styles.followButton}>
+        <TouchableOpacity
+            style={styles.followButton}
+            activeOpacity={0.7}
+            onPress={handleFollow}
+        >
             <Text style={styles.followText}>{buttonText}</Text>
         </TouchableOpacity>
     )
