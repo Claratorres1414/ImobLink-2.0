@@ -39,7 +39,10 @@ export default function FollowButton({ userId }: Props) {
 
     return (
         <TouchableOpacity
-            style={styles.followButton}
+            style={[
+                styles.followButton,
+                following && styles.followingButton
+            ]}
             activeOpacity={0.7}
             onPress={handleFollow}
         >
@@ -65,8 +68,14 @@ const styles = StyleSheet.create({
         backgroundColor: "#FF8C42",
     },
 
+    followingButton: {
+        width: 75,
+        borderRadius: 8,
+        backgroundColor: "#FFC107",
+    },
+
     followText: {
         color: "#E9E9E9",
         fontWeight: "600",
     },
-})
+});
