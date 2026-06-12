@@ -7,6 +7,7 @@ import PostDetailScreen from "../screens/PostDetailScreen";
 import LogoutButton from "../components/LogoutButton";
 import CreateNewPostScreen from "../screens/CreateNewPostScreen";
 import MyProfileScreen from "../screens/MyProfileScreen";
+import UserProfileScreen from "../screens/UserProfileScreen";
 
 
 const Stack =
@@ -60,6 +61,19 @@ export default function AppStack() {
             <Stack.Screen
                 name="MyProfile"
                 component={MyProfileScreen}
+
+                options={{
+                    headerShown: false,
+                    animation: "simple_push",
+                    contentStyle: {
+                        backgroundColor: "#fff",
+                    },
+                }}
+            />
+
+            <Stack.Screen
+                name="UserProfile"
+                component={UserProfileScreen}
 
                 options={{
                     headerShown: false,
