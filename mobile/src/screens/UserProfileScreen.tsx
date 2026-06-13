@@ -19,9 +19,11 @@ type NavigationProps =
         "UserProfile"
     >;
 
-export default function UserProfileScreen() {
+export default function UserProfileScreen({route}: Props) {
     const navigation =
         useNavigation<NavigationProps>();
+
+    const {user} = route.params;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -39,6 +41,7 @@ export default function UserProfileScreen() {
             <Text>
                 Aqui será a tela de perfil :)
             </Text>
+            <Text> {user.id} | {user.name} | {user?.followers || 0} | {user?.followings || 0}</Text>
         </SafeAreaView>
     );
 }

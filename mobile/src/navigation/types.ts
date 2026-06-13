@@ -10,7 +10,9 @@ export type RootStackParamList = {
         post: any;
     }
 
-    UserProfile: undefined;
+    UserProfile: {
+        user: any;
+    };
 
     CreateNewPost: undefined;
 

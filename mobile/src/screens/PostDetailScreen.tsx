@@ -123,7 +123,10 @@ export default function PostDetailScreen({route}: Props) {
     }, [postDetails]);
 
     async function seeProfile() {
-        navigation.navigate("UserProfile");
+        navigation.navigate("UserProfile",
+            {
+                user: postUser,
+            });
     }
 
     async function handleLike() {
