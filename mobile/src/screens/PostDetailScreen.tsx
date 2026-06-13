@@ -126,6 +126,7 @@ export default function PostDetailScreen({route}: Props) {
         navigation.navigate("UserProfile",
             {
                 user: postUser,
+                imageProfile: profileImage
             });
     }
 

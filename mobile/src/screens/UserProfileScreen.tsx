@@ -1,10 +1,11 @@
 import {RouteProp, useNavigation} from "@react-navigation/native";
 import {RootStackParamList} from "../navigation/types";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
-import {StyleSheet, Text, TouchableOpacity} from "react-native";
+import {StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import {ArrowLeft} from "lucide-react-native";
 import React from "react";
-import {SafeAreaView} from "react-native-safe-area-context";
+import {SafeAreaView, useSafeAreaInsets} from "react-native-safe-area-context";
+import UserInfoPageHeader from "../components/UserInfoPageHeader";
 
 type Props = {
     route: RouteProp<
@@ -23,10 +24,12 @@ export default function UserProfileScreen({route}: Props) {
     const navigation =
         useNavigation<NavigationProps>();
 
-    const {user} = route.params;
+    const insets = useSafeAreaInsets();
+
+    const {user, imageProfile} = route.params;
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={{ flex:1, paddingTop: insets.top }}>
             <TouchableOpacity
                 style={styles.backButton}
                 activeOpacity={0.7}
@@ -38,11 +41,8 @@ export default function UserProfileScreen({route}: Props) {
             >
                 <ArrowLeft size={30} color="#A3C3FF"/>
             </TouchableOpacity>
-            <Text>
-                Aqui será a tela de perfil :)
-            </Text>
-            <Text> {user.id} | {user.name} | {user?.followers || 0} | {user?.followings || 0}</Text>
-        </SafeAreaView>
+            <UserInfoPageHeader user={user} profileImage={imageProfile} postsNum={0}/>
+        </View>
     );
 }
 
@@ -54,7 +54,6 @@ const styles = StyleSheet.create({
 
     backButton: {
         marginLeft: 24,
-        marginTop: 16,
         width: 44,
         height: 44,
         justifyContent: "center",

@@ -12,6 +12,7 @@ export type RootStackParamList = {
 
     UserProfile: {
         user: any;
+        imageProfile: string | null;
     };
 
     CreateNewPost: undefined;

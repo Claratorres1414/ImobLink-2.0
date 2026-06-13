@@ -146,7 +146,6 @@ export default function MyProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-
     editProfileButton: {
         width: "auto",
         height: 28,

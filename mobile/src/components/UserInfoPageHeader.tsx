@@ -11,7 +11,7 @@ type Props = {
 
 export default function UserInfoPageHeader({ user, profileImage, postsNum } : Props) {
     return (
-    <View>
+    <View style={{marginTop: -15}}>
         <View style={styles.userInfo}>
             <Image
                 source={
