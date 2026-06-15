@@ -49,7 +49,15 @@ public class RecommendationController {
         Long userId = getUserId(auth);
         recommendationService.saveQuestionnaire(userId, request);
     }
-   
+    // ---------------------------------------------------------------------
+    // 🎯 DISPARAR TREINAMENTO DA IA COM OS DADOS DO BANCO
+    // ---------------------------------------------------------------------
+    @PostMapping("/train-ia")
+    public Map<String, String> triggerIaTraining(Authentication auth) {
+        // Opcional: Se quiser validar se apenas admins podem treinar, adicione regras aqui
+        return recommendationService.executarTreinamentoCompleto();
+    }
+
     @GetMapping("/recommendations")
     public List<PostRecommendationDTO> getRecommendations(Authentication auth) {
         Long userId = getUserId(auth);

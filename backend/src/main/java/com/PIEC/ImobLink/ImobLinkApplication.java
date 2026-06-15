@@ -1,10 +1,13 @@
 package com.PIEC.ImobLink;
 
-import com.PIEC.ImobLink.Initializer.EnvInitializer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+import com.PIEC.ImobLink.Initializer.EnvInitializer;
 
 @SpringBootApplication
+@EnableScheduling
 public class ImobLinkApplication {
 
 	public static void main(String[] args) {
