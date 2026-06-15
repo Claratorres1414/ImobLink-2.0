@@ -4,8 +4,11 @@ import {NativeStackNavigationProp} from "@react-navigation/native-stack";
 import {StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import {ArrowLeft} from "lucide-react-native";
 import React from "react";
-import {SafeAreaView, useSafeAreaInsets} from "react-native-safe-area-context";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 import UserInfoPageHeader from "../components/UserInfoPageHeader";
+import {useAuthStore} from "../store/authStore";
+import EditProfileButton from "../components/EditProfileButton";
+import FollowButton from "../components/FollowButton";
 
 type Props = {
     route: RouteProp<
@@ -27,6 +30,8 @@ export default function UserProfileScreen({route}: Props) {
     const insets = useSafeAreaInsets();
 
     const {user, imageProfile} = route.params;
+    const currentUserId =
+        useAuthStore((state) => state.userId);
 
     return (
         <View style={{ flex:1, paddingTop: insets.top }}>
@@ -42,6 +47,14 @@ export default function UserProfileScreen({route}: Props) {
                 <ArrowLeft size={30} color="#A3C3FF"/>
             </TouchableOpacity>
             <UserInfoPageHeader user={user} profileImage={imageProfile} postsNum={0}/>
+            {
+                user &&
+                user.id === currentUserId && (
+                    <EditProfileButton/>
+                ) || (
+                    <FollowButton userId={user?.id} />
+                )
+            }
         </View>
     );
 }
