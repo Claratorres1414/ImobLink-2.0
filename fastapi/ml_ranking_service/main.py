@@ -13,6 +13,7 @@ if AMBIENTE == "PROD":
         docs_url=None,  # Esconde o Swagger em produção
         redoc_url=None  # Esconde o Redoc em produção
     )
+    
 else:
     app = FastAPI(
         title="FastAPI Inteligente - ML Recommendation & Ranking Engine"
