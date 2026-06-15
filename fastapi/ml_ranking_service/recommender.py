@@ -1,136 +1,64 @@
+import os
+import joblib
+import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from model import CAMINHO_MODELO_RECOMENDACAO, extrair_features_linha
 
-
-def build_post_text(post):
-    return " ".join([
-        str(post.get("description", "")),
-        str(post.get("type", "")),
-        str(post.get("street", "")),
-        str(post.get("avenue", "")),
-        str(post.get("price", "")),
-    ])
-
-
-def build_user_profile(user_profile):
-    return " ".join([
-        str(user_profile.get("objective", "")),
-        str(user_profile.get("propertyType", "")),
-        str(user_profile.get("priceRange", "")),
-    ])
-
-
-def get_price_score(price, price_range, objective):
-    try:
-        price = float(price)
-    except (ValueError, TypeError):
-        price = 0.0
-
-    if objective == "aluguel":
-        ranges = {
-            "baixo": (0, 1500),
-            "medio": (1501, 3500),
-            "alto": (3501, 999999999)
-        }
-    else:
-        ranges = {
-            "baixo": (0, 200000),
-            "medio": (200001, 500000),
-            "alto": (500001, 999999999)
-        }
-
-    min_price, max_price = ranges.get(
-        price_range,
-        (0, 999999999)
-    )
-
-    return 1.0 if min_price <= price <= max_price else 0.0
-
-
-def get_profile_score(user_profile, post):
-    score = 0.0
-
-    objective = user_profile.get("objective")
-    property_type = user_profile.get("propertyType")
-    price_range = user_profile.get("priceRange")
-
-    # Tipo de imóvel (Casa, Ap, etc.)
-    if property_type and post.get("propertyType") == property_type:
-        score += 3.0
-
-    # Objetivo (Aluguel/Venda)
-    if objective and post.get("type") == objective:
-        score += 2.0
-
-    # Faixa de preço
-    score += get_price_score(
-        post.get("price", 0),
-        price_range,
-        objective
-    ) * 4.0
-
-    return score
-
-
-def recommend(data):
+def recommend_with_ml(data):
     posts = data.get("posts", [])
     user_profile = data.get("user_profile", {}) or {}
-    
-    # Agora recebendo APENAS os IDs com LIKE vindos do Java
     user_interactions = set(data.get("user_interactions", []))
-    
-    print("POSTS EXCLUÍDOS POR LIKE:", user_interactions)
-    
-    if not posts:   
+
+    if not posts:
         return []
 
-    user_text = build_user_profile(user_profile)
-    post_texts = [build_post_text(post) for post in posts]
-
+    user_text = " ".join([str(user_profile.get("objective", "")), str(user_profile.get("propertyType", "")), str(user_profile.get("priceRange", ""))])
+    post_texts = [" ".join([str(p.get("description", "")), str(p.get("type", "")), str(p.get("street", "")), str(p.get("price", ""))]) for p in posts]
+    
     corpus = [user_text] + post_texts
-
     vectorizer = TfidfVectorizer()
     tfidf_matrix = vectorizer.fit_transform(corpus)
-
+    
     user_vector = tfidf_matrix[0]
     posts_vectors = tfidf_matrix[1:]
-
     similarities = cosine_similarity(user_vector, posts_vectors)[0]
 
+    modelo_treinado = None
+    if os.path.exists(CAMINHO_MODELO_RECOMENDACAO):
+        modelo_treinado = joblib.load(CAMINHO_MODELO_RECOMENDACAO)
+
     recommendations = []
+    linhas_para_prever = []
+    posts_validos = []
 
     for i, post in enumerate(posts):
-        # Se o post está na lista de curtidos, ele sai dos recomendados aqui
         if post["id"] in user_interactions:
             continue
 
-        similarity_score = similarities[i]
-        profile_score = get_profile_score(user_profile, post)
+        sim_score = similarities[i]
+        linhas_features = extrair_features_linha(user_profile, post, sim_score)
+        linhas_para_prever.append(linhas_features)
+        posts_validos.append(post)
 
-        # AJUSTE: Trocado 'favedTimes' por 'views', que é o que o Java realmente envia no payload
-        popularity_score = (
-            float(post.get("likedTimes", 0)) * 1.0 +
-            float(post.get("views", 0)) * 0.2
-        )
+    if not posts_validos:
+        return []
 
-        final_score = (
-            profile_score * 4 +
-            similarity_score * 3 +
-            popularity_score
-        )
+    if modelo_treinado:
+        X_pred = pd.DataFrame(linhas_para_prever)
+        scores_preditos = modelo_treinado.predict(X_pred)
+    else:
+        # Fallback caso o modelo de recomendação ainda não tenha sido treinado
+        scores_preditos = [
+            (lin["similarity_score"] * 3 + lin["match_tipo"] * 2 + lin["match_preco"] * 4 + lin["item_likes"])
+            for lin in linhas_para_prever
+        ]
 
-        # Reduz a força caso o usuário não tenha respondido o questionário
-        profile_weight = 1.0 if user_profile.get("objective") else 0.3
-        final_score *= profile_weight
-
+    for idx, post in enumerate(posts_validos):
         recommendations.append({
             "id": int(post["id"]),
-            "score": float(final_score)
+            "score": float(scores_preditos[idx])
         })
 
-    recommendations.sort(
-        key=lambda x: x["score"],
-        reverse=True
-    )
-
+    recommendations.sort(key=lambda x: x["score"], reverse=True)
     return recommendations[:10]

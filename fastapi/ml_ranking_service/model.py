@@ -1,46 +1,55 @@
+import os
 import pandas as pd
 import joblib
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import GradientBoostingRegressor
-import os
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-MODELO_CAMINHO = "modelo_popularidade_pre.pkl"
+# Caminhos dos dois modelos distintos
+CAMINHO_MODELO_POPULARIDADE = "modelo_popularidade_pre.pkl"
+CAMINHO_MODELO_RECOMENDACAO = "modelo_recomendacao_ia.pkl"
 
-# ----------------------------
-# FUNÇÃO PARA PREPARAR FEATURES PRÉ-PUBLICAÇÃO
-# ----------------------------
+# =====================================================================
+# 🧠 MODELO 1: PREVISÃO DE POPULARIDADE (PRÉ-PUBLICAÇÃO)
+# =====================================================================
+
 def preparar_features_pre_publicacao(posts):
     df = pd.DataFrame(posts)
-
-    # Garantir colunas básicas
     df["descLen"] = df["description"].apply(lambda x: len(x) if isinstance(x, str) else 0)
-
-    # Codificação de tipo, rua, avenida será feita pelo OneHotEncoder na pipeline
-
     return df
 
-# ----------------------------
-# TREINAR MODELO DE REGRESSÃO (PRÉ-PUBLICAÇÃO)
-# ----------------------------
-def treinar_modelo(posts: list):
-    """
-    Treina modelo usando apenas features disponíveis antes da publicação.
-    """
+def treinar_modelo_popularidade(posts: list):
     df = preparar_features_pre_publicacao(posts)
 
-    # Feature alvo: popularidade histórica (você pode criar com base em posts antigos)
-    # Exemplo: views + likedTimes + favedTimes + reachedTimes + commentsCount
+    # Garante que as colunas numéricas existam no DataFrame, mesmo que não venham no JSON
+    for col in ["views", "likedTimes", "favedTimes", "reachedTimes"]:
+        if col not in df.columns:
+            df[col] = 0
+
+    # Calcula o peso dos comentários de forma segura se a coluna existir
+    if "comments" in df.columns:
+        comments_score = df["comments"].apply(lambda x: len(x) if isinstance(x, list) else 0) * 4
+    else:
+        comments_score = 0
+
+    # Agora o cálculo está 100% protegido contra colunas ausentes
     df["target_popularity"] = (
-        df.get("views", 0) +
-        df.get("likedTimes", 0) * 3 +
-        df.get("favedTimes", 0) * 2 +
-        df.get("reachedTimes", 0) * 1 +
-        df.get("comments", 0).apply(lambda x: len(x) if isinstance(x, list) else 0) * 4
+        df["views"].astype(float) +
+        df["likedTimes"].astype(float) * 3 +
+        df["favedTimes"].astype(float) * 2 +
+        df["reachedTimes"].astype(float) * 1 +
+        comments_score
     )
 
     features = ["price", "descLen", "street", "avenue", "type"]
+    
+    # Garante que nenhuma feature essencial esteja faltando por segurança
+    for col in features:
+        if col not in df.columns:
+            df[col] = 0 if col in ["price", "descLen"] else ""
 
     X = df[features]
     y = df["target_popularity"]
@@ -57,37 +66,94 @@ def treinar_modelo(posts: list):
 
     model = Pipeline([
         ("preprocess", preprocess),
-        ("regressor", GradientBoostingRegressor())
+        ("regressor", GradientBoostingRegressor(random_state=42))
     ])
 
     model.fit(X, y)
-    joblib.dump(model, MODELO_CAMINHO)
+    joblib.dump(model, CAMINHO_MODELO_POPULARIDADE)
+    return {"status": "Modelo de popularidade treinado com sucesso"}
 
-    return {"status": "modelo treinado com sucesso"}
-
-# ----------------------------
-# PREVER POST NOVO
-# ----------------------------
 def prever_post(post: dict):
-    if not os.path.exists(MODELO_CAMINHO):
-        return {"erro": "Modelo ainda não foi treinado"}
+    if not os.path.exists(CAMINHO_MODELO_POPULARIDADE):
+        return {"erro": "Modelo de popularidade ainda não foi treinado"}
 
-    model = joblib.load(MODELO_CAMINHO)
-
-    # Criar df de 1 linha com features pré-publicação
+    model = joblib.load(CAMINHO_MODELO_POPULARIDADE)
     df = preparar_features_pre_publicacao([post])
     features = ["price", "descLen", "street", "avenue", "type"]
     X = df[features]
-
+    
     pred = model.predict(X)[0]
-
     return {
         "predicted_popularity": float(pred),
         "postId": post.get("id")
     }
 
-# ----------------------------
-# PREVER FEED COMPLETO
-# ----------------------------
 def prever_feed(posts: list):
     return [prever_post(p) for p in posts]
+
+
+# =====================================================================
+# 🧠 MODELO 2: SISTEMA DE RECOMENDAÇÃO PERSONALIZADO
+# =====================================================================
+
+def calcular_match_preco(price, price_range, objective):
+    try:
+        price = float(price)
+    except (ValueError, TypeError):
+        price = 0.0
+
+    ranges = {
+        "aluguel": {"baixo": (0, 1500), "medio": (1501, 3500), "alto": (3501, 999999999)},
+        "venda": {"baixo": (0, 200000), "medio": (200001, 500000), "alto": (500001, 999999999)}
+    }
+    
+    obj_dict = ranges.get(str(objective).lower(), ranges["venda"])
+    min_p, max_p = obj_dict.get(str(price_range).lower(), (0, 999999999))
+    return 1.0 if min_p <= price <= max_p else 0.0
+
+def extrair_features_linha(user_profile, post, similarity_score):
+    return {
+        "similarity_score": float(similarity_score),
+        "match_tipo": 1.0 if user_profile.get("objective") == post.get("type") else 0.0,
+        "match_propriedade": 1.0 if user_profile.get("propertyType") == post.get("propertyType") else 0.0,
+        "match_preco": calcular_match_preco(post.get("price", 0), user_profile.get("priceRange"), user_profile.get("objective")),
+        "item_price": float(post.get("price", 0) or 0),
+        "item_views": float(post.get("views", 0) or 0),
+        "item_likes": float(post.get("likedTimes", 0) or 0)
+    }
+
+def treinar_modelo_recomendacao(dados_historicos: list):
+    if not dados_historicos:
+        return {"erro": "Nenhum dado enviado para treino"}
+
+    linhas_features = []
+    targets = []
+
+    for item in dados_historicos:
+        user = item.get("user_profile", {})
+        post = item.get("post", {})
+        
+        user_text = f"{user.get('objective', '')} {user.get('propertyType', '')} {user.get('priceRange', '')}"
+        post_text = f"{post.get('description', '')} {post.get('type', '')} {post.get('street', '')} {post.get('price', '')}"
+        
+        vectorizer = TfidfVectorizer()
+        try:
+            tfidf = vectorizer.fit_transform([user_text, post_text])
+            sim = cosine_similarity(tfidf[0], tfidf[1])[0][0]
+        except:
+            sim = 0.0
+
+        features = extrair_features_linha(user, post, sim)
+        linhas_features.append(features)
+
+        score_sucesso = float(post.get("views", 0)) * 0.2 + float(post.get("likedTimes", 0)) * 1.0
+        targets.append(score_sucesso)
+
+    X = pd.DataFrame(linhas_features)
+    y = pd.Series(targets)
+
+    model = GradientBoostingRegressor(n_estimators=100, random_state=42)
+    model.fit(X, y)
+    joblib.dump(model, CAMINHO_MODELO_RECOMENDACAO)
+    
+    return {"status": "Modelo de Recomendação treinado com sucesso!", "linhas_processadas": len(X)}
