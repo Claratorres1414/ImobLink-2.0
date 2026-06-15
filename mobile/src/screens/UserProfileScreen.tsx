@@ -10,6 +10,7 @@ import {useAuthStore} from "../store/authStore";
 import EditProfileButton from "../components/EditProfileButton";
 import FollowButton from "../components/FollowButton";
 import ChatButton from "../components/ChatButton";
+import FollowAndChatBar from "../components/FollowAndChatBar";
 
 type Props = {
     route: RouteProp<
@@ -53,7 +54,9 @@ export default function UserProfileScreen({route}: Props) {
                 user.id === currentUserId && (
                     <EditProfileButton/>
                 ) || (
-                    <><ChatButton/><FollowButton userId={user?.id}/></>
+                    <View style={{alignItems: "center"}}>
+                        <FollowAndChatBar userId={user.id}/>
+                    </View>
                 )
             }
         </View>
