@@ -5,6 +5,20 @@ from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
+AMBIENTE = os.getenv("AMBIENTE", "LOCAL")
+
+if AMBIENTE == "PROD":
+    app = FastAPI(
+        title="FastAPI Inteligente - ML Recommendation & Ranking Engine",
+        docs_url=None,  # Esconde o Swagger em produção
+        redoc_url=None  # Esconde o Redoc em produção
+    )
+    
+else:
+    app = FastAPI(
+        title="FastAPI Inteligente - ML Recommendation & Ranking Engine"
+    )
+
 # Importações atualizadas dos arquivos locais unificados
 from recommender import recommend_with_ml
 from model import (
