@@ -3,7 +3,7 @@ import {RootStackParamList} from "../navigation/types";
 
 import Tabbar from "../components/Tabbar";
 import {useFocusEffect, useNavigation} from "@react-navigation/native";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import {ScrollView, StyleSheet, Text, View} from "react-native";
 import React, {useCallback, useState} from "react";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 import {getUserInfo} from "../apiServices/userService";
@@ -12,6 +12,7 @@ import {mapPostFromApi} from "../mappers/postMapper";
 import MiniPostCardSlider from "../components/MiniPostCardSlider";
 import UserInfoPageHeader from "../components/UserInfoPageHeader";
 import {getProfileImage} from "../apiServices/imageService";
+import EditProfileButton from "../components/EditProfileButton";
 
 type MyProfileNavigationProp =
     NativeStackNavigationProp<
@@ -96,11 +97,7 @@ export default function MyProfileScreen() {
 
                     >
                         <UserInfoPageHeader user={user} profileImage={profileImage} postsNum={myPosts.length}/>
-                        <TouchableOpacity style={styles.editProfileButton}>
-                            <Text style={styles.editProfileText}>
-                                Editar perfil
-                            </Text>
-                        </TouchableOpacity>
+                        <EditProfileButton />
                         <View style={styles.postsContainer}>
                             {myPosts.length > 0 && (
                                 <>
@@ -146,23 +143,6 @@ export default function MyProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-    editProfileButton: {
-        width: "auto",
-        height: 28,
-
-        marginHorizontal: 21,
-
-        borderRadius: 7,
-
-        justifyContent: "center",
-        alignItems: "center",
-
-        backgroundColor: "#333D52",
-    },
-    editProfileText: {
-        color: "#E9E9E9",
-        fontWeight: "400",
-    },
     postsContainer: {
         marginTop: 15,
     },
