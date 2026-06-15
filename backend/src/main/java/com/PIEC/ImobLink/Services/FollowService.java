@@ -21,7 +21,7 @@ public class FollowService {
     private final FollowRespository followRepository;
     private final RequireUserService requireUserService;
 
-    public Follow follow(Authentication auth, Long followingId) {
+    public void follow(Authentication auth, Long followingId) {
         User user = requireUserService.requireUser(auth);
         Long userId = user.getId();
         if (userId.equals(followingId)){
@@ -43,7 +43,7 @@ public class FollowService {
         user.getFollowings().add(follow);
         userFollowed.getFollowers().add(follow);
 
-        return followRepository.save(follow);
+        followRepository.save(follow);
     }
 
     public void unfollow(Authentication auth, Long followingId) {
@@ -102,5 +102,11 @@ public class FollowService {
                 .stream()
                 .map(UserDetails::new)
                 .toList();
+    }
+
+    public Boolean check(Long targetId, Authentication auth) {
+        User user = requireUserService.requireUser(auth);
+
+        return followRepository.existsByFollowerAndFollowingId(user, targetId);
     }
 }

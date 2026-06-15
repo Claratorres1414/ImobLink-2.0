@@ -28,10 +28,10 @@ public class FollowController {
             description = "Permite seguir o perfil de outro usuário"
     )
     @PostMapping("/{followingId}")
-    public ResponseEntity<ApiResponse<Follow>> followUser(@PathVariable Long followingId, Authentication auth) {
-        return ResponseUtil.ok(
-                "OK",
-                followService.follow(auth, followingId)
+    public ResponseEntity<ApiResponse<Void>> followUser(@PathVariable Long followingId, Authentication auth) {
+        followService.follow(auth, followingId);
+        return ResponseUtil.noContent(
+                "OK"
         );
     }
 
@@ -92,6 +92,14 @@ public class FollowController {
         return ResponseUtil.ok(
                 "Lista de usuários seguidos buscada com sucesso",
                 followService.getFollowingsById(userId)
+        );
+    }
+
+    @GetMapping("/check/{userId}")
+    public ResponseEntity<ApiResponse<Boolean>> checkFollow(@PathVariable Long userId, Authentication auth) {
+        return ResponseUtil.ok(
+                "Verificado com sucesso",
+                followService.check(userId, auth)
         );
     }
 }
