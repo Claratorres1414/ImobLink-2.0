@@ -6,37 +6,25 @@ def redimensionar_imagem(caminho, largura_alvo=1000):
     imagem = cv2.imread(caminho)
     if imagem is None:
         return None
-
     altura, largura = imagem.shape[:2]
     proporcao = largura_alvo / float(largura)
     nova_altura = int(altura * proporcao)
-    
     return cv2.resize(imagem, (largura_alvo, nova_altura))
 
 def extrair_nome(resultados):
     for item in resultados:
         texto = item[1].strip()
-
         texto_lower = texto.lower()
-
-        # procura qualquer variação tipo FILACAO, FILIACAO, FILIAÇÃO etc
         if "fila" in texto_lower or "fili" in texto_lower:
-            
             partes = re.split(r'fil[a-zçãáõôêéíóú]*', texto, flags=re.IGNORECASE)
-
             if partes:
                 nome = partes[0].strip()
-
-                # remove "nome" caso venha junto
                 nome = re.sub(r'^nome\s*', '', nome, flags=re.IGNORECASE)
-
-                # remove espaços duplicados
                 nome = re.sub(r'\s+', ' ', nome).strip()
-
                 if len(nome.split()) >= 3:
                     return nome
-
     return "Nome não identificado"
+
 def extrair_data_nascimento(texto):
     match = re.search(r'(\d{2}[\/\-]\d{2}[\/\-]\d{4})', texto)
     return match.group(0) if match else "Data não identificada"
@@ -47,7 +35,6 @@ def extrair_cpf(texto):
 
 def processar_documento(frente_path, verso_path):
     reader = easyocr.Reader(['pt', 'en'])
-
     frente_img = redimensionar_imagem(frente_path)
     verso_img = redimensionar_imagem(verso_path)
 
