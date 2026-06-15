@@ -5,7 +5,10 @@ from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-AMBIENTE = os.getenv("AMBIENTE", "LOCAL")
+# ---------------------------------------------------------------------
+# 🔒 CONFIGURAÇÃO DO AMBIENTE E INICIALIZAÇÃO DA API (Sem duplicatas)
+# ---------------------------------------------------------------------
+AMBIENTE = os.getenv("AMBIENTE", "LOCAL").replace('"', '').replace("'", "").strip().upper()
 
 if AMBIENTE == "PROD":
     app = FastAPI(
@@ -13,13 +16,14 @@ if AMBIENTE == "PROD":
         docs_url=None,  # Esconde o Swagger em produção
         redoc_url=None  # Esconde o Redoc em produção
     )
-    
 else:
     app = FastAPI(
         title="FastAPI Inteligente - ML Recommendation & Ranking Engine"
     )
 
-# Importações atualizadas dos arquivos locais unificados
+# ---------------------------------------------------------------------
+# 📦 IMPORTAÇÕES DOS ARQUIVOS LOCAIS UNIFICADOS
+# ---------------------------------------------------------------------
 from recommender import recommend_with_ml
 from model import (
     treinar_modelo_popularidade, 
@@ -28,8 +32,9 @@ from model import (
     treinar_modelo_recomendacao
 )
 
-app = FastAPI(title="FastAPI Inteligente - IA Popularidade & Recomendação")
-
+# ---------------------------------------------------------------------
+# 🔐 CONFIGURAÇÃO DE SEGURANÇA (CORS)
+# ---------------------------------------------------------------------
 JAVA_BACKEND_PROD = os.getenv("JAVA_BACKEND_URL", "http://localhost:8080")
 
 ALLOWED_ORIGINS = [
@@ -40,11 +45,20 @@ ALLOWED_ORIGINS = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS, # <-- Agora estritamente controlado
+    allow_origins=ALLOWED_ORIGINS, 
     allow_credentials=True,
-    allow_methods=["*"],           # Permite POST, GET, OPTIONS, etc.
+    allow_methods=["*"],           
     allow_headers=["*"],
 )
+
+# Rota opcional para a raiz não devolver 404 puro, mas sim um JSON informativo
+@app.get("/")
+async def root():
+    return {
+        "status": "online",
+        "mensagem": "API de Machine Learning & Ranking do ImobLink ativa.",
+        "ambiente": AMBIENTE
+    }
 
 # ---------------------------------------------------------------------
 # 📋 MODELOS DE VALIDAÇÃO DE DADOS (Pydantic)
@@ -104,14 +118,10 @@ async def prever_pop_feed(posts: list = Body(..., description="Lista de posts no
 
 
 # ---------------------------------------------------------------------
-# 📌 ROTAS DO MODELO 2: RECOMENDAÇÃO PERSONALIZADA (NOVO!)
+# 📌 ROTAS DO MODELO 2: RECOMENDAÇÃO PERSONALIZADA
 # ---------------------------------------------------------------------
 @app.post("/treinar-recomendador")
 async def treinar_rec(payload: list = Body(..., description="Histórico de interações do banco contendo {'user_profile':..., 'post':...}")):
-    """
-    Treina o modelo de Machine Learning que decide o ordenamento ideal do feed
-    com base no histórico extraído do banco de dados do Java.
-    """
     try:
         resultado = treinar_modelo_recomendacao(payload)
         return JSONResponse(content=resultado)
@@ -120,9 +130,6 @@ async def treinar_rec(payload: list = Body(..., description="Histórico de inter
 
 @app.post("/recommend")
 async def get_recommendations(data: RecommendationRequest):
-    """
-    Mapeia os posts elegíveis e usa o cérebro de Regressão para ordenar o feed do usuário.
-    """
     try:
         recs = recommend_with_ml(data.model_dump())
         return recs
@@ -131,7 +138,7 @@ async def get_recommendations(data: RecommendationRequest):
 
 
 # ---------------------------------------------------------------------
-# 📌 CONTROLE DE INTERAÇÕES (Armazenamento temporário local)
+# 📌 CONTROLE DE INTERAÇÕES 
 # ---------------------------------------------------------------------
 user_interactions_db = {}
 
