@@ -7,12 +7,12 @@ import {ScrollView, StyleSheet, Text, View} from "react-native";
 import React, {useCallback, useState} from "react";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 import {getUserInfo} from "../apiServices/userService";
-import {getMyFavs, getMyPosts} from "../apiServices/postService";
-import {mapPostFromApi} from "../mappers/postMapper";
-import MiniPostCardSlider from "../components/MiniPostCardSlider";
 import UserInfoPageHeader from "../components/UserInfoPageHeader";
 import {getProfileImage} from "../apiServices/imageService";
 import EditProfileButton from "../components/EditProfileButton";
+import {getMyFavs, getMyPosts} from "../apiServices/postService";
+import {mapPostFromApi} from "../mappers/postMapper";
+import MyProfileSlidersGroup from "../components/MyProfileSlidersGroup";
 
 type MyProfileNavigationProp =
     NativeStackNavigationProp<
@@ -25,10 +25,10 @@ export default function MyProfileScreen() {
     const insets = useSafeAreaInsets();
 
     const [user, setUser] = useState<any>(null);
-    const [myPosts, setMyPosts] = useState<any[]>([]);
-    const [myFavs, setMyFavs] = useState<any[]>([]);
     const [profileImage, setProfileImage] =
         useState<string | null>(null);
+    const [myPosts, setMyPosts] = useState<any[]>([]);
+    const [myFavs, setMyFavs] = useState<any[]>([]);
 
     async function loadUserInfo() {
         try {
@@ -48,6 +48,12 @@ export default function MyProfileScreen() {
             );
         }
     }
+
+    useFocusEffect(
+        useCallback(() => {
+            loadUserInfo();
+        }, [])
+    );
 
     async function loadMyPosts() {
         try {
@@ -83,7 +89,6 @@ export default function MyProfileScreen() {
 
     useFocusEffect(
         useCallback(() => {
-            loadUserInfo();
             loadMyPosts();
             loadMyFavs();
         }, [])
@@ -98,22 +103,7 @@ export default function MyProfileScreen() {
                     >
                         <UserInfoPageHeader user={user} profileImage={profileImage} postsNum={myPosts.length}/>
                         <EditProfileButton />
-                        <View style={styles.postsContainer}>
-                            {myPosts.length > 0 && (
-                                <>
-                                    <Text style={styles.postsTypeText}>meus posts</Text>
-                                    <MiniPostCardSlider posts={myPosts} />
-                                </>
-                            )}
-                        </View>
-                        <View style={styles.postsContainer}>
-                            {myFavs.length > 0 && (
-                                <>
-                                    <Text style={styles.postsTypeText}>meus favoritos</Text>
-                                    <MiniPostCardSlider posts={myFavs} />
-                                </>
-                            )}
-                        </View>
+                        <MyProfileSlidersGroup myFavs={myFavs} myPosts={myPosts} />
                     </ScrollView>
                 </View>
                 <Tabbar
@@ -141,17 +131,3 @@ export default function MyProfileScreen() {
                 />
             </View>
 }
-
-const styles = StyleSheet.create({
-    postsContainer: {
-        marginTop: 15,
-    },
-    postsTypeText: {
-        marginLeft: 28,
-        marginBottom: 12,
-        fontFamily: "Inter-SemiBold",
-        fontSize: 15,
-        fontWeight: 200,
-        color: "#7D92D4",
-    },
-});
