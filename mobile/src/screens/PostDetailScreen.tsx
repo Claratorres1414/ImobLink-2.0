@@ -122,6 +122,14 @@ export default function PostDetailScreen({route}: Props) {
         }
     }, [postDetails]);
 
+    async function seeProfile() {
+        navigation.navigate("UserProfile",
+            {
+                user: postUser,
+                imageProfile: profileImage
+            });
+    }
+
     async function handleLike() {
         const previousLiked = liked;
 
@@ -188,7 +196,7 @@ export default function PostDetailScreen({route}: Props) {
 
             <View style={styles.header}>
 
-                <View style={styles.userInfo}>
+                <TouchableOpacity style={styles.userInfo} onPress={() => seeProfile()}>
                     <Image
                         source={
                             profileImage
@@ -201,7 +209,7 @@ export default function PostDetailScreen({route}: Props) {
                     <Text style={styles.username}>
                         {postUser?.name || "User"}
                     </Text>
-                </View>
+                </TouchableOpacity>
                 {
                     postUser &&
                     postUser.id !== currentUserId && (

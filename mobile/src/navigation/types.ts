@@ -10,6 +10,11 @@ export type RootStackParamList = {
         post: any;
     }
 
+    UserProfile: {
+        user: any;
+        imageProfile: string | null;
+    };
+
     CreateNewPost: undefined;
 
     MyProfile: undefined;

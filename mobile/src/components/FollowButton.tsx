@@ -4,9 +4,10 @@ import {checkFollow, followUser, unfollowUser} from "../apiServices/followServic
 
 type Props = {
     userId: number;
+    width?: number;
 }
 
-export default function FollowButton({ userId }: Props) {
+export default function FollowButton({ userId, width = 70 }: Props) {
     const [following, setFollowing] = useState(false);
 
     async function checkFollowing() {
@@ -41,7 +42,8 @@ export default function FollowButton({ userId }: Props) {
         <TouchableOpacity
             style={[
                 styles.followButton,
-                following && styles.followingButton
+                following && styles.followingButton,
+                {width},
             ]}
             activeOpacity={0.7}
             onPress={handleFollow}
