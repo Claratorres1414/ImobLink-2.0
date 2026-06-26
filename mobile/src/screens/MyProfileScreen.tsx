@@ -115,17 +115,17 @@ export default function MyProfileScreen() {
                                     navigation.replace('Feed');
                                     break;
 
-                                /*case 'search':
-                                    navigation.navigate('SearchScreen');
+                                case 'search':
+                                    navigation.replace('Search');
                                     break;
 
-                                case 'chat':
-                                    navigation.navigate('ChatScreen');
+                                /*case 'chat':
+                                    navigation.replace('ChatScreen');
                                     break;
 
                                  */
                                 case 'profile':
-                                    return
+                                    return;
                             }
                         }}
                 />

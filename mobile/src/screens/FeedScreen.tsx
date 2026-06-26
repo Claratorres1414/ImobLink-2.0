@@ -157,12 +157,12 @@ export default function FeedScreen() {
                             case 'home':
                                 return;
 
-                            /*case 'search':
-                                navigation.navigate('SearchScreen');
+                            case 'search':
+                                navigation.replace('Search');
                                 break;
 
-                            case 'chat':
-                                navigation.navigate('ChatScreen');
+                            /*case 'chat':
+                                navigation.replace('ChatScreen');
                                 break;
 
                              */
