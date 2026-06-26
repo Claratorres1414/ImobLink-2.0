@@ -1,12 +1,12 @@
 import {View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Dimensions} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import {useFocusEffect, useNavigation} from "@react-navigation/native";
 import { ArrowLeft, Heart, MessageCircle, Phone, Star } from "lucide-react-native";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {getPostImages} from "../apiServices/imageService";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 
 import { api } from "../apiServices/api";
 import { getUserAccount } from "../apiServices/userService";
@@ -180,6 +180,14 @@ export default function PostDetailScreen({route}: Props) {
         ? new Date(postDate).toLocaleString("pt-BR")
         : "";
 
+    const [instance, setInstance] = useState(0);
+
+    useFocusEffect(
+        useCallback(() => {
+            setInstance(v => v + 1);
+        }, [])
+    );
+
     return (
         <SafeAreaView style={styles.container}>
             <TouchableOpacity
@@ -213,7 +221,7 @@ export default function PostDetailScreen({route}: Props) {
                 {
                     postUser &&
                     postUser.id !== currentUserId && (
-                        <FollowButton userId={postUser?.id || null}/>
+                        <FollowButton key={`${postUser?.id || null}-${instance}`} userId={postUser?.id || null}/>
                     )
                 }
             </View>

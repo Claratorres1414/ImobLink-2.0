@@ -113,8 +113,6 @@ export default function UserProfileScreen({route}: Props) {
     );
 }
 
-//<MyProfileSlidersGroup myFavs={userFavs} myPosts={userPosts} />
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
