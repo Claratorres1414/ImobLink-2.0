@@ -70,7 +70,7 @@ public class UserService {
 
     public List<UserDetails> searchUsers(String search, Authentication auth) {
         requireUserService.requireUser(auth);
-        List<User> users = userRepository.findTop10ByEmailContainingIgnoreCase(search);
+        List<User> users = userRepository.findTop10ByNameContainingIgnoreCase(search);
 
         return users.stream()
                 .map(UserDetails::new)
