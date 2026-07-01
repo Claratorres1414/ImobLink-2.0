@@ -34,3 +34,21 @@ export async function getUserInfo () {
         throw error;
     }
 }
+
+export async function searchUsers (query: string) {
+    try {
+        const response = await api.get(
+            `/user/search`, {
+                params: {
+                    search: query
+                },
+            });
+
+        return response.data;
+    } catch (error) {
+        console.log(
+            "Erro ao buscar usuários"
+        );
+        throw error;
+    }
+}

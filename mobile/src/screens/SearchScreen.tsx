@@ -3,9 +3,11 @@ import {RootStackParamList} from "../navigation/types";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 import Tabbar from "../components/Tabbar";
-import React, {useState} from "react";
-import {View} from "react-native";
+import React, {useEffect, useState} from "react";
+import {View, Text} from "react-native";
 import {SearchBar} from "../components/SearchBar";
+import {searchUsers} from "../apiServices/userService";
+import {User} from "../types/User";
 
 type Props = {
     route: RouteProp<
@@ -25,6 +27,25 @@ export default function SearchScreen({route}: Props) {
     const insets = useSafeAreaInsets();
 
     const [search, setSearch] = useState('');
+    const [users, setUsers] = useState<User[]>([]);
+
+    async function doSearch() {
+        const response = await searchUsers(search)
+        setUsers(response.data)
+    }
+
+    useEffect(() => {
+        const timeout = setTimeout(async () => {
+            if (search.trim() === "") {
+                setUsers([]);
+                return;
+            }
+
+            await doSearch();
+        }, 200);
+
+        return () => clearTimeout(timeout);
+    }, [search]);
 
     return (
         <View style={{ flex:1, paddingTop: insets.top, alignItems: "center" }}>
@@ -33,6 +54,12 @@ export default function SearchScreen({route}: Props) {
                     value={search}
                     onChangeText={setSearch}
                 />
+                {users.map(user => (
+                    <View key={user.id}>
+                        <Text>ID: {user.id}</Text>
+                        <Text>Username: {user.name}</Text>
+                    </View>
+                ))}
             </View>
             <Tabbar
                 activeTab={"search"}
