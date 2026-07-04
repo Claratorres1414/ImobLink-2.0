@@ -28,7 +28,9 @@ export default function UserCard({ user, onPress }: Props) {
         >
             <Image
                 source={
-                    require("../assets/default_profile.jpg")
+                    user.imageUrl
+                        ? { uri: user.imageUrl }
+                        : require("../assets/default_profile.jpg")
                 }
                 style={styles.avatar}
             />
