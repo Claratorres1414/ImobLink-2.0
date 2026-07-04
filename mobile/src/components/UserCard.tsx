@@ -1,4 +1,4 @@
-import {Image, StyleSheet, View, Text} from "react-native";
+import {Image, StyleSheet, View, Text, TouchableOpacity} from "react-native";
 import React, {useCallback, useState} from "react";
 import FollowButton from "./FollowButton";
 import {useAuthStore} from "../store/authStore";
@@ -6,9 +6,10 @@ import {useFocusEffect} from "@react-navigation/native";
 
 type Props = {
     user: any
+    onPress?: () => void;
 }
 
-export default function UserCard({ user }: Props) {
+export default function UserCard({ user, onPress }: Props) {
     const currentUserId =
         useAuthStore((state) => state.userId);
     const [instance, setInstance] = useState(0);
@@ -20,7 +21,11 @@ export default function UserCard({ user }: Props) {
     );
 
     return (
-        <View style={styles.userInfo}>
+        <TouchableOpacity
+            activeOpacity={0.95}
+            onPress={onPress}
+            style={styles.userInfo}
+        >
             <Image
                 source={
                     require("../assets/default_profile.jpg")
@@ -34,7 +39,7 @@ export default function UserCard({ user }: Props) {
                     <FollowButton key={`${user?.id || null}-${instance}`} userId={user?.id || null}/>
                 )
             }
-        </View>
+        </TouchableOpacity>
     )
 }
 
