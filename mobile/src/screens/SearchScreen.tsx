@@ -4,10 +4,11 @@ import {NativeStackNavigationProp} from "@react-navigation/native-stack";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 import Tabbar from "../components/Tabbar";
 import React, {useEffect, useState} from "react";
-import {View, Text} from "react-native";
+import {View} from "react-native";
 import {SearchBar} from "../components/SearchBar";
 import {searchUsers} from "../apiServices/userService";
 import {User} from "../types/User";
+import UsersList from "../components/UsersList";
 
 type Props = {
     route: RouteProp<
@@ -54,12 +55,7 @@ export default function SearchScreen({route}: Props) {
                     value={search}
                     onChangeText={setSearch}
                 />
-                {users.map(user => (
-                    <View key={user.id}>
-                        <Text>ID: {user.id}</Text>
-                        <Text>Username: {user.name}</Text>
-                    </View>
-                ))}
+                <UsersList users={users} />
             </View>
             <Tabbar
                 activeTab={"search"}
