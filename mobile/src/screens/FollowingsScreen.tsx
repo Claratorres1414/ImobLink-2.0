@@ -1,11 +1,12 @@
 import {RouteProp, useNavigation} from "@react-navigation/native";
 import {RootStackParamList} from "../navigation/types";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
-import {useAuthStore} from "../store/authStore";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {StyleSheet, TouchableOpacity} from "react-native";
 import {ArrowLeft} from "lucide-react-native";
-import React from "react";
+import React, {useEffect, useState} from "react";
+import {getFollowings} from "../apiServices/followService";
+import UsersList from "../components/UsersList";
 
 type Props = {
     route: RouteProp<
@@ -21,12 +22,25 @@ type NavigationProps =
     >;
 
 export default function FollowingsScreen({route}: Props) {
+    const [followings, setFollowings] = useState<any>([])
+
     const navigation =
         useNavigation<NavigationProps>();
 
     const {user} = route.params;
-    const currentUserId =
-        useAuthStore((state) => state.userId);
+
+    async function loadFollowings() {
+        try {
+            const data = (await getFollowings(user.id)).data;
+            setFollowings(data.data);
+        } catch (error) {
+            console.log('Erro ao carregar followers:', error);
+        }
+    }
+
+    useEffect(() => {
+        loadFollowings();
+    }, []);
 
     return (
         <SafeAreaView>
@@ -41,6 +55,8 @@ export default function FollowingsScreen({route}: Props) {
             >
                 <ArrowLeft size={30} color="#A3C3FF"/>
             </TouchableOpacity>
+
+            <UsersList users={followings} />
         </SafeAreaView>
     )
 }
