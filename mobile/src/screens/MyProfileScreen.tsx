@@ -101,7 +101,23 @@ export default function MyProfileScreen() {
                         contentContainerStyle={{ paddingBottom: 20 }}
 
                     >
-                        <UserInfoPageHeader user={user} profileImage={profileImage} postsNum={myPosts.length}/>
+                        <UserInfoPageHeader
+                            user={user}
+                            profileImage={profileImage}
+                            postsNum={myPosts.length}
+                            onFollowingsPress={() =>
+                                navigation.navigate(
+                                "Followings", {
+                                    user: user
+                                }
+                            )}
+                            onFollowersPress={() =>
+                                navigation.navigate(
+                                "Followers", {
+                                    user: user,
+                                }
+                            )}
+                        />
                         <EditProfileButton />
                         <MyProfileSlidersGroup myFavs={myFavs} myPosts={myPosts} />
                     </ScrollView>

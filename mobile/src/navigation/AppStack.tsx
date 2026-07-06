@@ -9,6 +9,8 @@ import CreateNewPostScreen from "../screens/CreateNewPostScreen";
 import MyProfileScreen from "../screens/MyProfileScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
 import SearchScreen from "../screens/SearchScreen";
+import FollowersScreen from "../screens/FollowersScreen";
+import FollowingsScreen from "../screens/FollowingsScreen";
 
 
 const Stack =
@@ -89,6 +91,32 @@ export default function AppStack() {
             <Stack.Screen
                 name="UserProfile"
                 component={UserProfileScreen}
+
+                options={{
+                    headerShown: false,
+                    animation: "simple_push",
+                    contentStyle: {
+                        backgroundColor: "#fff",
+                    },
+                }}
+            />
+
+            <Stack.Screen
+                name="Followers"
+                component={FollowersScreen}
+
+                options={{
+                    headerShown: false,
+                    animation: "simple_push",
+                    contentStyle: {
+                        backgroundColor: "#fff",
+                    },
+                }}
+            />
+
+            <Stack.Screen
+                name="Followings"
+                component={FollowingsScreen}
 
                 options={{
                     headerShown: false,
