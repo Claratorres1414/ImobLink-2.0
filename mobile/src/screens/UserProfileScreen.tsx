@@ -94,7 +94,23 @@ export default function UserProfileScreen({route}: Props) {
             >
                 <ArrowLeft size={30} color="#A3C3FF"/>
             </TouchableOpacity>
-            <UserInfoPageHeader user={user} profileImage={imageProfile} postsNum={0}/>
+            <UserInfoPageHeader
+                user={user}
+                profileImage={imageProfile}
+                postsNum={0}
+                onFollowingsPress={() =>
+                    navigation.navigate(
+                        "Followings", {
+                            user: user
+                        }
+                    )}
+                onFollowersPress={() =>
+                    navigation.navigate(
+                        "Followers", {
+                            user: user,
+                        }
+                    )}
+            />
             {
                 user &&
                 user.id === currentUserId && (

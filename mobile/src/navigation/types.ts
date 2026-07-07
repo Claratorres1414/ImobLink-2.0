@@ -20,4 +20,12 @@ export type RootStackParamList = {
     Search: undefined;
 
     MyProfile: undefined;
+
+    Followers: {
+        user: any;
+    }
+
+    Followings: {
+        user: any;
+    }
 }

@@ -6,10 +6,12 @@ import {Phone} from "lucide-react-native";
 type Props = {
     user: any,
     profileImage: string | null,
-    postsNum: number | null
+    postsNum: number | null;
+    onFollowersPress?: () => void;
+    onFollowingsPress?: () => void;
 };
 
-export default function UserInfoPageHeader({ user, profileImage, postsNum } : Props) {
+export default function UserInfoPageHeader({ user, profileImage, postsNum, onFollowingsPress, onFollowersPress } : Props) {
     return (
     <View style={{marginTop: -15}}>
         <View style={styles.userInfo}>
@@ -34,13 +36,19 @@ export default function UserInfoPageHeader({ user, profileImage, postsNum } : Pr
                         </Text>
                         <Text style={styles.infoText}>posts</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.infoItem}>
+                    <TouchableOpacity
+                        style={styles.infoItem}
+                        onPress={onFollowersPress}
+                    >
                         <Text style={styles.infoNumbers}>
                             {user?.followers || 0}
                         </Text>
                         <Text style={styles.infoText}>seguidores</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.infoItem}>
+                    <TouchableOpacity
+                        style={styles.infoItem}
+                        onPress={onFollowingsPress}
+                    >
                         <Text style={styles.infoNumbers}>
                             {user?.followings || 0}
                         </Text>

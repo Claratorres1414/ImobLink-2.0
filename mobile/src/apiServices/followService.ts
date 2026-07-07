@@ -11,3 +11,11 @@ export async function unfollowUser(userId: number) {
 export async function checkFollow(userId: number) {
     return api.get(`/follow/check/${userId}`);
 }
+
+export async function getFollowers(userId: number) {
+    return api.get(`/follow/getFollowers/${userId}`);
+}
+
+export async function getFollowings(userId: number) {
+    return api.get(`/follow/getFollowings/${userId}`);
+}
