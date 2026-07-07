@@ -1,7 +1,7 @@
 import {RouteProp, useNavigation} from "@react-navigation/native";
 import {RootStackParamList} from "../navigation/types";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
-import {SafeAreaView, useSafeAreaInsets} from "react-native-safe-area-context";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 import {ArrowLeft} from "lucide-react-native";
 import {StyleSheet, TouchableOpacity, View} from "react-native";
 import React, {useEffect, useState} from "react";
@@ -25,6 +25,11 @@ type NavigationProps =
 export default function FollowersScreen({route}: Props) {
     const [followers, setFollowers] = useState<any>([])
     const [search, setSearch] = useState('');
+
+    const filteredFollowers = followers.filter((user: any) =>
+        user.name.toLowerCase().includes(search.toLowerCase())
+    );
+
     const insets = useSafeAreaInsets();
 
     const navigation =
@@ -63,7 +68,7 @@ export default function FollowersScreen({route}: Props) {
                     value={search}
                     onChangeText={setSearch}
                 />
-                <UsersList users={followers} />
+                <UsersList users={filteredFollowers} />
             </View>
 
         </View>
