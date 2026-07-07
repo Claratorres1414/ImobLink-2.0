@@ -1,12 +1,13 @@
 import {RouteProp, useNavigation} from "@react-navigation/native";
 import {RootStackParamList} from "../navigation/types";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
-import {SafeAreaView} from "react-native-safe-area-context";
+import {SafeAreaView, useSafeAreaInsets} from "react-native-safe-area-context";
 import {ArrowLeft} from "lucide-react-native";
-import {StyleSheet, TouchableOpacity} from "react-native";
+import {StyleSheet, TouchableOpacity, View} from "react-native";
 import React, {useEffect, useState} from "react";
 import {getFollowers} from "../apiServices/followService";
 import UsersList from "../components/UsersList";
+import {SearchBar} from "../components/SearchBar";
 
 type Props = {
     route: RouteProp<
@@ -23,6 +24,8 @@ type NavigationProps =
 
 export default function FollowersScreen({route}: Props) {
     const [followers, setFollowers] = useState<any>([])
+    const [search, setSearch] = useState('');
+    const insets = useSafeAreaInsets();
 
     const navigation =
         useNavigation<NavigationProps>();
@@ -43,7 +46,7 @@ export default function FollowersScreen({route}: Props) {
     }, []);
 
     return (
-        <SafeAreaView>
+        <View style={{ flex: 1, paddingTop: insets.top, alignItems: "center" }}>
             <TouchableOpacity
                 style={styles.backButton}
                 activeOpacity={0.7}
@@ -55,8 +58,15 @@ export default function FollowersScreen({route}: Props) {
             >
                 <ArrowLeft size={30} color="#A3C3FF"/>
             </TouchableOpacity>
-            <UsersList users={followers} />
-        </SafeAreaView>
+            <View>
+                <SearchBar
+                    value={search}
+                    onChangeText={setSearch}
+                />
+                <UsersList users={followers} />
+            </View>
+
+        </View>
     )
 }
 
@@ -67,6 +77,8 @@ const styles = StyleSheet.create({
     },
 
     backButton: {
+        flexDirection: "row",
+        paddingRight: 350,
         marginLeft: 24,
         marginTop: 16,
         width: 44,

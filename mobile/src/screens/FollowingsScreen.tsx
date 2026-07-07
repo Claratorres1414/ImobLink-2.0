@@ -1,12 +1,13 @@
 import {RouteProp, useNavigation} from "@react-navigation/native";
 import {RootStackParamList} from "../navigation/types";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
-import {SafeAreaView} from "react-native-safe-area-context";
-import {StyleSheet, TouchableOpacity} from "react-native";
+import {SafeAreaView, useSafeAreaInsets} from "react-native-safe-area-context";
+import {StyleSheet, TouchableOpacity, View} from "react-native";
 import {ArrowLeft} from "lucide-react-native";
 import React, {useEffect, useState} from "react";
 import {getFollowings} from "../apiServices/followService";
 import UsersList from "../components/UsersList";
+import {SearchBar} from "../components/SearchBar";
 
 type Props = {
     route: RouteProp<
@@ -23,6 +24,8 @@ type NavigationProps =
 
 export default function FollowingsScreen({route}: Props) {
     const [followings, setFollowings] = useState<any>([])
+    const [search, setSearch] = useState('');
+    const insets = useSafeAreaInsets();
 
     const navigation =
         useNavigation<NavigationProps>();
@@ -34,7 +37,7 @@ export default function FollowingsScreen({route}: Props) {
             const data = (await getFollowings(user.id)).data;
             setFollowings(data.data);
         } catch (error) {
-            console.log('Erro ao carregar followers:', error);
+            console.log('Erro ao carregar followings:', error);
         }
     }
 
@@ -43,7 +46,7 @@ export default function FollowingsScreen({route}: Props) {
     }, []);
 
     return (
-        <SafeAreaView>
+        <View style= {{ flex: 1, paddingTop: insets.top, alignItems: "center" }}>
             <TouchableOpacity
                 style={styles.backButton}
                 activeOpacity={0.7}
@@ -56,8 +59,14 @@ export default function FollowingsScreen({route}: Props) {
                 <ArrowLeft size={30} color="#A3C3FF"/>
             </TouchableOpacity>
 
-            <UsersList users={followings} />
-        </SafeAreaView>
+            <View>
+                <SearchBar
+                    value={search}
+                    onChangeText={setSearch}
+                />
+                <UsersList users={followings} />
+            </View>
+        </View>
     )
 }
 
@@ -68,6 +77,8 @@ const styles = StyleSheet.create({
     },
 
     backButton: {
+        flexDirection: "row",
+        paddingRight: 350,
         marginLeft: 24,
         marginTop: 16,
         width: 44,
