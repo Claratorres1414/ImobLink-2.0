@@ -1,10 +1,9 @@
 package com.PIEC.ImobLink;
 
+import com.PIEC.ImobLink.Integration.IntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(properties = "spring.profiles.active=test")
-class ImobLinkApplicationTests {
+class ImobLinkApplicationTests extends IntegrationTest {
 
 	@Test
 	void contextLoads() {
