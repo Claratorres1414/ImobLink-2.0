@@ -150,12 +150,12 @@ public class UserServiceTest {
     void shouldSearchForUserByEmail() {
         when(requireUserService.requireUser(any()))
                 .thenReturn(user);
-        when(userRepository.findTop10ByEmailContainingIgnoreCase(anyString()))
+        when(userRepository.findTop10ByNameContainingIgnoreCase(anyString()))
                 .thenReturn(List.of(user2));
 
         userService.searchUsers("eMAIl091", auth);
 
-        verify(userRepository, times(1)).findTop10ByEmailContainingIgnoreCase(anyString());
+        verify(userRepository, times(1)).findTop10ByNameContainingIgnoreCase(anyString());
     }
 
     @Test
