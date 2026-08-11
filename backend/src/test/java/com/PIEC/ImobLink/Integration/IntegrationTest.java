@@ -1,5 +1,6 @@
 package com.PIEC.ImobLink.Integration;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,6 +20,9 @@ public abstract class IntegrationTest {
 
     @Autowired
     protected MockMvc mockMvc;
+
+    @Autowired
+    protected DatabaseCleaner databaseCleaner;
 
     @Container
     static PostgreSQLContainer<?> postgres =
@@ -44,6 +48,11 @@ public abstract class IntegrationTest {
                 "spring.datasource.password",
                 postgres::getPassword
         );
+    }
 
+
+    @BeforeEach
+    void cleanDatabase() {
+        databaseCleaner.clean();
     }
 }
