@@ -8,6 +8,7 @@ import com.PIEC.ImobLink.Entitys.Post;
 import com.PIEC.ImobLink.Entitys.Tag;
 import com.PIEC.ImobLink.Entitys.User;
 import com.PIEC.ImobLink.Repositorys.*;
+import com.PIEC.ImobLink.Services.Images.FileStorageService;
 import com.PIEC.ImobLink.Services.Images.ImageService;
 import com.PIEC.ImobLink.Services.PostService;
 import com.PIEC.ImobLink.Services.RequireUserService;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,6 +51,7 @@ public class PostServiceTest {
     @Mock private LikesLimitedHeap likesHeap;
     @Mock private ImageRepository imageRepository;
     @Mock private MultipartFile mFile;
+    @Mock private FileStorageService fileStorageService;
 
     @InjectMocks private PostService postService;
 
@@ -268,6 +271,9 @@ public class PostServiceTest {
         when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
 
+        when(imageRepository.findById(image.getId()))
+                .thenReturn(Optional.of(image));
+
         postService.removeImageByPostIdAndImageId(post.getId(), image.getId(), auth);
         assertNotNull(post.getImages());
         verify(requireUserService, times(1)).requireUser(any());
@@ -292,6 +298,9 @@ public class PostServiceTest {
 
         when(postRepository.getPostById(anyLong()))
                 .thenReturn(post);
+
+        when(imageRepository.findById(anyLong()))
+                .thenReturn(Optional.ofNullable(image));
 
         assertThrows(UnsupportedOperationException.class,
                 () -> postService.removeImageByPostIdAndImageId(post.getId(), image.getId(), auth));
